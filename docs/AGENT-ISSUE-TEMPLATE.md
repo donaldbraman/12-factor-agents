@@ -45,8 +45,11 @@ Implement GitHub issue #[NUMBER]: [TITLE]
 ```python
 # Create autonomous agent script
 Write("scripts/autonomous_[feature]_agent.py", agent_code)
+
+# TRUE BACKGROUND EXECUTION - This returns immediately!
+# The script runs completely independently in the background
 bash_id = Bash("nohup uv run scripts/autonomous_[feature]_agent.py > /tmp/agent.log 2>&1 &", 
-               run_in_background=True)
+               run_in_background=True)  # ← Critical: run_in_background=True makes it non-blocking!
 
 # Monitor via status files
 def update_status(progress: int, message: str, data: dict = None):
@@ -155,10 +158,7 @@ git commit -m "feat: [Description] (#[NUMBER])
 - [Component 1]: What was implemented
 - [Component 2]: What was implemented
 - [Tests]: Coverage added
-- [Performance]: Metrics achieved
-
-🤖 Generated with Claude Code
-Co-Authored-By: Claude <noreply@anthropic.com>"
+- [Performance]: Metrics achieved"
 
 # Create PR
 gh pr create --title "feat: [Description] (#[NUMBER])" \
