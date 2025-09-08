@@ -1,0 +1,30 @@
+# Local CI/CD Quality Gates - Issue #35
+repos:
+  - repo: https://github.com/psf/black
+    rev: 23.12.1
+    hooks:
+      - id: black
+        language_version: python3
+        args: [--line-length=88]
+        
+  - repo: https://github.com/astral-sh/ruff-pre-commit
+    rev: v0.1.9
+    hooks:
+      - id: ruff
+        args: [--fix, --exit-non-zero-on-fix]
+        
+  - repo: local
+    hooks:
+      - id: quick-tests
+        name: Quick Test Suite
+        entry: uv run -m pytest tests/test_quick_validation.py -v
+        language: system
+        pass_filenames: false
+        always_run: true
+        
+      - id: performance-check
+        name: Performance Regression Check
+        entry: uv run scripts/quick_performance_check.py
+        language: system  
+        pass_filenames: false
+        always_run: true
