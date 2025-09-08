@@ -36,3 +36,33 @@ See [docs/](docs/) for detailed documentation.
 ## License
 
 MIT
+
+
+## 🔧 Local Development Quality Gates
+
+For hobbyist development with automatic quality checks:
+
+```bash
+# Install pre-commit hooks (run once)
+make install-hooks
+
+# Run all quality gates
+make test
+
+# Quick checks before committing  
+make quick-test
+
+# Format and lint code
+make format lint
+
+# Performance regression check
+make perf-test
+```
+
+### Pre-commit Hooks
+- **Black**: Code formatting
+- **Ruff**: Linting and fixes
+- **Quick Tests**: Import validation and basic functionality
+- **Performance Check**: Regression detection
+
+Quality gates ensure code stays consistent and performant without manual checking.
