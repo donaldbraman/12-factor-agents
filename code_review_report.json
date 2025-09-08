@@ -1,20 +1,56 @@
 {
-  "review_date": "2025-09-08T09:56:32.859950",
+  "review_date": "2025-09-08T10:09:27.204405",
   "directory": "/Users/dbraman/Documents/GitHub/12-factor-agents",
   "files_reviewed": 575,
-  "total_issues": 167,
+  "total_issues": 256,
   "issues_by_type": {
-    "missing_type_hints": 46,
-    "print_statement": 88,
-    "todo_comment": 2,
-    "hardcoded_path": 2,
+    "missing_type_hints": 63,
+    "print_statement": 139,
+    "hardcoded_path": 5,
+    "todo_comment": 9,
     "missing_docstring": 2,
     "undocumented_dependencies": 1,
-    "dangerous_function": 21,
-    "unsafe_deserialization": 4,
+    "unsafe_deserialization": 13,
+    "dangerous_function": 23,
     "hardcoded_secret": 1
   },
-  "github_issues_created": [],
+  "github_issues_created": [
+    {
+      "issue_number": "7",
+      "url": "https://github.com/donaldbraman/12-factor-agents/issues/7",
+      "title": "Fix: 139 print statement issues"
+    },
+    {
+      "issue_number": "8",
+      "url": "https://github.com/donaldbraman/12-factor-agents/issues/8",
+      "title": "Fix: 5 hardcoded path issues"
+    },
+    {
+      "issue_number": "9",
+      "url": "https://github.com/donaldbraman/12-factor-agents/issues/9",
+      "title": "Fix: 9 todo comment issues"
+    },
+    {
+      "issue_number": "10",
+      "url": "https://github.com/donaldbraman/12-factor-agents/issues/10",
+      "title": "Fix: 2 missing docstring issues"
+    },
+    {
+      "issue_number": "11",
+      "url": "https://github.com/donaldbraman/12-factor-agents/issues/11",
+      "title": "Fix: 13 unsafe deserialization issues"
+    },
+    {
+      "issue_number": "12",
+      "url": "https://github.com/donaldbraman/12-factor-agents/issues/12",
+      "title": "Fix: 23 dangerous function issues"
+    },
+    {
+      "issue_number": "13",
+      "url": "https://github.com/donaldbraman/12-factor-agents/issues/13",
+      "title": "Fix: Potential hardcoded secret detected"
+    }
+  ],
   "all_findings": [
     {
       "type": "missing_type_hints",
@@ -152,6 +188,13 @@
     {
       "type": "missing_type_hints",
       "severity": "low",
+      "line": 184,
+      "message": "Function lacks return type hint: def add(self, key: str, value: str):",
+      "file": "core/context.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
       "line": 87,
       "message": "Function lacks return type hint: def pause(self):",
       "file": "core/agent.py"
@@ -204,6 +247,55 @@
       "line": 113,
       "message": "Function lacks return type hint: def clear_errors(self):",
       "file": "core/state.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 16,
+      "message": "Function lacks return type hint: def test_base_agent(self):",
+      "file": "tests/test_agents.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 23,
+      "message": "Function lacks return type hint: def test_tool_response(self):",
+      "file": "tests/test_agents.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 33,
+      "message": "Function lacks return type hint: def test_unified_state(self):",
+      "file": "tests/test_agents.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 42,
+      "message": "Function lacks return type hint: def test_agent_context(self):",
+      "file": "tests/test_agents.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 52,
+      "message": "Function lacks return type hint: def test_repository_setup_agent(self):",
+      "file": "tests/test_agents.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 59,
+      "message": "Function lacks return type hint: def test_prompt_management_agent(self):",
+      "file": "tests/test_agents.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 66,
+      "message": "Function lacks return type hint: def test_event_system_agent(self):",
+      "file": "tests/test_agents.py"
     },
     {
       "type": "print_statement",
@@ -260,6 +352,258 @@
       "line": 441,
       "message": "Use logging instead of print statements",
       "file": "agents/uv_migration_agent.py"
+    },
+    {
+      "type": "hardcoded_path",
+      "severity": "medium",
+      "line": 273,
+      "message": "Hardcoded path detected",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "hardcoded_path",
+      "severity": "medium",
+      "line": 274,
+      "message": "Hardcoded path detected",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "hardcoded_path",
+      "severity": "medium",
+      "line": 275,
+      "message": "Hardcoded path detected",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "todo_comment",
+      "severity": "low",
+      "line": 324,
+      "message": "Unresolved comment: \"\"\"Resolve NOTE comments\"\"\"",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "todo_comment",
+      "severity": "low",
+      "line": 329,
+      "message": "Unresolved comment: description=\"Resolve or document NOTE comments\"",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "todo_comment",
+      "severity": "low",
+      "line": 333,
+      "message": "Unresolved comment: \"\"\"Resolve NOTE comments in directory\"\"\"",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "todo_comment",
+      "severity": "low",
+      "line": 345,
+      "message": "Unresolved comment: if 'NOTE' in line or 'FIXME' in line:",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "todo_comment",
+      "severity": "low",
+      "line": 347,
+      "message": "Unresolved comment: if 'NOTE' in line:",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "todo_comment",
+      "severity": "low",
+      "line": 348,
+      "message": "Unresolved comment: new_line = line.replace('NOTE', 'NOTE')",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "todo_comment",
+      "severity": "low",
+      "line": 500,
+      "message": "Unresolved comment: # Resolve NOTE comments",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 553,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 587,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 594,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 595,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 597,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_fixer_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 107,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 110,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 217,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 289,
+      "message": "Function lacks return type hint: def test_base_agent():",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 294,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 297,
+      "message": "Function lacks return type hint: def test_tool_response():",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 302,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 308,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 474,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 487,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 494,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 500,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 506,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 508,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 516,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 522,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 526,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 562,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 569,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 570,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 572,
+      "message": "Use logging instead of print statements",
+      "file": "agents/issue_processor_agent.py"
     },
     {
       "type": "print_statement",
@@ -393,6 +737,244 @@
       "line": 673,
       "message": "Use logging instead of print statements",
       "file": "agents/prompt_management_agent.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 284,
+      "message": "Function lacks return type hint: def test_base_agent(self):",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 291,
+      "message": "Function lacks return type hint: def test_tool_response(self):",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 301,
+      "message": "Function lacks return type hint: def test_unified_state(self):",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 310,
+      "message": "Function lacks return type hint: def test_agent_context(self):",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 320,
+      "message": "Function lacks return type hint: def test_repository_setup_agent(self):",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 327,
+      "message": "Function lacks return type hint: def test_prompt_management_agent(self):",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "missing_type_hints",
+      "severity": "low",
+      "line": 334,
+      "message": "Function lacks return type hint: def test_event_system_agent(self):",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 454,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 460,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 462,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 466,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 472,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 474,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 480,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 483,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 489,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 491,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 495,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 501,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 503,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 507,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 508,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 509,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 512,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 514,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 516,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 517,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 518,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 519,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 520,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 556,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 562,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 564,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 569,
+      "message": "Use logging instead of print statements",
+      "file": "agents/testing_agent.py"
     },
     {
       "type": "print_statement",
@@ -551,56 +1133,49 @@
     {
       "type": "todo_comment",
       "severity": "low",
-      "line": 51,
-      "message": "Unresolved comment: # Check for TODO/FIXME comments",
+      "line": 52,
+      "message": "Unresolved comment: # Check for NOTE/FIXME comments",
       "file": "agents/code_review_agent.py"
     },
     {
       "type": "todo_comment",
       "severity": "low",
-      "line": 53,
-      "message": "Unresolved comment: if 'TODO' in line or 'FIXME' in line:",
+      "line": 54,
+      "message": "Unresolved comment: if 'NOTE' in line or 'FIXME' in line:",
       "file": "agents/code_review_agent.py"
     },
     {
       "type": "hardcoded_path",
       "severity": "medium",
-      "line": 62,
+      "line": 63,
       "message": "Hardcoded path detected",
       "file": "agents/code_review_agent.py"
     },
     {
       "type": "print_statement",
       "severity": "low",
-      "line": 359,
+      "line": 361,
       "message": "Use logging instead of print statements",
       "file": "agents/code_review_agent.py"
     },
     {
       "type": "print_statement",
       "severity": "low",
-      "line": 376,
+      "line": 378,
       "message": "Use logging instead of print statements",
       "file": "agents/code_review_agent.py"
     },
     {
       "type": "print_statement",
       "severity": "low",
-      "line": 385,
+      "line": 387,
       "message": "Use logging instead of print statements",
       "file": "agents/code_review_agent.py"
     },
     {
       "type": "print_statement",
       "severity": "low",
-      "line": 394,
-      "message": "Use logging instead of print statements",
-      "file": "agents/code_review_agent.py"
-    },
-    {
-      "type": "print_statement",
-      "severity": "low",
-      "line": 432,
+      "line": 396,
       "message": "Use logging instead of print statements",
       "file": "agents/code_review_agent.py"
     },
@@ -614,21 +1189,14 @@
     {
       "type": "print_statement",
       "severity": "low",
-      "line": 603,
+      "line": 436,
       "message": "Use logging instead of print statements",
       "file": "agents/code_review_agent.py"
     },
     {
       "type": "print_statement",
       "severity": "low",
-      "line": 610,
-      "message": "Use logging instead of print statements",
-      "file": "agents/code_review_agent.py"
-    },
-    {
-      "type": "print_statement",
-      "severity": "low",
-      "line": 611,
+      "line": 606,
       "message": "Use logging instead of print statements",
       "file": "agents/code_review_agent.py"
     },
@@ -636,6 +1204,20 @@
       "type": "print_statement",
       "severity": "low",
       "line": 613,
+      "message": "Use logging instead of print statements",
+      "file": "agents/code_review_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 614,
+      "message": "Use logging instead of print statements",
+      "file": "agents/code_review_agent.py"
+    },
+    {
+      "type": "print_statement",
+      "severity": "low",
+      "line": 616,
       "message": "Use logging instead of print statements",
       "file": "agents/code_review_agent.py"
     },
@@ -999,7 +1581,55 @@
     {
       "type": "undocumented_dependencies",
       "severity": "high",
-      "message": "Third-party imports without requirements.txt: pygments.lexers.webmisc, pygments.lexers.esoteric, _pytest.hookspec, pygments.lexers, pygments.lexers.robotframework, warnings, shlex, pygments.filters, mypy.types, pygments.regexopt, pygments.lexers.configs, _pytest.config.argparsing, pygments.formatters.terminal, pydantic.v1.version, pygments.lexers.php, pygments.lexers.graphics, unicodedata, pydantic_core.core_schema, __future__, locale, pygments.lexers.iolang, pygments.lexers.sgf, pygments.lexers.urbi, pygments.cmdline, pygments.lexers.rust, pydantic_core._pydantic_core, hashlib, _pytest.main, _pytest.cacheprovider, pygments.formatters._mapping, pygments.lexers.ruby, mypy.plugins.common, pydantic._internal, pygments.lexers.dotnet, _pytest._py.error, pygments.lexers.jvm, _pytest._code, _pytest._io, pydantic._internal._internal_dataclass, argparse, _pytest._io.wcwidth, pygments.lexers.felix, REPL.REPLCompletions, pygments.lexers.mime, pydantic, importlib.machinery, _pytest.mark.structures, string, pygments.lexers.lisp, mypy.plugins, pydantic.v1.utils, collections.abc, threading, _pytest.capture, _pytest.freeze_support, zoneinfo, itertools, pydantic.v1.networks, logging, pygments.lexers._usd_builtins, pygments.console, _pytest.terminal, pygments.lexers.automation, mypy.nodes, bisect, pygments.scanner, pygments.lexers.ml, _pytest.assertion.util, _pytest.tracemalloc, pygments.lexers.css, pygments.lexers.installers, fractions, _pytest.config, contextlib, pygments.lexers._lilypond_builtins, pydantic.v1.color, agents.code_review_agent, pydantic.v1.schema, email.message, mypy.plugin, pydantic.color, _pytest.debugging, base64, pygments.lexers._ada_builtins, mypy.typevars, _pytest.outcomes, pydantic.v1.errors, ast, pickle, py, docutils.statemachine, pygments.lexers.smalltalk, _pytest._code.code, struct, packaging.licenses._spdx, operator, pygments.lexers.c_cpp, pydantic.v1.json, mypy.state, pygments.lexers.prolog, _pytest.python_api, _pytest.config.exceptions, pydantic.v1, pytest, email.feedparser, pydantic.v1.class_validators, pygments.lexers._openedge_builtins, _pytest._code.source, pydantic._internal._import_utils, pygments.lexers.r, _pytest.assertion, pygments.lexer, importlib, runpy, pygments.lexers.idl, mypy.typeops, _pytest._py.path, email.policy, tempfile, platform, importlib.abc, _pytest._io.saferepr, posixpath, _pytest.warning_types, email.parser, pygments.lexers.shell, pygments.formatter, pygments.lexers._csound_builtins, _pytest.legacypath, pygments.lexers.html, pygments.lexers.pawn, importlib.util, mypy.util, pydantic.v1.datetime_parse, pydantic.v1.parse, _pytest.stash, marshal, pygments.lexers.diff, agents.{module_name}, pygments.formatters.terminal256, pygments.lexers.modeling, pygments.style, keyword, _pytest.tmpdir, pygments.lexers.data, pygments.lexers.go, pygments.lexers.modula2, unittest, pygments.lexers.textedit, docutils.parsers.rst, pygments.lexers._julia_builtins, configparser, mypy.version, pygments.lexers.ooc, pygments.modeline, math, pygments.unistring, textwrap, codecs, _pytest._version, pygments.lexers.python, _pytest.nodes, reprlib, pygments.lexers.dsls, pydantic.warnings, _pytest.doctest, pydantic.types, pygments.lexers.scripting, dataclasses, _pytest.mark, pydantic_core, tokenize, pygments.lexers.console, abc, email.header, _pytest.reports, xml.etree.ElementTree, pygments.lexers.crystal, pygments.lexers.javascript, pygments.lexers.sql, docutils, pydantic.v1.env_settings, _pytest.scope, pygments.lexers.haxe, pygments.plugin, pydantic.version, pydantic.v1.main, pygments.styles, _pytest.monkeypatch, fnmatch, pydantic.v1.types, builtins, pygments.lexers.dylan, pygments.lexers.basic, pydantic.v1.config, _pytest.runner, pygments.lexers._mapping, collections, stat, mypy.errorcodes, uuid, pygments.lexers.theorem, pydantic.main, core.agent, click, atexit, pygments.styles._mapping, colorsys, typing_extensions, _pytest.pytester, _pytest.raises, pygments.formatters, functools, mypy.server.trigger, gc, pydantic.v1.tools, time, _pytest.fixtures, _pytest.compat, ipaddress, pluggy, pygments.lexers.d, importlib.metadata, _pytest, pygments.lexers._qlik_builtins, pygments, pygments.util, pydantic.v1.typing, inspect, errno, pygments.lexers.testing, enum, agents.test_runner_agent, _pytest.recwarn, typing_inspection.introspection, pygments.lexers.ecl, typing_inspection, weakref, pygments.token, bdb, pygments.lexers.factor, pygments.filter, pydantic.v1.fields, pygments.lexers.haskell, pygments.lexers.nimrod, sphinx.util.nodes, pydantic.v1.annotated_types, pprint, pydantic.v1.validators, core.tools, annotated_types, hypothesis.strategies, pygments.lexers.actionscript, shutil, pygments.lexers.ada, traceback, numbers, mypy.expandtype, pygments.lexers.objective, mypy.semanal, pygments.lexers.c_like, pygments.lexers.lilypond, pygments.lexers.julia, pygments.lexers.erlang, pygments.lexers.smv, pygments.lexers._scheme_builtins, pygments.lexers.rebol, _pytest.logging, mypy.type_visitor, pydantic.v1.error_wrappers, pygments.lexers.fortran, pygments.lexers.textfmts, sysconfig, contextvars, mypy.options, pygments.lexers.special, io, _pytest._io.pprint, pygments.lexers.snobol, core.triggers, pygments.lexers.make, pygments.lexers.business, pygments.lexers.web, pygments.lexers.lean, pygments.lexers.pascal, copy, _pytest.python, pygments.lexers.matlab, types, site, pygments.lexers.algebra, iniconfig, pygments.lexers.tcl, _pytest.config.compat, pygments.lexers.markup, pygments.formatters.latex, pygments.lexers.perl, pygments.lexers._css_builtins, pydantic.v1.decorator, decimal, _pytest.pathlib, pydantic.errors, _pytest.assertion.rewrite, _pytest.deprecated, pygments.lexers._stata_builtins, glob"
+      "message": "Third-party imports without requirements.txt: core.state, pygments.lexers.sgf, pygments.lexers.idl, functools, email.message, mypy.plugins.common, core.agent, pygments.lexers._scheme_builtins, _pytest.raises, pygments.lexers.erlang, pygments.style, runpy, pydantic.v1.utils, pygments.formatters._mapping, pygments.lexers.dsls, importlib.metadata, pygments.lexers.modeling, pygments.lexers.esoteric, pygments.lexers.installers, pygments.lexers.smalltalk, copy, pydantic.color, pygments.lexers.haxe, configparser, itertools, pydantic.v1.class_validators, _pytest.python, pygments.lexer, agents.test_runner_agent, hashlib, pygments.lexers._css_builtins, pygments.lexers.modula2, marshal, collections.abc, pygments.formatters, pygments.formatters.latex, fnmatch, _pytest.stash, _pytest.pytester, pygments.lexers.crystal, pygments.lexers.d, _pytest.pathlib, sysconfig, reprlib, pygments.lexers, _pytest.config, _pytest.outcomes, traceback, core.triggers, pygments.lexers.pascal, pygments.lexers.ooc, pprint, agents.{module_name}, codecs, pydantic.v1.validators, inspect, _pytest.debugging, pydantic, gc, sphinx.util.nodes, mypy.nodes, pygments.lexers.lean, time, pygments.lexers.web, dataclasses, packaging.licenses._spdx, pygments.lexers._csound_builtins, textwrap, mypy.options, importlib, pygments.lexers.dotnet, pygments.lexers.haskell, REPL.REPLCompletions, pygments.lexers.lisp, pydantic_core._pydantic_core, pygments.lexers.actionscript, pydantic.v1.typing, pydantic.v1.types, _pytest.tracemalloc, pydantic.v1.decorator, pygments.lexers.factor, ast, pygments.lexers.php, docutils.parsers.rst, pydantic.main, _pytest.config.compat, pygments.lexers._stata_builtins, keyword, core.tools, pydantic._internal._import_utils, _pytest.freeze_support, mypy.version, pygments.lexers.markup, _pytest.doctest, pygments.lexers.jvm, pygments.lexers.c_like, pygments.lexers.objective, core.context, pydantic.v1, locale, zoneinfo, pydantic_core.core_schema, pygments.console, pygments.filters, warnings, _pytest.assertion.rewrite, pygments.lexers.shell, pygments.lexers.rebol, pygments.lexers.r, pygments.token, math, _pytest.recwarn, pygments.lexers.console, threading, _pytest.terminal, pydantic.v1.errors, pygments.lexers.matlab, pygments.styles, _pytest._io.wcwidth, pygments.unistring, abc, _pytest.tmpdir, pygments.lexers.robotframework, bisect, _pytest.nodes, _pytest._code.source, _pytest.main, numbers, stat, _pytest._version, pygments.lexers.ada, pydantic.v1.json, _pytest._io.pprint, mypy.errorcodes, pytest, pydantic_core, pygments.lexers._lilypond_builtins, typing_extensions, pygments.lexers.textedit, hypothesis.strategies, mypy.typevars, pydantic.v1.fields, pydantic.v1.annotated_types, _pytest.config.exceptions, pygments.lexers.lilypond, pydantic.errors, tempfile, errno, pygments.lexers.ruby, pygments.lexers.python, pygments.lexers.javascript, _pytest._py.path, mypy.state, pydantic.v1.parse, pygments.lexers.pawn, pygments.util, pydantic.version, pydantic.v1.tools, pygments.lexers.snobol, posixpath, py, pydantic.v1.error_wrappers, typing_inspection, mypy.semanal, shlex, pydantic.v1.version, pygments.lexers.perl, platform, pygments.lexers.go, glob, pygments.lexers.c_cpp, pygments.lexers.mime, _pytest._io, unicodedata, _pytest.capture, _pytest.fixtures, pygments.lexers.prolog, email.parser, pygments.lexers.felix, pygments.lexers.theorem, pygments.regexopt, pygments.lexers.css, pygments.lexers.data, pygments.lexers.special, agents.code_review_agent, mypy.plugins, pydantic._internal, pygments.lexers._mapping, _pytest.python_api, pygments.lexers.ecl, _pytest.mark, _pytest.assertion.util, pygments.lexers.ml, bdb, shutil, docutils, pydantic.v1.env_settings, _pytest._code, pygments.lexers.basic, _pytest.config.argparsing, _pytest.reports, pygments.lexers.rust, pygments.formatter, pydantic.v1.networks, iniconfig, xml.etree.ElementTree, email.feedparser, pydantic.v1.main, typing_inspection.introspection, pydantic.v1.schema, argparse, pygments.lexers.configs, pygments.lexers._qlik_builtins, contextvars, _pytest.runner, site, struct, pygments.lexers.dylan, colorsys, mypy.expandtype, pydantic.v1.datetime_parse, builtins, mypy.type_visitor, logging, contextlib, ipaddress, weakref, pickle, pydantic.types, _pytest.legacypath, importlib.util, pygments.cmdline, io, _pytest.hookspec, pygments, pydantic.warnings, pygments.lexers.webmisc, pygments.lexers.diff, pygments.lexers.nimrod, pygments.lexers.fortran, _pytest.monkeypatch, pygments.lexers.scripting, base64, pygments.lexers.smv, email.policy, atexit, __future__, _pytest.compat, _pytest.assertion, annotated_types, _pytest._code.code, pygments.modeline, _pytest.logging, pygments.plugin, pygments.lexers.sql, pygments.lexers._julia_builtins, pygments.lexers.make, pygments.lexers.tcl, pygments.scanner, mypy.plugin, docutils.statemachine, _pytest._py.error, _pytest.cacheprovider, operator, pydantic.v1.config, click, pygments.filter, importlib.machinery, _pytest.deprecated, pydantic.v1.color, pygments.lexers.julia, decimal, pydantic._internal._internal_dataclass, mypy.types, pygments.lexers.graphics, pygments.lexers.urbi, pygments.lexers._usd_builtins, pygments.formatters.terminal, pygments.lexers._openedge_builtins, pygments.lexers._ada_builtins, pygments.formatters.terminal256, pygments.lexers.textfmts, email.header, pygments.lexers.testing, unittest, _pytest, mypy.util, types, _pytest.scope, _pytest.warning_types, pluggy, fractions, pygments.lexers.algebra, importlib.abc, pygments.lexers.iolang, mypy.typeops, tokenize, _pytest._io.saferepr, pygments.lexers.business, enum, string, uuid, mypy.server.trigger, pygments.lexers.html, _pytest.mark.structures, pygments.styles._mapping, collections, pygments.lexers.automation"
+    },
+    {
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/core/triggers.py",
+      "type": "unsafe_deserialization",
+      "severity": "high",
+      "message": "Unsafe deserialization with pickle"
+    },
+    {
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/core/tools.py",
+      "type": "unsafe_deserialization",
+      "severity": "high",
+      "message": "Unsafe deserialization with pickle"
+    },
+    {
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/core/agent.py",
+      "type": "unsafe_deserialization",
+      "severity": "high",
+      "message": "Unsafe deserialization with pickle"
+    },
+    {
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/agents/issue_fixer_agent.py",
+      "type": "dangerous_function",
+      "severity": "high",
+      "message": "Use of eval() or exec() is dangerous"
+    },
+    {
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/agents/issue_fixer_agent.py",
+      "type": "unsafe_deserialization",
+      "severity": "high",
+      "message": "Unsafe deserialization with pickle"
+    },
+    {
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/agents/issue_processor_agent.py",
+      "type": "unsafe_deserialization",
+      "severity": "high",
+      "message": "Unsafe deserialization with pickle"
+    },
+    {
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/agents/testing_agent.py",
+      "type": "dangerous_function",
+      "severity": "high",
+      "message": "Use of eval() or exec() is dangerous"
+    },
+    {
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/agents/issue_orchestrator_agent.py",
+      "type": "unsafe_deserialization",
+      "severity": "high",
+      "message": "Unsafe deserialization with pickle"
     },
     {
       "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/agents/code_review_agent.py",
@@ -1009,6 +1639,12 @@
     },
     {
       "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/agents/code_review_agent.py",
+      "type": "unsafe_deserialization",
+      "severity": "high",
+      "message": "Unsafe deserialization with pickle"
+    },
+    {
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/agents/event_system_agent.py",
       "type": "unsafe_deserialization",
       "severity": "high",
       "message": "Unsafe deserialization with pickle"
@@ -1062,6 +1698,12 @@
       "message": "Use of eval() or exec() is dangerous"
     },
     {
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/.venv/lib/python3.13/site-packages/_pytest/cacheprovider.py",
+      "type": "unsafe_deserialization",
+      "severity": "high",
+      "message": "Unsafe deserialization with pickle"
+    },
+    {
       "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/.venv/lib/python3.13/site-packages/_pytest/mark/__init__.py",
       "type": "dangerous_function",
       "severity": "high",
@@ -1092,7 +1734,13 @@
       "message": "Use of eval() or exec() is dangerous"
     },
     {
-      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/.venv/lib/python3.13/site-packages/_pytest/_py/path.py",
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/.venv/lib/python3.13/site-packages/pydantic/v1/config.py",
+      "type": "unsafe_deserialization",
+      "severity": "high",
+      "message": "Unsafe deserialization with pickle"
+    },
+    {
+      "file": "/Users/dbraman/Documents/GitHub/12-factor-agents/.venv/lib/python3.13/site-packages/pydantic/v1/tools.py",
       "type": "unsafe_deserialization",
       "severity": "high",
       "message": "Unsafe deserialization with pickle"
