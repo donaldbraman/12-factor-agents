@@ -175,3 +175,16 @@ class ContextManager:
                 compacted.append(next((l.strip() for l in lines if l.strip()), "Unknown error"))
         
         return "Recent errors:\n" + "\n".join(f"- {e}" for e in compacted)
+
+
+# Alias for backwards compatibility
+class AgentContext(ContextManager):
+    """Alias for ContextManager for backwards compatibility"""
+    
+    def add(self, key: str, value: str):
+        """Add context item with default priority"""
+        self.add_context(value, priority=5, source=key)
+    
+    def __str__(self):
+        """String representation of context"""
+        return self.build_prompt()

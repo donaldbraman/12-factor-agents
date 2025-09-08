@@ -1,0 +1,123 @@
+{
+  "all_passed": false,
+  "results": {
+    "lint": {
+      "issues": [
+        {
+          "file": "agents/issue_fixer_agent.py",
+          "type": "syntax_error",
+          "line": 148,
+          "message": "unindent does not match any outer indentation level (issue_fixer_agent.py, line 148)"
+        }
+      ],
+      "files_checked": 575,
+      "issues_found": 1
+    },
+    "unit_tests": {
+      "tests_run": 12,
+      "passed": 9,
+      "failed": 3,
+      "results": [
+        {
+          "test": "core_imports",
+          "status": "failed",
+          "error": "cannot import name 'AgentContext' from 'core.context' (/Users/dbraman/Documents/GitHub/12-factor-agents/core/context.py)"
+        },
+        {
+          "test": "import_repository_setup_agent",
+          "status": "passed",
+          "message": "repository_setup_agent imports successfully"
+        },
+        {
+          "test": "import_prompt_management_agent",
+          "status": "passed",
+          "message": "prompt_management_agent imports successfully"
+        },
+        {
+          "test": "import_event_system_agent",
+          "status": "passed",
+          "message": "event_system_agent imports successfully"
+        },
+        {
+          "test": "import_component_migration_agent",
+          "status": "passed",
+          "message": "component_migration_agent imports successfully"
+        },
+        {
+          "test": "import_issue_orchestrator_agent",
+          "status": "passed",
+          "message": "issue_orchestrator_agent imports successfully"
+        },
+        {
+          "test": "import_uv_migration_agent",
+          "status": "passed",
+          "message": "uv_migration_agent imports successfully"
+        },
+        {
+          "test": "import_code_review_agent",
+          "status": "passed",
+          "message": "code_review_agent imports successfully"
+        },
+        {
+          "test": "import_issue_processor_agent",
+          "status": "passed",
+          "message": "issue_processor_agent imports successfully"
+        },
+        {
+          "test": "import_issue_fixer_agent",
+          "status": "failed",
+          "error": "unindent does not match any outer indentation level (issue_fixer_agent.py, line 148)",
+          "traceback": "Traceback (most recent call last):\n  File \"/Users/dbraman/Documents/GitHub/12-factor-agents/agents/testing_agent.py\", line 68, in execute\n    exec(f\"from agents.{module} import *\")\n    ~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\n  File \"<string>\", line 1, in <module>\n  File \"/Users/dbraman/Documents/GitHub/12-factor-agents/agents/issue_fixer_agent.py\", line 148\n    else:\n         ^\nIndentationError: unindent does not match any outer indentation level\n"
+        },
+        {
+          "test": "base_agent_instantiation",
+          "status": "failed",
+          "error": "Can't instantiate abstract class BaseAgent without an implementation for abstract methods '_apply_action', 'execute_task', 'register_tools'"
+        },
+        {
+          "test": "tool_response",
+          "status": "passed",
+          "message": "ToolResponse works correctly"
+        }
+      ]
+    },
+    "integration_tests": {
+      "tests_run": 4,
+      "passed": 4,
+      "failed": 0,
+      "results": [
+        {
+          "test": "repository_setup_agent_creation",
+          "status": "passed",
+          "message": "RepositorySetupAgent creates successfully"
+        },
+        {
+          "test": "state_management",
+          "status": "passed",
+          "message": "UnifiedState works correctly"
+        },
+        {
+          "test": "prompt_manager",
+          "status": "passed",
+          "message": "PromptManager initializes correctly"
+        },
+        {
+          "test": "event_system",
+          "status": "passed",
+          "message": "LocalEventSystem works correctly"
+        }
+      ]
+    },
+    "pytest": {
+      "exit_code": 2,
+      "output": "============================= test session starts ==============================\nplatform darwin -- Python 3.13.7, pytest-8.4.2, pluggy-1.6.0 -- /Users/dbraman/Documents/GitHub/12-factor-agents/.venv/bin/python3\ncachedir: .pytest_cache\nrootdir: /Users/dbraman/Documents/GitHub/12-factor-agents\nconfigfile: pyproject.toml\ncollecting ... collected 0 items / 1 error\n\n==================================== ERRORS ====================================\n____________________ ERROR collecting tests/test_agents.py _____________________\nImportError while importing test module '/Users/dbraman/Documents/GitHub/12-factor-agents/tests/test_agents.py'.\nHint: make sure your test modules/packages have valid Python names.\nTraceback:\n../../../.local/share/uv/python/cpython-3.13.7-macos-aarch64-none/lib/python3.13/importlib/__init__.py:88: in import_module\n    return _bootstrap._gcd_import(name[level:], package, level)\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\ntests/test_agents.py:10: in <module>\n    from core.context import AgentContext\nE   ImportError: cannot import name 'AgentContext' from 'core.context' (/Users/dbraman/Documents/GitHub/12-factor-agents/core/context.py)\n=========================== short test summary info ============================\nERROR tests/test_agents.py\n!!!!!!!!!!!!!!!!!!!! Interrupted: 1 error during collection !!!!!!!!!!!!!!!!!!!!\n=============================== 1 error in 0.09s ===============================\n",
+      "errors": null
+    }
+  },
+  "summary": {
+    "lint": false,
+    "unit_tests": "9/12",
+    "integration_tests": "4/4",
+    "pytest": false
+  }
+}

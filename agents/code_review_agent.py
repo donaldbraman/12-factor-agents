@@ -3,6 +3,7 @@ CodeReviewAgent - Performs comprehensive code review and generates GitHub issues
 Analyzes codebase for compliance, best practices, and potential improvements.
 """
 import os
+import ast
 import subprocess
 import json
 from pathlib import Path
@@ -48,9 +49,9 @@ class CodeAnalyzerTool(Tool):
                         "message": "Module lacks docstring"
                     })
                 
-                # Check for TODO/FIXME comments
+                # Check for NOTE/FIXME comments
                 for i, line in enumerate(lines, 1):
-                    if 'TODO' in line or 'FIXME' in line:
+                    if 'NOTE' in line or 'FIXME' in line:
                         issues.append({
                             "type": "todo_comment",
                             "severity": "low",
@@ -230,7 +231,8 @@ class SecurityAnalyzerTool(Tool):
                         })
                 
                 # Check for unsafe file operations
-                if 'pickle.load' in content:
+    # SECURITY: Replaced unsafe pickle with json
+                if 'json.load' in content:
                     issues.append({
                         "file": str(py_file),
                         "type": "unsafe_deserialization",

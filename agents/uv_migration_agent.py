@@ -174,7 +174,7 @@ class DocumentationUpdaterTool(Tool):
                 ('```sh\npython3', '```sh\nuv run'),
                 
                 # Specific patterns
-                ('~/Documents/GitHub/12-factor-agents/bin/agent', 'uv run ~/Documents/GitHub/12-factor-agents/bin/agent'),
+                ('Path.home() / "Documents" / "GitHub"/12-factor-agents/bin/agent', 'uv run Path.home() / "Documents" / "GitHub"/12-factor-agents/bin/agent'),
                 ('./bin/agent', 'uv run bin/agent'),
                 ('bin/agent', 'uv run bin/agent'),
                 

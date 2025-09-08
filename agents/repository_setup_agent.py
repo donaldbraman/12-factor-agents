@@ -446,7 +446,7 @@ if __name__ == "__main__":
     agent = RepositorySetupAgent()
     
     # Test on the actual 12-factor-agents directory
-    result = agent.execute_task("setup repository at /Users/dbraman/Documents/GitHub/12-factor-agents")
+    result = agent.execute_task('setup repository at /Users/dbraman/Documents/GitHub/12-factor-agents')
     
     if result.success:
         print("✅ Repository setup successful!")
