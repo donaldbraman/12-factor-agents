@@ -599,6 +599,7 @@ Consider a systematic approach to address all these issues at once, possibly usi
 
 
 # Self-test when run directly
+# Usage: uv run agents/code_review_agent.py
 if __name__ == "__main__":
     print("Testing CodeReviewAgent...")
     agent = CodeReviewAgent()
