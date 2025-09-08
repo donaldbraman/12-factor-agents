@@ -1,0 +1,21 @@
+# Prompt Metadata
+# Version: 1.0.0
+# Description: Error handling prompt
+# Variables: error_message, error_type, stack_trace, suggestions
+# Created: 2025-09-08T09:45:08.525500
+
+An error occurred while executing your task:
+
+## Error Details
+${error_message}
+
+## Error Type
+${error_type}
+
+## Stack Trace
+${stack_trace}
+
+## Recovery Suggestions
+${suggestions}
+
+Please review the error and determine the appropriate recovery action.

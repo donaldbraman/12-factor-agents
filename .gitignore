@@ -1,0 +1,29 @@
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+env/
+venv/
+.venv
+.env
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+.DS_Store
+
+# Agent-specific
+*.pid
+*.log
+.claude-shared-state/
+tmp/
+temp/
+
+# Test coverage
+htmlcov/
+.coverage
+.pytest_cache/

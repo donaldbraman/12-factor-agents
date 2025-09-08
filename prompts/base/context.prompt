@@ -1,0 +1,22 @@
+# Prompt Metadata
+# Version: 1.0.0
+# Description: Context information prompt
+# Variables: working_directory, action_history, state_summary, resources, constraints
+# Created: 2025-09-08T09:45:08.525613
+
+## Current Context
+
+### Working Directory
+${working_directory}
+
+### Previous Actions
+${action_history}
+
+### Current State
+${state_summary}
+
+### Available Resources
+${resources}
+
+### Constraints
+${constraints}

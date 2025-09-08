@@ -1,0 +1,113 @@
+#!/usr/bin/env uv run python
+"""
+Event management CLI for 12-factor agents.
+Allows triggering and managing events from command line.
+"""
+import sys
+import json
+import click
+from pathlib import Path
+
+# Add parent to path
+sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from core.triggers import LocalEventSystem, CLITrigger
+
+
+@click.group()
+def cli():
+    """Event management for 12-factor agents"""
+    pass
+
+
+@cli.command()
+@click.argument('event_type')
+@click.option('--data', '-d', default='{}', help='Event data as JSON')
+@click.option('--source', '-s', default='cli', help='Event source')
+def emit(event_type, data, source):
+    """Emit an event"""
+    try:
+        event_system = LocalEventSystem()
+        data_dict = json.loads(data) if data else {}
+        event_id = event_system.emit(event_type, data_dict, source)
+        click.echo(f"Event emitted: {event_id}")
+    except json.JSONDecodeError:
+        click.echo("Error: Invalid JSON data", err=True)
+        sys.exit(1)
+    except Exception as e:
+        click.echo(f"Error: {e}", err=True)
+        sys.exit(1)
+
+
+@cli.command()
+def list():
+    """List pending events"""
+    event_system = LocalEventSystem()
+    events = event_system.get_pending_events()
+    
+    if not events:
+        click.echo("No pending events")
+        return
+    
+    click.echo(f"Pending events ({len(events)}):")
+    for event in events:
+        click.echo(f"  - {event.event_type} at {event.timestamp} from {event.source}")
+
+
+@cli.command()
+def process():
+    """Process all pending events"""
+    event_system = LocalEventSystem()
+    count = event_system.process_events()
+    click.echo(f"Processed {count} events")
+
+
+@cli.command()
+@click.option('--limit', '-l', default=10, help='Number of events to show')
+def history(limit):
+    """Show processed event history"""
+    event_system = LocalEventSystem()
+    events = event_system.get_processed_events(limit)
+    
+    if not events:
+        click.echo("No processed events")
+        return
+    
+    click.echo(f"Recent processed events (last {limit}):")
+    for event in events:
+        click.echo(f"  - {event.event_type} at {event.timestamp} from {event.source}")
+
+
+@cli.command()
+@click.option('--days', '-d', default=7, help='Days to keep')
+def cleanup(days):
+    """Clean up old processed events"""
+    event_system = LocalEventSystem()
+    count = event_system.cleanup_old_events(days)
+    click.echo(f"Cleaned up {count} old events")
+
+
+@cli.command()
+@click.argument('path')
+@click.option('--pattern', '-p', default='*', help='File pattern to watch')
+@click.option('--event', '-e', default='file_changed', help='Event type to emit')
+def watch(path, pattern, event):
+    """Watch a directory for changes"""
+    event_system = LocalEventSystem()
+    event_system.register_file_watcher(path, pattern, event)
+    event_system.start()
+    
+    click.echo(f"Watching {path} for {pattern} files...")
+    click.echo("Press Ctrl+C to stop")
+    
+    try:
+        import time
+        while True:
+            time.sleep(1)
+    except KeyboardInterrupt:
+        event_system.stop()
+        click.echo("\nStopped watching")
+
+
+if __name__ == '__main__':
+    cli()

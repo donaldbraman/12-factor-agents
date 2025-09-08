@@ -1,0 +1,20 @@
+[project]
+name = "12-factor-agents"
+version = "1.0.0"
+description = "12-Factor compliant AI agent framework"
+requires-python = ">=3.9"
+dependencies = [
+    "pydantic>=2.0",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=7.0",
+    "black>=23.0",
+    "ruff>=0.1",
+]
+
+[tool.uv]
+dev-dependencies = [
+    "pytest>=7.0",
+]
