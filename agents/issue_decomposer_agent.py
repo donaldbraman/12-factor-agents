@@ -3,18 +3,19 @@ IssueDecomposerAgent - Breaks down complex issues into manageable subtasks.
 Inspired by the hierarchical orchestrator pattern for intelligent task decomposition.
 """
 
-import re
 import json
-from pathlib import Path
-from typing import Dict, Any, List, Optional
+import re
+import sys
 from dataclasses import dataclass
 from enum import Enum
-import sys
+from pathlib import Path
+from typing import Any, Dict, List, Optional
 
+# Add parent directory to path for core imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.agent import BaseAgent
-from core.tools import Tool, ToolResponse
+from core.agent import BaseAgent  # noqa: E402
+from core.tools import Tool, ToolResponse  # noqa: E402
 
 
 class IssueComplexity(Enum):
@@ -76,9 +77,9 @@ class ComplexityAnalyzerTool(Tool):
                 "documentation.*code",
                 "examples.*tests",
                 "all.*files",
-                "###.*1\.",
-                "###.*2\.",
-                "###.*3\.",  # Numbered sections indicate complexity
+                r"###.*1\.",
+                r"###.*2\.",
+                r"###.*3\.",  # Numbered sections indicate complexity
             ]
 
             # Moderate indicators - related changes
@@ -244,331 +245,249 @@ class IssueDecomposerTool(Tool):
 
     def _moderate_strategy(self, content: str, title: str) -> List[SubIssue]:
         """
-        Moderate decomposition following 12-Factor Agent principles:
-        - Factor 10: Small, focused agents (specific file-based tasks)
-        - Factor 1: Natural Language to Tool Calls (extract actionable changes)
-        - Factor 12: Stateless Reducer (clear input/output per task)
+        Moderate decomposition using agent intelligence with heuristic guidance.
+
+        Typically breaks into 2-3 focused tasks that can work together.
+        Uses heuristics to guide agent understanding rather than rigid patterns.
         """
 
-        # Factor 4: Extract structured file information
-        files = re.findall(r"([/\w.-]+\.\w+)", content)
+        # Heuristic: Moderate issues typically benefit from focused implementation + validation
 
-        if files:
-            # Factor 10: Create focused tasks per file
-            sub_issues = []
-            for i, file_path in enumerate(set(files)):
-                file_name = Path(file_path).name
+        implementation_task = SubIssue(
+            title=f"Implement: {title}",
+            description=f"""**Objective**: Implement the functionality described in this moderate complexity issue.
 
-                # Extract context about this specific file from content
-                file_context = ""
-                lines = content.split("\n")
-                for j, line in enumerate(lines):
-                    if file_path in line or file_name in line:
-                        # Get surrounding context (3 lines before and after)
-                        start = max(0, j - 3)
-                        end = min(len(lines), j + 4)
-                        file_context = "\n".join(lines[start:end])
-                        break
+**Original Issue**:
+{content}
 
-                description = f"""Update {file_name} according to the requirements.
+**Your Intelligence Task**: 
+Use your understanding to implement what's needed. This is moderate complexity so:
 
-## Target File
-{file_path}
+- Analyze the requirements and understand what needs to be built
+- Identify which files, components, or systems need modification
+- Implement the changes with proper error handling and code quality
+- Follow existing patterns and conventions in the codebase
+- Test your changes as you implement
 
-## Context from Main Issue
-{file_context if file_context else 'General update required based on main issue requirements.'}
+**Heuristic Guidance**:
+- Look for specific file mentions, code snippets, or technical specs
+- Notice Current/Should patterns that indicate what to change
+- Identify integration points with existing functionality  
+- Consider edge cases and error conditions
+- Ensure backwards compatibility unless explicitly changing
 
-## Actionable Steps (Factor 8: Own Your Control Flow)
-1. Open and review {file_path}
-2. Identify specific sections that need changes
-3. Apply the required modifications
-4. Verify syntax and functionality
-5. Test the changes work as expected
+**Implementation Approach**:
+1. Understand the requirements thoroughly
+2. Identify target files and components
+3. Implement changes following existing patterns
+4. Add proper error handling and validation
+5. Test functionality works as expected
+6. Document any important decisions or changes
 
-## Definition of Done (Factor 12: Stateless Reducer)
-- [ ] File modifications completed
-- [ ] No syntax errors introduced
-- [ ] Changes align with requirements
-- [ ] Integration verified
+**Success Criteria**:
+- All requirements from the issue are implemented
+- Code follows project conventions and quality standards
+- Implementation handles edge cases appropriately  
+- Changes integrate properly with existing systems
+- Functionality is tested and working""",
+            assignee="issue_fixer_agent",
+            priority="high",
+            type="implementation",
+        )
 
-## Implementation Notes
-- Follow existing code style and patterns
-- Preserve existing functionality unless explicitly changing it
-- Add appropriate error handling if needed"""
+        validation_task = SubIssue(
+            title=f"Test and validate: {title}",
+            description=f"""**Objective**: Test the implementation to ensure it works correctly and meets requirements.
 
-                sub_issues.append(
-                    SubIssue(
-                        title=f"Update {file_name}",
-                        description=description,
-                        target_file=file_path,
-                        assignee="issue_fixer_agent",
-                        priority="high" if i == 0 else "medium",
-                    )
-                )
-            return sub_issues
-        else:
-            # No specific files - break into focused phases following 12-Factor
-            return [
-                SubIssue(
-                    title=f"Plan implementation for {title}",
-                    description=f"""Plan the implementation approach for: {title}
+**Context**:
+{content}
 
-## Context
-{content.strip()[:400]}{'...' if len(content) > 400 else ''}
+**Your Intelligence Task**:
+Validate that the implementation works properly:
 
-## Actionable Steps (Factor 8: Own Your Control Flow)
-1. Review all requirements in detail
-2. Identify specific files and components to modify
-3. Determine the order of implementation
-4. Plan testing approach
-5. Document the implementation plan
+- Test the implemented functionality end-to-end
+- Verify edge cases and error conditions are handled
+- Check integration with existing systems  
+- Ensure user experience meets expectations
+- Validate that all requirements from the original issue are satisfied
 
-## Definition of Done
-- [ ] Implementation plan documented
-- [ ] Files and components identified
-- [ ] Dependencies mapped
-- [ ] Testing plan created
+**Heuristic Guidance**:
+- Review what was implemented against the original requirements
+- Create test scenarios for normal usage and edge cases
+- Test integration points and data flows
+- Verify error handling and user experience
+- Check for any performance or security considerations
 
-## Output (Factor 4: Structured Outputs)
-Create a clear plan that subsequent tasks can follow.""",
-                    assignee="code_review_agent",
-                    priority="high",
-                ),
-                SubIssue(
-                    title=f"Implement core changes for {title}",
-                    description=f"""Implement the main functionality for: {title}
+**Testing Approach**:
+1. Review implementation against original requirements
+2. Test normal usage scenarios
+3. Test edge cases and error conditions
+4. Validate integration points work correctly
+5. Check user experience and workflows
+6. Verify no regressions were introduced
+7. Document any issues found
 
-## Prerequisites  
-Complete the planning task first to understand the approach.
+**Success Criteria**:
+- All functionality works as specified
+- Edge cases are handled properly
+- No regressions in existing functionality
+- User experience is smooth and intuitive
+- Implementation is ready for production use""",
+            assignee="qa_agent",
+            priority="medium",
+            type="validation",
+            dependencies=["Implement"],
+        )
 
-## Actionable Steps (Factor 8: Own Your Control Flow)
-1. Follow the implementation plan from previous task
-2. Make the core code changes
-3. Ensure proper error handling
-4. Maintain code quality standards
-5. Document any important changes
-
-## Definition of Done (Factor 12: Stateless Reducer)
-- [ ] Core implementation completed
-- [ ] Code follows project standards
-- [ ] Error handling implemented
-- [ ] Changes documented
-
-## Dependencies
-- Planning task must be completed first""",
-                    assignee="issue_fixer_agent",
-                    dependencies=["1"],
-                    priority="high",
-                ),
-                SubIssue(
-                    title=f"Test and validate {title}",
-                    description=f"""Test and validate the implementation for: {title}
-
-## Prerequisites
-Core implementation must be completed.
-
-## Actionable Steps (Factor 8: Own Your Control Flow)
-1. Review the implemented changes
-2. Create appropriate test cases
-3. Run existing tests to ensure no regressions
-4. Test the new functionality thoroughly
-5. Document test results
-
-## Definition of Done (Factor 12: Stateless Reducer)
-- [ ] Test cases created
-- [ ] All tests passing
-- [ ] No regressions introduced
-- [ ] Functionality verified
-
-## Dependencies  
-- Core implementation must be completed first""",
-                    assignee="testing_agent",
-                    dependencies=["2"],
-                    priority="medium",
-                ),
-            ]
+        return [implementation_task, validation_task]
 
     def _complex_strategy(self, content: str, title: str) -> List[SubIssue]:
         """
-        Complex decomposition following 12-Factor Agent principles:
-        - Factor 10: Small, focused agents (one clear task each)
-        - Factor 4: Tools are Structured Outputs (clear, actionable tasks)
-        - Factor 8: Own Your Control Flow (explicit step-by-step actions)
-        """
-        sub_issues = []
+        Complex decomposition using agent intelligence with heuristic guidance.
 
-        # Look for numbered sections in the issue (like "### 1. Fix CLI Commands")
-        sections = re.findall(
-            r"###?\s+(\d+\.?\s+[^\n]+)\n(.*?)(?=###?\s+\d+\.|\Z)", content, re.DOTALL
+        Instead of rigid regex patterns, provide intelligent heuristics that let
+        the agent understand and decompose naturally. Based on orchestration patterns:
+        - Planning phase (understanding and design)
+        - Implementation phase (core execution)
+        - Validation phase (testing and verification)
+        """
+        # Heuristic: Complex issues typically benefit from a three-phase approach:
+        # 1. Planning/Analysis phase - understand what needs to be done
+        # 2. Implementation phase - do the core work
+        # 3. Validation phase - ensure it works correctly
+
+        planning_task = SubIssue(
+            title=f"Plan approach for: {title}",
+            description=f"""**Objective**: Analyze this complex issue and create a detailed implementation plan.
+
+**Original Issue**:
+{content}
+
+**Your Intelligence Task**: 
+Use your understanding to break down what needs to be done. Consider:
+
+- What are the core requirements and goals?
+- What files, components, or systems need to be created/modified?
+- What's the logical sequence of implementation steps?
+- What dependencies exist between different parts?
+- What could go wrong and how to handle edge cases?
+- How will we know when it's complete?
+
+**Heuristic Guidance**:
+- Look for numbered sections, bullet points, or step indicators
+- Identify file paths, code snippets, or technical specifications  
+- Notice Current/Required patterns or before/after descriptions
+- Spot integration points with existing systems
+- Consider user experience and validation needs
+
+**Output Expected**:
+Create a clear, actionable plan that subsequent tasks can follow:
+1. Specific files/components to create or modify
+2. Implementation order with rationale
+3. Key technical decisions and approaches
+4. Testing and validation strategy
+5. Definition of success
+
+**Success Criteria**:
+- Plan addresses all requirements from the original issue
+- Implementation steps are specific and actionable
+- Dependencies and risks are identified
+- Success measures are clear and testable""",
+            assignee="code_review_agent",
+            priority="high",
+            type="planning",
         )
 
-        if sections:
-            # Factor 10: Create small, focused tasks for each section
-            for i, (section_title, section_content) in enumerate(sections):
-                clean_title = re.sub(r"^\d+\.?\s*", "", section_title).strip()
+        implementation_task = SubIssue(
+            title=f"Implement core functionality: {title}",
+            description=f"""**Objective**: Execute the implementation plan to build the required functionality.
 
-                # Factor 4: Extract structured information
-                files = re.findall(r"([/\w.-]+\.\w+)", section_content)
-                target_file = files[0] if files else None
+**Context**: 
+{content}
 
-                # Extract Current/Should be patterns (Factor 1: Natural Language to Tool Calls)
-                current_should_pairs = re.findall(
-                    r"Current[^:]*:\s*```([^`]*)```.*?Should be:\s*```([^`]*)```",
-                    section_content,
-                    re.DOTALL | re.IGNORECASE,
-                )
+**Your Intelligence Task**:
+Following the planning task output, implement the core functionality using your programming knowledge:
 
-                # Factor 8: Create explicit, actionable description
-                if current_should_pairs:
-                    old_code, new_code = current_should_pairs[0]
-                    description = f"""{clean_title}
+- Understand the requirements deeply from both the original issue and the plan
+- Write clean, maintainable, well-structured code
+- Follow existing patterns and conventions in the codebase
+- Handle edge cases and error conditions appropriately
+- Add proper documentation and comments where needed
 
-## Problem
-The current code needs updating to fix functionality.
+**Heuristic Guidance**:
+- Review the implementation plan first to understand the approach
+- Start with core functionality before edge cases
+- Test your implementation as you build
+- Ensure integration with existing systems
+- Follow security and performance best practices
 
-## Current Code
-```
-{old_code.strip()}
-```
+**Implementation Approach**:
+1. Review and understand the planning task output
+2. Set up any necessary scaffolding or structure
+3. Implement core functionality step by step
+4. Add error handling and edge case management
+5. Ensure code quality and maintainability
+6. Document any important implementation decisions
 
-## Required Change
-```  
-{new_code.strip()}
-```
+**Success Criteria**:
+- All core functionality from requirements is implemented
+- Code follows project standards and best practices
+- Implementation is robust with proper error handling
+- Integration points work correctly with existing systems
+- Code is well-documented and maintainable""",
+            assignee="issue_fixer_agent",
+            priority="medium",
+            type="implementation",
+            dependencies=["Plan approach"],
+        )
 
-## Actionable Steps (Factor 8: Own Your Control Flow)
-1. Locate the target file: {target_file or 'identified file'}
-2. Find the current code block
-3. Replace with the new implementation
-4. Verify the change works correctly
+        validation_task = SubIssue(
+            title=f"Validate and test: {title}",
+            description=f"""**Objective**: Thoroughly validate that the implementation meets all requirements and works correctly.
 
-## Definition of Done
-- [ ] Code replacement completed
-- [ ] No syntax errors
-- [ ] Functionality verified
+**Context**:
+{content}
 
-## Files to Update
-- {target_file or 'target file from context'}"""
-                else:
-                    # Extract actionable content from section
-                    action_items = re.findall(
-                        r"(?:^|\n)[-•*]\s*([^\n]+)", section_content
-                    )
-                    steps = "\n".join(
-                        f"{i+1}. {item.strip()}" for i, item in enumerate(action_items)
-                    )
+**Your Intelligence Task**:
+Use your testing knowledge to comprehensively validate the implementation:
 
-                    description = f"""{clean_title}
+- Test all functionality end-to-end from user perspective
+- Verify edge cases and error conditions are handled properly
+- Ensure integration with existing systems works smoothly
+- Validate user experience meets expectations
+- Check for performance issues or regressions
+- Confirm security considerations are addressed
 
-## Task Description  
-{section_content.strip() if section_content.strip() else f'Complete {clean_title.lower()}'}
+**Heuristic Guidance**:
+- Review what was implemented against original requirements
+- Create test scenarios covering normal and edge cases
+- Test integration points and data flows
+- Validate user workflows and experience
+- Check for performance, security, and reliability
 
-## Actionable Steps (Factor 8: Own Your Control Flow)
-{steps if steps else f'''1. Analyze requirements for {clean_title.lower()}
-2. Implement the necessary changes
-3. Test the implementation
-4. Update documentation if needed'''}
+**Validation Approach**:
+1. Review implementation against original requirements
+2. Create comprehensive test scenarios and test data
+3. Execute functional testing of all features
+4. Test error conditions and edge cases
+5. Validate integration and user experience
+6. Performance and security validation if applicable
+7. Document any issues found and verify fixes
 
-## Definition of Done
-- [ ] Implementation completed
-- [ ] Requirements met
-- [ ] Testing verified
+**Success Criteria**:
+- All functionality works as specified in requirements
+- Edge cases and error conditions are handled properly
+- No regressions in existing functionality
+- User experience is smooth and intuitive
+- Performance is acceptable for expected usage
+- Implementation is ready for production use""",
+            assignee="qa_agent",
+            priority="medium",
+            type="validation",
+            dependencies=["Implement core functionality"],
+        )
 
-## Files to Update
-- {target_file or 'files identified from requirements'}"""
-
-                # Factor 10: Assign to focused, specialized agents
-                content_lower = section_content.lower()
-                if "test" in content_lower or "testing" in content_lower:
-                    assignee = "testing_agent"
-                elif (
-                    "readme" in content_lower
-                    or "doc" in content_lower
-                    or "integration-guide" in content_lower
-                    or "documentation" in content_lower
-                ):
-                    assignee = "issue_fixer_agent"
-                elif (
-                    "pipeline" in content_lower
-                    or "code" in content_lower
-                    or "import" in content_lower
-                ):
-                    assignee = "issue_fixer_agent"
-                else:
-                    assignee = "issue_fixer_agent"
-
-                sub_issues.append(
-                    SubIssue(
-                        title=clean_title,
-                        description=description,
-                        target_file=target_file,
-                        assignee=assignee,
-                        priority="high" if i < 2 else "medium",
-                    )
-                )
-        else:
-            # Factor 10: Break into small, focused tasks instead of generic phases
-            # Extract key files and areas from content
-            files = list(set(re.findall(r"([/\w.-]+\.\w+)", content)))
-
-            if files:
-                # Create focused tasks per file
-                for i, file_path in enumerate(files[:4]):  # Limit to 4 files
-                    file_name = Path(file_path).name
-                    sub_issues.append(
-                        SubIssue(
-                            title=f"Update {file_name}",
-                            description=f"""Update {file_path} according to requirements in: {title}
-
-## Context
-Extracted from the main issue requirements.
-
-## Actionable Steps (Factor 8: Own Your Control Flow)
-1. Review the main issue requirements for {file_name}
-2. Identify specific changes needed
-3. Implement the updates
-4. Test the changes
-5. Verify integration
-
-## Files to Update
-- {file_path}
-
-## Definition of Done
-- [ ] File updated per requirements
-- [ ] No breaking changes introduced
-- [ ] Integration verified""",
-                            target_file=file_path,
-                            assignee="issue_fixer_agent",
-                            priority="high" if i < 2 else "medium",
-                        )
-                    )
-            else:
-                # Generic fallback - still apply 12-factor principles
-                sub_issues.append(
-                    SubIssue(
-                        title=f"Implement {title}",
-                        description=f"""Implement the requirements for: {title}
-
-## Context
-{content.strip()[:500]}{'...' if len(content) > 500 else ''}
-
-## Actionable Steps (Factor 8: Own Your Control Flow)
-1. Analyze the complete requirements
-2. Identify specific files and components to change
-3. Implement the necessary changes
-4. Test the implementation
-5. Verify all requirements are met
-
-## Definition of Done
-- [ ] All requirements implemented
-- [ ] Testing completed
-- [ ] Documentation updated""",
-                        assignee="issue_fixer_agent",
-                        priority="high",
-                    )
-                )
-
-        return sub_issues
+        return [planning_task, implementation_task, validation_task]
 
     def _enterprise_strategy(self, content: str, title: str) -> List[SubIssue]:
         """
