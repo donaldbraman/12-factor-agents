@@ -7,30 +7,33 @@ Following 12-factor-agents framework with TRUE background execution
 import json
 import os
 import signal
-import sys
 from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any
 import subprocess
-import time
+
 
 class AutonomousPerformanceAgent:
     """Autonomous agent for implementing Issue #36: Performance Testing Suite"""
-    
+
     def __init__(self):
         self.agent_id = "perf_agent_36"
         self.issue_number = 36
         self.status_file = Path(f"/tmp/{self.agent_id}_status.json")
         self.branch_name = "feature/performance-testing-issue-36"
-        
+
         # Setup timeout protection (CRITICAL for performance testing)
         signal.signal(signal.SIGALRM, self.timeout_handler)
-        
+
     def timeout_handler(self, signum, frame):
         """Handle timeout to prevent crashes"""
-        self.update_status(99, "⚠️ Timeout protection triggered", {"error": "Operation exceeded time limit"})
+        self.update_status(
+            99,
+            "⚠️ Timeout protection triggered",
+            {"error": "Operation exceeded time limit"},
+        )
         raise TimeoutError("Operation exceeded safe time limit")
-        
+
     def update_status(self, progress: int, message: str, data: Dict[str, Any] = None):
         """Update status file for monitoring"""
         status = {
@@ -40,11 +43,11 @@ class AutonomousPerformanceAgent:
             "message": message,
             "data": data or {},
             "timestamp": datetime.now().isoformat(),
-            "pid": os.getpid()
+            "pid": os.getpid(),
         }
         self.status_file.write_text(json.dumps(status, indent=2))
         print(f"[{progress}%] {message}")
-        
+
     def run_command(self, cmd: str, timeout: int = 30) -> tuple:
         """Run command with timeout protection"""
         try:
@@ -56,18 +59,21 @@ class AutonomousPerformanceAgent:
             return False, "", "Command timed out"
         except Exception as e:
             return False, "", str(e)
-            
+
     def create_performance_benchmarks(self):
         """Create comprehensive performance testing suite"""
-        self.update_status(10, "Creating performance benchmarks", {"phase": "implementation"})
-        
+        self.update_status(
+            10, "Creating performance benchmarks", {"phase": "implementation"}
+        )
+
         # Create test directory
         test_dir = Path("tests/performance")
         test_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # 1. Context Efficiency Benchmarks
         self.update_status(20, "Creating context efficiency benchmarks")
-        (test_dir / "test_context_efficiency.py").write_text('''"""Context efficiency benchmarks for 12-factor agents"""
+        (test_dir / "test_context_efficiency.py").write_text(
+            '''"""Context efficiency benchmarks for 12-factor agents"""
 import pytest
 import time
 import json
@@ -141,11 +147,13 @@ class TestContextEfficiency:
         
         assert recovery_time < 0.004, f"Recovery took {recovery_time:.3f}s, target < 0.004s"
         assert new_manager.get_context("Critical info") is not None
-''')
-        
+'''
+        )
+
         # 2. Orchestration Overhead Benchmarks
         self.update_status(35, "Creating orchestration overhead benchmarks")
-        (test_dir / "test_orchestration_overhead.py").write_text('''"""Orchestration overhead benchmarks"""
+        (test_dir / "test_orchestration_overhead.py").write_text(
+            '''"""Orchestration overhead benchmarks"""
 import pytest
 import time
 import signal
@@ -227,11 +235,13 @@ class TestOrchestrationOverhead:
             
             assert exec_time < 1.0, f"{pattern.value} took {exec_time:.2f}s, target < 1s"
             print(f"✅ {pattern.value}: {exec_time:.3f}s")
-''')
-        
+'''
+        )
+
         # 3. Memory Usage Benchmarks
         self.update_status(50, "Creating memory usage benchmarks")
-        (test_dir / "test_memory_usage.py").write_text('''"""Memory usage benchmarks"""
+        (test_dir / "test_memory_usage.py").write_text(
+            '''"""Memory usage benchmarks"""
 import pytest
 import psutil
 import signal
@@ -310,11 +320,13 @@ class TestMemoryUsage:
         
         assert leak < 50, f"Memory leak {leak:.0f}MB detected"
         print(f"✅ Memory cleanup: {leak:.0f}MB retained after cleanup")
-''')
-        
+'''
+        )
+
         # 4. End-to-end Performance Tests
         self.update_status(65, "Creating end-to-end performance tests")
-        (test_dir / "test_e2e_performance.py").write_text('''"""End-to-end performance validation"""
+        (test_dir / "test_e2e_performance.py").write_text(
+            '''"""End-to-end performance validation"""
 import pytest
 import time
 import signal
@@ -392,13 +404,15 @@ class TestE2EPerformance:
         speedup = sequential_time / parallel_time
         assert speedup > 1.5, f"Parallel speedup {speedup:.1f}x below 1.5x target"
         print(f"✅ Parallel speedup: {speedup:.1f}x")
-''')
-        
+'''
+        )
+
         self.update_status(75, "Creating performance runner script")
-        
+
         # 5. Create performance test runner
         runner_path = Path("scripts/run_performance_tests.py")
-        runner_path.write_text('''#!/usr/bin/env python3
+        runner_path.write_text(
+            '''#!/usr/bin/env python3
 """Performance test runner with reporting"""
 import subprocess
 import json
@@ -464,17 +478,19 @@ if __name__ == "__main__":
     import sys
     success = run_performance_suite()
     sys.exit(0 if success else 1)
-''')
+'''
+        )
         runner_path.chmod(0o755)
-        
+
     def create_supporting_infrastructure(self):
         """Create supporting modules for tests"""
         self.update_status(80, "Creating supporting infrastructure")
-        
+
         # Create minimal context manager
         context_mgr = Path("core/context_manager.py")
         context_mgr.parent.mkdir(parents=True, exist_ok=True)
-        context_mgr.write_text('''"""Context manager for efficient LLM context window usage"""
+        context_mgr.write_text(
+            '''"""Context manager for efficient LLM context window usage"""
 from typing import Dict, Any, List
 import time
 
@@ -543,11 +559,13 @@ class ContextManager:
             if search in ctx["content"]:
                 return ctx
         return None
-''')
-        
+'''
+        )
+
         # Create minimal agent executor
         executor = Path("core/agent_executor.py")
-        executor.write_text('''"""Agent executor with parallel support"""
+        executor.write_text(
+            '''"""Agent executor with parallel support"""
 import time
 from typing import Any, Dict, List
 from concurrent.futures import ThreadPoolExecutor
@@ -568,12 +586,14 @@ class AgentExecutor:
                 future = executor.submit(self.execute, "process_task", task)
                 futures.append(future)
             return [f.result() for f in futures]
-''')
-        
+'''
+        )
+
         # Update base agent
         base_agent = Path("agents/base.py")
         base_agent.parent.mkdir(parents=True, exist_ok=True)
-        base_agent.write_text('''"""Base agent class"""
+        base_agent.write_text(
+            '''"""Base agent class"""
 
 class BaseAgent:
     """Base class for all agents"""
@@ -588,21 +608,24 @@ class BaseAgent:
         # Allocate some memory for testing
         self.data = [0] * 10000
         return self
-''')
-        
+'''
+        )
+
     def create_pr(self):
         """Create pull request for the implementation"""
         self.update_status(90, "Creating pull request")
-        
+
         # Commit changes
         success, out, err = self.run_command(
-            f'git add -A && git commit -m "📊 Implement Performance Testing Suite (#36)" -m "- Context efficiency benchmarks (95% target)" -m "- Orchestration overhead validation (<5%)" -m "- Memory usage tracking (<500MB/agent)" -m "- End-to-end performance tests" -m "- SAFE timeout protection on all tests"'
+            'git add -A && git commit -m "📊 Implement Performance Testing Suite (#36)" -m "- Context efficiency benchmarks (95% target)" -m "- Orchestration overhead validation (<5%)" -m "- Memory usage tracking (<500MB/agent)" -m "- End-to-end performance tests" -m "- SAFE timeout protection on all tests"'
         )
-        
+
         if success:
             # Push branch
-            success, out, err = self.run_command(f"git push -u origin {self.branch_name}")
-            
+            success, out, err = self.run_command(
+                f"git push -u origin {self.branch_name}"
+            )
+
             if success:
                 # Create PR
                 pr_body = """## Summary
@@ -631,52 +654,61 @@ class BaseAgent:
 Closes #36
 
 🤖 Generated with Claude Code"""
-                
+
                 success, out, err = self.run_command(
                     f'gh pr create --title "📊 Performance Testing & Benchmarking Suite (#36)" '
                     f'--body "{pr_body}" --base main --head {self.branch_name}'
                 )
-                
+
                 if success and "github.com" in out:
                     return out.strip()
-        
+
         return None
-        
+
     def run(self):
         """Main execution flow"""
         try:
-            self.update_status(0, "🚀 Starting autonomous performance testing implementation")
-            
+            self.update_status(
+                0, "🚀 Starting autonomous performance testing implementation"
+            )
+
             # Create feature branch
             self.update_status(5, "Creating feature branch")
             success, out, err = self.run_command(f"git checkout -b {self.branch_name}")
-            
+
             if not success:
                 # Branch might exist, try checking it out
                 self.run_command(f"git checkout {self.branch_name}")
-            
+
             # Implementation phases
             self.create_performance_benchmarks()
             self.create_supporting_infrastructure()
-            
+
             # Create PR
             pr_url = self.create_pr()
-            
+
             if pr_url:
-                self.update_status(100, "✅ Complete!", {
-                    "pr_url": pr_url,
-                    "issue": self.issue_number,
-                    "files_created": 9,
-                    "test_categories": 4
-                })
+                self.update_status(
+                    100,
+                    "✅ Complete!",
+                    {
+                        "pr_url": pr_url,
+                        "issue": self.issue_number,
+                        "files_created": 9,
+                        "test_categories": 4,
+                    },
+                )
             else:
-                self.update_status(95, "⚠️ PR creation failed, but implementation complete")
-                
+                self.update_status(
+                    95, "⚠️ PR creation failed, but implementation complete"
+                )
+
         except Exception as e:
             self.update_status(99, f"❌ Error: {str(e)}", {"error": str(e)})
             raise
         finally:
             signal.alarm(0)  # Cancel any pending timeout
+
 
 if __name__ == "__main__":
     agent = AutonomousPerformanceAgent()
