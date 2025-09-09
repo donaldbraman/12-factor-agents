@@ -115,9 +115,15 @@ class TaskDecomposer:
         }
 
     def decompose(
-        self, task: str, max_depth: int = 3, current_depth: int = 0
+        self, task, max_depth: int = 3, current_depth: int = 0
     ) -> OrchestrationTask:
         """Decompose task into hierarchical structure"""
+
+        # Handle both string and dict inputs
+        if isinstance(task, dict):
+            task_content = task.get("description", "")
+        else:
+            task_content = task
 
         # Analyze task complexity
         complexity = self._analyze_complexity(task)
@@ -125,7 +131,7 @@ class TaskDecomposer:
         # Create task object
         orchestration_task = OrchestrationTask(
             task_id=str(uuid.uuid4()),
-            content=task,
+            content=task_content,
             level=self._determine_level(complexity, current_depth),
             complexity=complexity,
         )
@@ -151,8 +157,16 @@ class TaskDecomposer:
     def _analyze_complexity(self, task: str) -> TaskComplexity:
         """Analyze task complexity using heuristics"""
 
+        # Handle both string and dict inputs
+        if isinstance(task, dict):
+            # Extract description from dict format
+            task_text = task.get("description", "")
+        else:
+            # Use string directly
+            task_text = task
+        
         # Simple keyword-based analysis (can be enhanced with ML)
-        task_lower = task.lower()
+        task_lower = task_text.lower()
 
         # Enterprise indicators
         enterprise_keywords = [
