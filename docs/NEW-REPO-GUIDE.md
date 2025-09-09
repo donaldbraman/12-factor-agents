@@ -18,8 +18,8 @@ chmod +x setup-new-repo.sh
 ./setup-new-repo.sh
 
 # Test installation
-uv run --directory agents-framework python bin/agent.py list
-uv run --directory agents-framework python bin/agent.py run SmartIssueAgent "001"
+./bin/agent list
+./bin/agent run SmartIssueAgent "001"
 ```
 
 ### Option 2: Manual Git Submodule
@@ -127,11 +127,11 @@ EOF
 
 ### 2. Test the System
 ```bash
-# From your repo root (Option 1 - submodule)  
-uv run --directory agents-framework python bin/agent.py run SmartIssueAgent "001"
+# Using wrapper script (recommended - handles paths correctly)
+./bin/agent run SmartIssueAgent "001"
 
-# Or (Option 2 - direct clone)
-uv run --directory agents-framework python bin/agent.py run SmartIssueAgent "001"
+# Or use uv directly from agents-framework directory
+cd agents-framework && uv run python bin/agent.py run SmartIssueAgent "001"
 
 # Expected output:
 # ✅ Issue is simple - handling directly
@@ -140,8 +140,11 @@ uv run --directory agents-framework python bin/agent.py run SmartIssueAgent "001
 
 ### 3. You're Ready!
 ```bash
-# Submit any issue to the universal agent
-uv run --directory agents-framework python bin/agent.py run SmartIssueAgent "your-issue-number"
+# Submit any issue to the universal agent (wrapper script - easiest)
+./bin/agent run SmartIssueAgent "your-issue-number"
+
+# Or use beautiful uv from agents-framework directory
+cd agents-framework && uv run python bin/agent.py run SmartIssueAgent "your-issue-number"
 ```
 
 ## Repository Structure
