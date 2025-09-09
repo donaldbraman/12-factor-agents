@@ -164,7 +164,7 @@ class TaskDecomposer:
         else:
             # Use string directly
             task_text = task
-        
+
         # Simple keyword-based analysis (can be enhanced with ML)
         task_lower = task_text.lower()
 
