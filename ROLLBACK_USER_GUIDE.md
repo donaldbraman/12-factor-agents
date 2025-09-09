@@ -174,12 +174,11 @@ Then use it:
 ### Option 3: Direct Orchestration
 ```python
 # your_project/orchestrate.py
-from .agents.core.hierarchical_orchestrator import HierarchicalOrchestrator
+import sys
+sys.path.insert(0, '.agents')
+from core.hierarchical_orchestrator import HierarchicalOrchestrator
 
-orchestrator = HierarchicalOrchestrator(
-    max_parallel_agents=10,
-    max_depth=3
-)
+orchestrator = HierarchicalOrchestrator(max_depth=3)
 
 # This automatically parallelizes independent tasks
 result = orchestrator.orchestrate_complex_task("""
