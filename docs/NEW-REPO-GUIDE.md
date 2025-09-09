@@ -18,8 +18,8 @@ chmod +x setup-new-repo.sh
 ./setup-new-repo.sh
 
 # Test installation
-./bin/agent list
-./bin/agent run SmartIssueAgent "001"
+uv run --directory agents-framework python bin/agent.py list
+uv run --directory agents-framework python bin/agent.py run SmartIssueAgent "001"
 ```
 
 ### Option 2: Manual Git Submodule
@@ -127,11 +127,11 @@ EOF
 
 ### 2. Test the System
 ```bash
-# From your repo root (Option 1 - submodule)
-./bin/agent run SmartIssueAgent "001"
+# From your repo root (Option 1 - submodule)  
+uv run --directory agents-framework python bin/agent.py run SmartIssueAgent "001"
 
 # Or (Option 2 - direct clone)
-cd agents-framework && uv run python bin/agent.py run SmartIssueAgent "001"
+uv run --directory agents-framework python bin/agent.py run SmartIssueAgent "001"
 
 # Expected output:
 # ✅ Issue is simple - handling directly
@@ -141,7 +141,7 @@ cd agents-framework && uv run python bin/agent.py run SmartIssueAgent "001"
 ### 3. You're Ready!
 ```bash
 # Submit any issue to the universal agent
-./bin/agent run SmartIssueAgent "your-issue-number"
+uv run --directory agents-framework python bin/agent.py run SmartIssueAgent "your-issue-number"
 ```
 
 ## Repository Structure
@@ -155,7 +155,7 @@ your-repo/
 │   ├── core/                  # Base classes
 │   ├── agents/                # All agent implementations
 │   └── docs/                  # Documentation
-├── bin/agent -> agents-framework/bin/agent.py  # Symlink
+├── bin/agent                   # Wrapper script (optional - uv preferred)
 ├── issues/                    # Your issues go here
 │   ├── 001-test-automation.md
 │   └── 002-next-task.md
@@ -283,9 +283,12 @@ chmod +x bin/agent  # Make executable
 
 ### Import Errors  
 ```bash
-# If Python can't find modules
-cd agents-framework  # Run from framework directory
-uv run python bin/agent.py list  # Use full path
+# If Python can't find modules (preferred approach)
+uv run --directory agents-framework python bin/agent.py list
+
+# Or run from framework directory
+cd agents-framework
+uv run python bin/agent.py list
 ```
 
 ### No Issues Found
@@ -293,7 +296,7 @@ uv run python bin/agent.py list  # Use full path
 # Verify issue file exists  
 ls issues/001*.md
 # Check issue number format
-./bin/agent run SmartIssueAgent "001"  # Not "#001" 
+uv run --directory agents-framework python bin/agent.py run SmartIssueAgent "001"  # Not "#001" 
 ```
 
 ### Permission Errors
