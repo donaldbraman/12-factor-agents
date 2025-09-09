@@ -2,16 +2,14 @@
 PromptManagementAgent - Implements proper prompt management for Factor 2 compliance.
 Designed to solve Issue #003: Implement Prompt Management
 """
-import os
-import re
 from pathlib import Path
 from typing import Dict, Any, List
 import json
 from datetime import datetime
-import string
 
 # Import from parent directory
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
@@ -20,68 +18,68 @@ from core.tools import Tool, ToolResponse
 
 class PromptCreatorTool(Tool):
     """Create prompt files with templates"""
-    
+
     def __init__(self):
         super().__init__(
-            name="create_prompt",
-            description="Create a prompt template file"
+            name="create_prompt", description="Create a prompt template file"
         )
-    
-    def execute(self, path: str, template: str, metadata: Dict[str, Any] = None) -> ToolResponse:
+
+    def execute(
+        self, path: str, template: str, metadata: Dict[str, Any] = None
+    ) -> ToolResponse:
         """Create prompt template file"""
         try:
             prompt_path = Path(path).resolve()
             prompt_path.parent.mkdir(parents=True, exist_ok=True)
-            
+
             # Add metadata header if provided
             content = ""
             if metadata:
-                content += f"# Prompt Metadata\n"
+                content += "# Prompt Metadata\n"
                 content += f"# Version: {metadata.get('version', '1.0.0')}\n"
-                content += f"# Description: {metadata.get('description', 'No description')}\n"
+                content += (
+                    f"# Description: {metadata.get('description', 'No description')}\n"
+                )
                 content += f"# Variables: {', '.join(metadata.get('variables', []))}\n"
                 content += f"# Created: {datetime.now().isoformat()}\n\n"
-            
+
             content += template
-            
+
             prompt_path.write_text(content)
-            
+
             return ToolResponse(
                 success=True,
                 data={
                     "path": str(prompt_path),
                     "size": len(content),
-                    "metadata": metadata
-                }
+                    "metadata": metadata,
+                },
             )
-            
+
         except Exception as e:
-            return ToolResponse(
-                success=False,
-                error=str(e)
-            )
-    
+            return ToolResponse(success=False, error=str(e))
+
     def get_parameters_schema(self) -> Dict[str, Any]:
         return {
             "type": "object",
             "properties": {
                 "path": {"type": "string"},
                 "template": {"type": "string"},
-                "metadata": {"type": "object"}
+                "metadata": {"type": "object"},
             },
-            "required": ["path", "template"]
+            "required": ["path", "template"],
         }
 
 
 class PromptManagerCreatorTool(Tool):
     """Create the PromptManager class"""
-    
+
     def __init__(self):
         super().__init__(
             name="create_prompt_manager",
-            description="Create the PromptManager class implementation"
+            description="Create the PromptManager class implementation",
         )
-    
+
     def execute(self, output_path: str) -> ToolResponse:
         """Create PromptManager implementation"""
         try:
@@ -265,88 +263,86 @@ class PromptManager:
         """Clear the prompt cache"""
         self._cache = {}
 '''
-            
+
             output = Path(output_path).resolve()
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(code)
-            
+
             return ToolResponse(
                 success=True,
                 data={
                     "path": str(output),
                     "class": "PromptManager",
                     "methods": [
-                        "load_prompt", "get_prompt", "register_prompt",
-                        "get_version", "list_prompts", "save_prompt"
-                    ]
-                }
+                        "load_prompt",
+                        "get_prompt",
+                        "register_prompt",
+                        "get_version",
+                        "list_prompts",
+                        "save_prompt",
+                    ],
+                },
             )
-            
+
         except Exception as e:
-            return ToolResponse(
-                success=False,
-                error=str(e)
-            )
-    
+            return ToolResponse(success=False, error=str(e))
+
     def get_parameters_schema(self) -> Dict[str, Any]:
         return {
             "type": "object",
-            "properties": {
-                "output_path": {"type": "string"}
-            },
-            "required": ["output_path"]
+            "properties": {"output_path": {"type": "string"}},
+            "required": ["output_path"],
         }
 
 
 class BaseAgentUpdaterTool(Tool):
     """Update BaseAgent to use PromptManager"""
-    
+
     def __init__(self):
         super().__init__(
             name="update_base_agent",
-            description="Update BaseAgent class to use PromptManager"
+            description="Update BaseAgent class to use PromptManager",
         )
-    
+
     def execute(self, base_agent_path: str) -> ToolResponse:
         """Add prompt management to BaseAgent"""
         try:
             agent_path = Path(base_agent_path).resolve()
-            
+
             if not agent_path.exists():
                 return ToolResponse(
-                    success=False,
-                    error=f"BaseAgent file not found at {agent_path}"
+                    success=False, error=f"BaseAgent file not found at {agent_path}"
                 )
-            
+
             content = agent_path.read_text()
-            
+
             # Check if already has prompt manager
             if "PromptManager" in content:
                 return ToolResponse(
                     success=True,
-                    data={"message": "BaseAgent already uses PromptManager"}
+                    data={"message": "BaseAgent already uses PromptManager"},
                 )
-            
+
             # Add import
             import_line = "from .prompt_manager import PromptManager"
             if "from .context import" in content:
                 content = content.replace(
                     "from .context import ContextManager",
-                    f"from .context import ContextManager\n{import_line}"
+                    f"from .context import ContextManager\n{import_line}",
                 )
-            
+
             # Add prompt manager initialization in __init__
             init_addition = """        self.prompt_manager = PromptManager()
         self._load_agent_prompt()
         """
-            
+
             # Find __init__ method and add after context_manager line
             if "self.context_manager = ContextManager()" in content:
                 content = content.replace(
                     "self.context_manager = ContextManager()",
-                    f"self.context_manager = ContextManager()\n{init_addition}"
+                    f"self.context_manager = ContextManager()\n{init_addition}",
                 )
-            
+
             # Add method to load agent-specific prompts
             method_addition = '''
     def _load_agent_prompt(self):
@@ -384,26 +380,28 @@ class BaseAgentUpdaterTool(Tool):
         )
         if prompt:
             self.context_manager.set_system_prompt(prompt)'''
-            
+
             # Add before the last class closing
             if "def get_status" in content:
                 # Add after get_status method
-                lines = content.split('\n')
+                lines = content.split("\n")
                 for i, line in enumerate(lines):
                     if "def get_status" in line:
                         # Find the end of this method
                         indent_count = len(line) - len(line.lstrip())
-                        for j in range(i+1, len(lines)):
-                            if lines[j].strip() and not lines[j].startswith(' ' * (indent_count + 4)):
+                        for j in range(i + 1, len(lines)):
+                            if lines[j].strip() and not lines[j].startswith(
+                                " " * (indent_count + 4)
+                            ):
                                 # Found end of method
                                 lines.insert(j, method_addition)
                                 break
                         break
-                content = '\n'.join(lines)
-            
+                content = "\n".join(lines)
+
             # Write updated content
             agent_path.write_text(content)
-            
+
             return ToolResponse(
                 success=True,
                 data={
@@ -412,24 +410,19 @@ class BaseAgentUpdaterTool(Tool):
                         "Added PromptManager import",
                         "Added prompt_manager initialization",
                         "Added _load_agent_prompt method",
-                        "Added set_prompt_variables method"
-                    ]
-                }
+                        "Added set_prompt_variables method",
+                    ],
+                },
             )
-            
+
         except Exception as e:
-            return ToolResponse(
-                success=False,
-                error=str(e)
-            )
-    
+            return ToolResponse(success=False, error=str(e))
+
     def get_parameters_schema(self) -> Dict[str, Any]:
         return {
             "type": "object",
-            "properties": {
-                "base_agent_path": {"type": "string"}
-            },
-            "required": ["base_agent_path"]
+            "properties": {"base_agent_path": {"type": "string"}},
+            "required": ["base_agent_path"],
         }
 
 
@@ -438,37 +431,33 @@ class PromptManagementAgent(BaseAgent):
     Agent responsible for implementing proper prompt management.
     Handles Issue #003: Implement Prompt Management (Factor 2)
     """
-    
+
     def register_tools(self) -> List[Tool]:
         """Register prompt management tools"""
-        return [
-            PromptCreatorTool(),
-            PromptManagerCreatorTool(),
-            BaseAgentUpdaterTool()
-        ]
-    
+        return [PromptCreatorTool(), PromptManagerCreatorTool(), BaseAgentUpdaterTool()]
+
     def execute_task(self, task: str) -> ToolResponse:
         """
         Execute prompt management setup.
         Expected task: "implement prompt management" or "solve issue #003"
         """
-        
+
         base_path = Path.home() / "Documents" / "GitHub" / "12-factor-agents"
         results = []
-        
+
         # Step 1: Create PromptManager class
         manager_tool = self.tools[1]  # PromptManagerCreatorTool
         manager_result = manager_tool.execute(
             output_path=str(base_path / "core" / "prompt_manager.py")
         )
         results.append(("prompt_manager", manager_result))
-        
+
         if not manager_result.success:
             return manager_result
-        
+
         # Step 2: Create base prompt templates
         prompt_tool = self.tools[0]  # PromptCreatorTool
-        
+
         # System prompt
         system_template = """You are a ${agent_type} agent with the following capabilities:
 
@@ -492,18 +481,24 @@ ${context}
 ${task}
 
 Please execute the task using the available tools and return a structured response."""
-        
+
         system_result = prompt_tool.execute(
             path=str(base_path / "prompts" / "base" / "system.prompt"),
             template=system_template,
             metadata={
                 "version": "1.0.0",
                 "description": "Base system prompt for all agents",
-                "variables": ["agent_type", "responsibility", "tools_list", "context", "task"]
-            }
+                "variables": [
+                    "agent_type",
+                    "responsibility",
+                    "tools_list",
+                    "context",
+                    "task",
+                ],
+            },
         )
         results.append(("system_prompt", system_result))
-        
+
         # Error prompt
         error_template = """An error occurred while executing your task:
 
@@ -520,18 +515,23 @@ ${stack_trace}
 ${suggestions}
 
 Please review the error and determine the appropriate recovery action."""
-        
+
         error_result = prompt_tool.execute(
             path=str(base_path / "prompts" / "base" / "error.prompt"),
             template=error_template,
             metadata={
                 "version": "1.0.0",
                 "description": "Error handling prompt",
-                "variables": ["error_message", "error_type", "stack_trace", "suggestions"]
-            }
+                "variables": [
+                    "error_message",
+                    "error_type",
+                    "stack_trace",
+                    "suggestions",
+                ],
+            },
         )
         results.append(("error_prompt", error_result))
-        
+
         # Context prompt
         context_template = """## Current Context
 
@@ -549,20 +549,26 @@ ${resources}
 
 ### Constraints
 ${constraints}"""
-        
+
         context_result = prompt_tool.execute(
             path=str(base_path / "prompts" / "base" / "context.prompt"),
             template=context_template,
             metadata={
                 "version": "1.0.0",
                 "description": "Context information prompt",
-                "variables": ["working_directory", "action_history", "state_summary", "resources", "constraints"]
-            }
+                "variables": [
+                    "working_directory",
+                    "action_history",
+                    "state_summary",
+                    "resources",
+                    "constraints",
+                ],
+            },
         )
         results.append(("context_prompt", context_result))
-        
+
         # Step 3: Create specialized prompts
-        
+
         # File search agent prompt
         file_search_template = """You are a FileSearchAgent specialized in finding files and content.
 
@@ -585,32 +591,38 @@ Execute the search and return structured results including:
 - Match count
 - Relevant snippets
 - Search statistics"""
-        
+
         file_search_result = prompt_tool.execute(
             path=str(base_path / "prompts" / "specialized" / "file_search.prompt"),
             template=file_search_template,
             metadata={
                 "version": "1.0.0",
                 "description": "Prompt for FileSearchAgent",
-                "variables": ["search_path", "pattern", "file_type", "max_results", "task"]
-            }
+                "variables": [
+                    "search_path",
+                    "pattern",
+                    "file_type",
+                    "max_results",
+                    "task",
+                ],
+            },
         )
         results.append(("file_search_prompt", file_search_result))
-        
+
         # Step 4: Update BaseAgent to use PromptManager
         updater_tool = self.tools[2]  # BaseAgentUpdaterTool
         update_result = updater_tool.execute(
             base_agent_path=str(base_path / "core" / "agent.py")
         )
         results.append(("base_agent_update", update_result))
-        
+
         # Compile results
         all_success = all(r[1].success for r in results)
-        
+
         if all_success:
             self.state.set("issue_003_status", "resolved")
             self.state.set("prompt_management_implemented", True)
-            
+
             return ToolResponse(
                 success=True,
                 data={
@@ -620,21 +632,21 @@ Execute the search and return structured results including:
                     "base_agent_updated": update_result.success,
                     "issue": "#003",
                     "status": "resolved",
-                    "factor_2_compliance": "100%"
-                }
+                    "factor_2_compliance": "100%",
+                },
             )
         else:
             failed = [r[0] for r in results if not r[1].success]
             return ToolResponse(
                 success=False,
                 error=f"Failed steps: {', '.join(failed)}",
-                data={"failed_steps": failed}
+                data={"failed_steps": failed},
             )
-    
+
     def _apply_action(self, action: Dict[str, Any]) -> ToolResponse:
         """Apply prompt management action"""
         action_type = action.get("type", "setup")
-        
+
         if action_type == "setup":
             return self.execute_task(action.get("task", "implement prompt management"))
         elif action_type == "verify":
@@ -644,18 +656,14 @@ Execute the search and return structured results including:
                 "prompt_manager": (base_path / "core" / "prompt_manager.py").exists(),
                 "prompts_dir": (base_path / "prompts").exists(),
                 "base_prompts": (base_path / "prompts" / "base").exists(),
-                "system_prompt": (base_path / "prompts" / "base" / "system.prompt").exists()
+                "system_prompt": (
+                    base_path / "prompts" / "base" / "system.prompt"
+                ).exists(),
             }
-            
-            return ToolResponse(
-                success=all(checks.values()),
-                data={"checks": checks}
-            )
-        
-        return ToolResponse(
-            success=False,
-            error=f"Unknown action type: {action_type}"
-        )
+
+            return ToolResponse(success=all(checks.values()), data={"checks": checks})
+
+        return ToolResponse(success=False, error=f"Unknown action type: {action_type}")
 
 
 # Self-test when run directly
@@ -663,9 +671,9 @@ Execute the search and return structured results including:
 if __name__ == "__main__":
     print("Testing PromptManagementAgent...")
     agent = PromptManagementAgent()
-    
+
     result = agent.execute_task("implement prompt management for Factor 2 compliance")
-    
+
     if result.success:
         print("✅ Prompt management implementation successful!")
         print(json.dumps(result.data, indent=2))

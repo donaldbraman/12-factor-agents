@@ -52,7 +52,7 @@ class TestQuickValidation:
         """Test marketplace components import"""
         try:
             from core.marketplace.registry import AgentRegistry
-            from core.marketplace.plugin_system import PluginSystem
+            from core.marketplace.plugin_system import PluginManager
             from core.marketplace.security import SecurityValidator
 
             assert True

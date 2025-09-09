@@ -7,20 +7,20 @@ multiple agent levels with intelligent workload distribution.
 
 from .patterns import (
     OrchestrationPattern,
-    MapReducePattern, 
+    MapReducePattern,
     PipelinePattern,
     ForkJoinPattern,
     ScatterGatherPattern,
     SagaPattern,
-    PatternExecutor
+    PatternExecutor,
 )
 
 __all__ = [
-    'OrchestrationPattern',
-    'MapReducePattern',
-    'PipelinePattern', 
-    'ForkJoinPattern',
-    'ScatterGatherPattern',
-    'SagaPattern',
-    'PatternExecutor'
+    "OrchestrationPattern",
+    "MapReducePattern",
+    "PipelinePattern",
+    "ForkJoinPattern",
+    "ScatterGatherPattern",
+    "SagaPattern",
+    "PatternExecutor",
 ]

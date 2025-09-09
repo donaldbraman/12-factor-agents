@@ -4,14 +4,12 @@ Designed to solve Issue #004: Implement Event Trigger System
 """
 import os
 import json
-import time
-import threading
 from pathlib import Path
-from typing import Dict, Any, List, Callable
-from datetime import datetime
+from typing import Dict, Any, List
 
 # Import from parent directory
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
@@ -20,13 +18,13 @@ from core.tools import Tool, ToolResponse
 
 class EventSystemCreatorTool(Tool):
     """Create the LocalEventSystem class"""
-    
+
     def __init__(self):
         super().__init__(
             name="create_event_system",
-            description="Create the LocalEventSystem implementation"
+            description="Create the LocalEventSystem implementation",
         )
-    
+
     def execute(self, output_path: str) -> ToolResponse:
         """Create LocalEventSystem implementation"""
         try:
@@ -421,52 +419,50 @@ class CLITrigger:
         event_id = event_system.emit(event_type, data, source="cli")
         return event_id
 '''
-            
+
             output = Path(output_path).resolve()
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(code)
-            
+
             return ToolResponse(
                 success=True,
                 data={
                     "path": str(output),
-                    "classes": ["LocalEventSystem", "LocalWebhookSimulator", "CLITrigger"],
+                    "classes": [
+                        "LocalEventSystem",
+                        "LocalWebhookSimulator",
+                        "CLITrigger",
+                    ],
                     "features": [
                         "File-based event queue",
                         "Event handlers",
-                        "File watchers", 
+                        "File watchers",
                         "Schedulers",
                         "Webhook simulation",
-                        "CLI triggers"
-                    ]
-                }
+                        "CLI triggers",
+                    ],
+                },
             )
-            
+
         except Exception as e:
-            return ToolResponse(
-                success=False,
-                error=str(e)
-            )
-    
+            return ToolResponse(success=False, error=str(e))
+
     def get_parameters_schema(self) -> Dict[str, Any]:
         return {
             "type": "object",
-            "properties": {
-                "output_path": {"type": "string"}
-            },
-            "required": ["output_path"]
+            "properties": {"output_path": {"type": "string"}},
+            "required": ["output_path"],
         }
 
 
 class EventCLICreatorTool(Tool):
     """Create CLI for event management"""
-    
+
     def __init__(self):
         super().__init__(
-            name="create_event_cli",
-            description="Create CLI tool for event management"
+            name="create_event_cli", description="Create CLI tool for event management"
         )
-    
+
     def execute(self, output_path: str) -> ToolResponse:
         """Create event CLI tool"""
         try:
@@ -584,36 +580,38 @@ def watch(path, pattern, event):
 if __name__ == '__main__':
     cli()
 '''
-            
+
             output = Path(output_path).resolve()
             output.parent.mkdir(parents=True, exist_ok=True)
             output.write_text(code)
-            
+
             # Make executable
             os.chmod(output, 0o755)
-            
+
             return ToolResponse(
                 success=True,
                 data={
                     "path": str(output),
-                    "commands": ["emit", "list", "process", "history", "cleanup", "watch"],
-                    "executable": True
-                }
+                    "commands": [
+                        "emit",
+                        "list",
+                        "process",
+                        "history",
+                        "cleanup",
+                        "watch",
+                    ],
+                    "executable": True,
+                },
             )
-            
+
         except Exception as e:
-            return ToolResponse(
-                success=False,
-                error=str(e)
-            )
-    
+            return ToolResponse(success=False, error=str(e))
+
     def get_parameters_schema(self) -> Dict[str, Any]:
         return {
             "type": "object",
-            "properties": {
-                "output_path": {"type": "string"}
-            },
-            "required": ["output_path"]
+            "properties": {"output_path": {"type": "string"}},
+            "required": ["output_path"],
         }
 
 
@@ -622,44 +620,39 @@ class EventSystemAgent(BaseAgent):
     Agent responsible for implementing event trigger system.
     Handles Issue #004: Implement Event Trigger System (Factor 11)
     """
-    
+
     def register_tools(self) -> List[Tool]:
         """Register event system tools"""
-        return [
-            EventSystemCreatorTool(),
-            EventCLICreatorTool()
-        ]
-    
+        return [EventSystemCreatorTool(), EventCLICreatorTool()]
+
     def execute_task(self, task: str) -> ToolResponse:
         """
         Execute event system implementation.
         Expected task: "implement event system" or "solve issue #004"
         """
-        
+
         base_path = Path.home() / "Documents" / "GitHub" / "12-factor-agents"
         results = []
-        
+
         # Step 1: Create LocalEventSystem class
         system_tool = self.tools[0]  # EventSystemCreatorTool
         system_result = system_tool.execute(
             output_path=str(base_path / "core" / "triggers.py")
         )
         results.append(("event_system", system_result))
-        
+
         if not system_result.success:
             return system_result
-        
+
         # Step 2: Create event CLI tool
         cli_tool = self.tools[1]  # EventCLICreatorTool
-        cli_result = cli_tool.execute(
-            output_path=str(base_path / "bin" / "event")
-        )
+        cli_result = cli_tool.execute(output_path=str(base_path / "bin" / "event"))
         results.append(("event_cli", cli_result))
-        
+
         # Step 3: Create example trigger configurations
         examples_dir = base_path / "examples" / "triggers"
         examples_dir.mkdir(parents=True, exist_ok=True)
-        
+
         # Example: File watcher config
         watcher_example = """#!/usr/bin/env uv run python
 \"\"\"
@@ -701,10 +694,10 @@ except KeyboardInterrupt:
     event_system.stop()
     print("\\nStopped")
 """
-        
+
         watcher_path = examples_dir / "file_watcher.py"
         watcher_path.write_text(watcher_example)
-        
+
         # Example: Schedule config
         schedule_example = """#!/usr/bin/env uv run python
 \"\"\"
@@ -743,17 +736,17 @@ except KeyboardInterrupt:
     event_system.stop()
     print("\\nStopped")
 """
-        
+
         schedule_path = examples_dir / "daily_schedule.py"
         schedule_path.write_text(schedule_example)
-        
+
         # Compile results
         all_success = all(r[1].success for r in results)
-        
+
         if all_success:
             self.state.set("issue_004_status", "resolved")
             self.state.set("event_system_implemented", True)
-            
+
             return ToolResponse(
                 success=True,
                 data={
@@ -766,47 +759,44 @@ except KeyboardInterrupt:
                         "File watchers",
                         "Schedulers",
                         "CLI triggers",
-                        "Webhook simulation"
+                        "Webhook simulation",
                     ],
                     "issue": "#004",
                     "status": "resolved",
-                    "factor_11_compliance": "100%"
-                }
+                    "factor_11_compliance": "100%",
+                },
             )
         else:
             failed = [r[0] for r in results if not r[1].success]
             return ToolResponse(
                 success=False,
                 error=f"Failed steps: {', '.join(failed)}",
-                data={"failed_steps": failed}
+                data={"failed_steps": failed},
             )
-    
+
     def _apply_action(self, action: Dict[str, Any]) -> ToolResponse:
         """Apply event system action"""
         action_type = action.get("type", "setup")
-        
+
         if action_type == "setup":
             return self.execute_task(action.get("task", "implement event system"))
         elif action_type == "test":
             # Test event emission
             base_path = Path.home() / "Documents" / "GitHub" / "12-factor-agents"
-            
+
             # Import and test
             sys.path.insert(0, str(base_path))
             from core.triggers import LocalEventSystem
-            
+
             event_system = LocalEventSystem()
             event_id = event_system.emit("test_event", {"test": True})
-            
+
             return ToolResponse(
                 success=True,
-                data={"event_id": event_id, "test": "Event emitted successfully"}
+                data={"event_id": event_id, "test": "Event emitted successfully"},
             )
-        
-        return ToolResponse(
-            success=False,
-            error=f"Unknown action type: {action_type}"
-        )
+
+        return ToolResponse(success=False, error=f"Unknown action type: {action_type}")
 
 
 # Self-test when run directly
@@ -814,13 +804,15 @@ except KeyboardInterrupt:
 if __name__ == "__main__":
     print("Testing EventSystemAgent...")
     agent = EventSystemAgent()
-    
-    result = agent.execute_task("implement event trigger system for Factor 11 compliance")
-    
+
+    result = agent.execute_task(
+        "implement event trigger system for Factor 11 compliance"
+    )
+
     if result.success:
         print("✅ Event system implementation successful!")
         print(json.dumps(result.data, indent=2))
-        
+
         # Test the system
         print("\nTesting event emission...")
         test_result = agent._apply_action({"type": "test"})
