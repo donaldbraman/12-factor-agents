@@ -1,121 +1,213 @@
-# 12-Factor Agents User Guide
+# 12-Factor Agents User Guide - Intelligent System
 
-## Quick Start
+## For Sister Repositories (pin-citer, cite-assist, etc.)
 
-```bash
-# Get the latest version
-cd ../12-factor-agents
-git pull origin main
+**You already have the new intelligent system!** Your symlinks automatically point to our latest code. No updates needed on your end.
 
-# Your symlinks automatically use the new intelligent system!
+## How It Works
+
+Your symlinks give you everything:
+```
+your-project/.agents/
+  ├── agents -> ../../12-factor-agents/agents  # Automatically includes IntelligentIssueAgent
+  ├── core -> ../../12-factor-agents/core      # All core functionality
+  └── framework -> ../../12-factor-agents      # Everything
 ```
 
-## What's New?
+When we update 12-factor-agents, you instantly get the updates. No pulling, no updating - it just works!
 
-We've added an **IntelligentIssueAgent** that understands natural language. It sits on top of the proven old system, so everything that worked before still works, plus you get smart issue processing.
+## Using the Intelligent Agent
 
-## Basic Usage
+### Simple Example
 
-### Process a GitHub Issue
-
-```python
-from agents.intelligent_issue_agent import IntelligentIssueAgent
-
-agent = IntelligentIssueAgent()
-
-# Just tell it what to do in natural language
-result = agent.execute_task("Fix issue #123")
-result = agent.execute_task("Process the bug report in issues/bug.md")
-```
-
-### The Agent Understands:
-- **File operations**: "Create a config file at config/settings.yaml"
-- **Bug fixes**: "Fix the authentication bug in auth.py"
-- **Multiple tasks**: "Fix the bug, add tests, and update the docs"
-- **Complex workflows**: Automatically runs tasks in parallel when possible
-
-## Examples
-
-### Simple Task
-```python
-# Create a single file
-agent.execute_task("Create a README.md file with project description")
-```
-
-### Complex Task (Runs in Parallel)
-```python
-# Multiple operations - automatically parallelized
-agent.execute_task("""
-    Fix bugs in auth.py, user.py, and database.py.
-    Create tests for all modules.
-    Update the documentation.
-""")
-```
-
-## For External Projects (pin-citer, cite-assist, etc.)
-
-Your existing symlinks work automatically:
+Create a file `test_intelligent_agent.py` in your project:
 
 ```python
-# In your project
+#!/usr/bin/env python3
+"""Test the new intelligent agent system"""
+
 import sys
 sys.path.insert(0, '.agents')
 
-# Use the new intelligent agent
 from agents.intelligent_issue_agent import IntelligentIssueAgent
 
+# Create the intelligent agent
 agent = IntelligentIssueAgent()
-result = agent.execute_task("Process issue #456")
+
+# Example 1: Process a GitHub issue
+result = agent.execute_task("Fix issue #123")
+print(f"Result: {result.success}")
+
+# Example 2: Create files using natural language
+result = agent.execute_task("Create a configuration file at config/settings.yaml")
+
+# Example 3: Process a local issue file
+with open("test_issue.md", "w") as f:
+    f.write("""
+    # Bug Report
+    Fix the authentication bug in src/auth.py
+    Add tests for the login function
+    Update README.md with the changes
+    """)
+
+result = agent.execute_task("Process test_issue.md")
+print(f"Processed: {result.success}")
 ```
 
-## All Old Features Still Work
-
-Everything from the old system is unchanged:
-- ✅ FileTool for file operations
-- ✅ HierarchicalOrchestrator for parallel execution
-- ✅ All existing agents (IssueProcessorAgent, TestingAgent, etc.)
-- ✅ Your existing code doesn't need changes
-
-## Switching Between Versions
-
+Run it:
 ```bash
-# Use the new intelligent system (default)
-git checkout main
-
-# Use the proven stable system
-git checkout rollback-to-stable
+python test_intelligent_agent.py
 ```
 
-## Testing
+### Real-World Example for pin-citer
 
-The system has been thoroughly tested:
-- 30 tests for the intelligent layer (100% passing)
-- 281 total tests (82% passing)
-- Security tests included
-- Performance validated (< 1 second for large issues)
+```python
+#!/usr/bin/env python3
+"""Process citations with intelligent understanding"""
 
-## Architecture
+import sys
+sys.path.insert(0, '.agents')
 
+from agents.intelligent_issue_agent import IntelligentIssueAgent
+
+def process_citation_request(request_text):
+    """
+    Process natural language citation requests
+    
+    Examples:
+        "Fix formatting issues in references.bib"
+        "Create a new citation template at templates/apa.yaml"
+        "Update all citations in chapter-3.md and add missing DOIs"
+    """
+    agent = IntelligentIssueAgent()
+    
+    # The agent understands natural language!
+    result = agent.execute_task(request_text)
+    
+    if result.success:
+        print(f"✅ Completed: {request_text}")
+        if result.data:
+            # Check what the agent understood
+            intent = result.data.get('intent', {})
+            print(f"   Actions taken: {intent.get('actions', [])}")
+            print(f"   Files affected: {intent.get('files_mentioned', [])}")
+    else:
+        print(f"❌ Failed: {result.error}")
+    
+    return result
+
+# Example usage
+if __name__ == "__main__":
+    # Process various citation tasks
+    tasks = [
+        "Fix the broken citation in paper.md",
+        "Create a bibliography file at refs/sources.bib",
+        "Update all citations in the manuscript folder"
+    ]
+    
+    for task in tasks:
+        process_citation_request(task)
 ```
-Your Request
-     ↓
-IntelligentIssueAgent (NEW - understands natural language)
-     ↓
-Existing Tools (OLD - proven and working)
-     ↓
-Results
+
+### Real-World Example for cite-assist
+
+```python
+#!/usr/bin/env python3
+"""Legal document processing with intelligence"""
+
+import sys
+sys.path.insert(0, '.agents')
+
+from agents.intelligent_issue_agent import IntelligentIssueAgent
+
+class LegalDocumentProcessor:
+    def __init__(self):
+        self.agent = IntelligentIssueAgent()
+    
+    def process_legal_request(self, request):
+        """
+        Handle legal document requests in natural language
+        
+        Examples:
+            "Create a contract template at templates/nda.md"
+            "Fix citations in brief.docx"
+            "Review and update all case references in chapter-2"
+        """
+        # Create an issue file for complex requests
+        issue_path = "temp_legal_issue.md"
+        with open(issue_path, "w") as f:
+            f.write(f"# Legal Document Request\n\n{request}")
+        
+        # Process with intelligence
+        result = self.agent.execute_task(f"Handle {issue_path}")
+        
+        # The agent automatically:
+        # - Understands the request
+        # - Identifies files mentioned
+        # - Determines if tasks can run in parallel
+        # - Routes to appropriate tools
+        
+        return result
+
+# Example usage
+processor = LegalDocumentProcessor()
+
+# Complex multi-step request - automatically parallelized!
+result = processor.process_legal_request("""
+    Fix all citation formatting in the Smith v. Jones brief.
+    Create a summary document at summaries/smith-jones.md.
+    Update the case index with new page numbers.
+""")
+
+if result.success:
+    print("✅ Legal documents processed successfully")
+    # Check if it ran in parallel
+    if result.data.get('parallel_execution'):
+        print("   Tasks were automatically parallelized for speed!")
+```
+
+## What the Intelligent Agent Does
+
+1. **Understands Natural Language** - Just describe what you want
+2. **Extracts Intent** - Knows if you want to fix, create, update, etc.
+3. **Identifies Files** - Finds file paths in your description
+4. **Determines Complexity** - Simple tasks run directly, complex tasks are parallelized
+5. **Routes to Tools** - Uses FileTool for files, Orchestrator for parallel work
+
+## No Configuration Needed
+
+Your existing symlinks already provide:
+- ✅ `IntelligentIssueAgent` - The new smart layer
+- ✅ `FileTool` - File operations
+- ✅ `HierarchicalOrchestrator` - Parallel execution
+- ✅ All other agents - Still available
+
+## Testing Your Setup
+
+Quick test to verify everything works:
+
+```python
+#!/usr/bin/env python3
+"""Verify intelligent system is available"""
+
+import sys
+sys.path.insert(0, '.agents')
+
+try:
+    from agents.intelligent_issue_agent import IntelligentIssueAgent
+    agent = IntelligentIssueAgent()
+    print("✅ Intelligent system is ready!")
+    print(f"   Available tools: {[t.name for t in agent.tools]}")
+    print(f"   Has orchestrator: {hasattr(agent, 'orchestrator')}")
+except ImportError as e:
+    print(f"❌ Import failed: {e}")
+    print("   Make sure your symlinks point to 12-factor-agents")
 ```
 
 ## That's It!
 
-The new system is:
-- **Simple** - Just describe what you want
-- **Smart** - Understands natural language
-- **Safe** - Built on top of the stable old system
-- **Fast** - Parallel execution when possible
-
-No configuration needed. Your symlinks already point to the enhanced system!
+No setup, no configuration, no updates needed. Your symlinks give you everything automatically. Just import and use the intelligent agent!
 
 ---
 
-**Questions?** The old system still works exactly as before. This just adds intelligence on top.
+**Remember**: When we update 12-factor-agents, you get the improvements instantly through your symlinks. Zero deployment!
