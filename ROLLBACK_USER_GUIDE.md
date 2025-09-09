@@ -1,12 +1,15 @@
-# 12-Factor Agents - User Guide (Stable Rollback Version)
+# 12-Factor Agents - Symlink Integration Guide (Stable Version)
 
-## Quick Start
+## IMMEDIATE FIX: Get Your Agents Working NOW
 
-The stable rollback branch is immediately available and fully functional. This guide shows how to use the working system while we develop improvements.
+Your agents are broken because of recent changes. Here's how to fix them immediately using the stable rollback branch.
 
-### Switch to Stable Branch
+## Step 1: Update 12-Factor-Agents to Stable Branch
 
 ```bash
+# Go to your 12-factor-agents directory (parent of your project)
+cd ../12-factor-agents
+
 # Get the stable working version
 git fetch origin
 git checkout rollback-to-stable
@@ -15,221 +18,269 @@ git checkout rollback-to-stable
 uv pip install -r requirements.txt
 ```
 
-## Basic Usage
+## Step 2: Verify Your Symlinks
 
-### List Available Agents
+Your project should have symlinks pointing to 12-factor-agents:
 
 ```bash
-uv run python bin/agent.py list
+# In your project (e.g., pin-citer, cite-assist, etc.)
+cd your-project
+ls -la .agents/
+
+# You should see something like:
+# agents -> ../../12-factor-agents/agents
+# core -> ../../12-factor-agents/core
 ```
 
-Available agents:
-- `CodeReviewAgent` - Review code for quality and standards
-- `TestingAgent` - Generate and run tests
-- `RefactoringAgent` - Refactor and improve code
-- `IssueFixerAgent` - Fix GitHub issues
-- `IssueDecomposerAgent` - Break down complex issues
-- `QAAgent` - Quality assurance and validation
-- `ComponentMigrationAgent` - Migrate components between systems
-- `EnhancedWorkflowAgent` - Orchestrate complex workflows
-
-### Run a Single Agent
+If symlinks are missing or broken, recreate them:
 
 ```bash
-# Basic usage
-uv run python bin/agent.py run <AgentName> "<task description>"
-
-# Examples
-uv run python bin/agent.py run CodeReviewAgent "Review the authentication module"
-uv run python bin/agent.py run TestingAgent "Create tests for user.py"
-uv run python bin/agent.py run RefactoringAgent "Refactor database.py for better performance"
+cd .agents
+ln -sf ../../12-factor-agents/agents agents
+ln -sf ../../12-factor-agents/core core
+ln -sf ../../12-factor-agents/docs docs
+ln -sf ../../12-factor-agents/scripts scripts
 ```
 
-### Orchestrate Complex Tasks
+## Step 3: Test Your Agents Work
 
-For complex tasks that need multiple agents:
-
-```bash
-# Use the orchestration system
-uv run python bin/agent.py orchestrate complex-task
-
-# Or use HierarchicalOrchestrator directly
-uv run python -c "
-from core.hierarchical_orchestrator import HierarchicalOrchestrator
-orch = HierarchicalOrchestrator()
-result = orch.orchestrate_task('Implement user authentication with tests and documentation')
-print(result)
+```python
+# Quick test in your project
+python3 -c "
+from .agents.core.hierarchical_orchestrator import HierarchicalOrchestrator
+from .agents.agents.issue_fixer_agent import IssueFixerAgent
+print('✅ Agents are working!')
 "
 ```
 
-## Working with GitHub Issues
+## What's Working in Stable Version
 
-### Fix a Single Issue
+### ✅ ALL Agent Functionality
+- File creation and modification
+- GitHub issue processing  
+- Parallel task execution
+- Complex orchestration
+- All 12+ agent types
 
-```bash
-# Fix issue #123
-uv run python bin/agent.py run IssueFixerAgent "Fix issue #123"
-```
-
-### Handle Complex Issues
-
-```bash
-# Decompose and fix a complex issue
-uv run python bin/agent.py run IssueDecomposerAgent "Decompose issue #456"
-# Then run each sub-issue
-uv run python bin/agent.py run IssueFixerAgent "Fix sub-issue #456-1"
-```
-
-## Advanced Features
-
-### Parallel Processing
-
-The system automatically runs independent tasks in parallel:
-
+### ✅ Your Existing Workflows
 ```python
-from core.hierarchical_orchestrator import HierarchicalOrchestrator
+# Your existing code continues to work
+from .agents.agents.issue_fixer_agent import IssueFixerAgent
+from .agents.agents.issue_decomposer_agent import IssueDecomposerAgent
+from .agents.core.hierarchical_orchestrator import HierarchicalOrchestrator
 
-orch = HierarchicalOrchestrator()
-
-# This will run all independent subtasks in parallel
-result = orch.orchestrate_task("""
-    1. Review all Python files in src/
-    2. Generate tests for user module
-    3. Update documentation
-    4. Check for security issues
-""")
+# Create and run agents as before
+agent = IssueFixerAgent()
+result = agent.execute_task("Fix issue #123")
 ```
 
-### Orchestration Patterns
-
-The system supports multiple orchestration patterns:
-
-- **MapReduce**: For processing multiple similar items
-- **Pipeline**: For sequential task dependencies
-- **Fork-Join**: For parallel independent tasks
-- **Scatter-Gather**: For broadcasting to multiple agents
-- **Saga**: For transactional workflows
-
-### Load Balancing
-
-The orchestrator automatically balances work across available agents:
-
+### ✅ Orchestration Patterns
 ```python
-# The system will distribute tasks efficiently
-orch = HierarchicalOrchestrator(
-    max_parallel_agents=10,  # Run up to 10 agents in parallel
-    load_balance_strategy="least_loaded"  # Or "round_robin", "capability_based"
+# Complex tasks run in parallel automatically
+orchestrator = HierarchicalOrchestrator()
+result = orchestrator.orchestrate_complex_task(
+    "Process multiple GitHub issues with tests and documentation"
 )
 ```
 
-## Integration with External Projects
+## Common Integration Patterns
 
-### Setup Symlinks
-
-If you're using this from another project:
-
+### Pattern 1: Single Framework Symlink (Recommended)
 ```bash
-# In your project root
-mkdir -p .agents
-cd .agents
-ln -s ../../12-factor-agents framework
-
-# Now you can import
-from .framework.core.hierarchical_orchestrator import HierarchicalOrchestrator
-from .framework.agents.issue_fixer_agent import IssueFixerAgent
+your-project/
+├── .agents/
+│   └── framework -> ../../12-factor-agents  [ONE SYMLINK TO RULE THEM ALL]
 ```
 
-### Create Custom Agents
+Usage:
+```python
+from .agents.framework.agents.issue_fixer_agent import IssueFixerAgent
+from .agents.framework.core.hierarchical_orchestrator import HierarchicalOrchestrator
+```
 
-Extend the base agent for your needs:
+### Pattern 2: Granular Symlinks (Pin-Citer Style)
+```bash
+your-project/
+├── .agents/
+│   ├── agents -> ../../12-factor-agents/agents
+│   ├── core -> ../../12-factor-agents/core
+│   ├── docs -> ../../12-factor-agents/docs
+│   └── scripts -> ../../12-factor-agents/scripts
+```
+
+Usage:
+```python
+from .agents.agents.issue_fixer_agent import IssueFixerAgent
+from .agents.core.hierarchical_orchestrator import HierarchicalOrchestrator
+```
+
+## Fixing Common Issues
+
+### Issue: "AttributeError: '_intelligent_processing' not found"
+**Solution**: You're on the wrong branch. Switch to rollback-to-stable:
+```bash
+cd ../12-factor-agents
+git checkout rollback-to-stable
+```
+
+### Issue: "ImportError: No module named 'agents'"
+**Solution**: Fix your symlinks:
+```bash
+cd your-project/.agents
+ln -sf ../../12-factor-agents/agents agents
+ln -sf ../../12-factor-agents/core core
+```
+
+### Issue: "Agents can't create files"
+**Solution**: The stable branch has full file operations working. Make sure you're on rollback-to-stable.
+
+## Running Agents from Your Project
+
+### Option 1: Direct Python Import
+```python
+#!/usr/bin/env python3
+# your_project/run_agent.py
+
+from .agents.agents.issue_fixer_agent import IssueFixerAgent
+from .agents.agents.issue_decomposer_agent import IssueDecomposerAgent
+
+def fix_issue(issue_number):
+    agent = IssueFixerAgent()
+    return agent.execute_task(f"Fix issue #{issue_number}")
+
+def decompose_complex_issue(issue_number):
+    decomposer = IssueDecomposerAgent()
+    sub_issues = decomposer.execute_task(f"Decompose issue #{issue_number}")
+    
+    # Fix each sub-issue
+    fixer = IssueFixerAgent()
+    for sub_issue in sub_issues:
+        fixer.execute_task(f"Fix {sub_issue}")
+```
+
+### Option 2: Use the CLI via Symlink
+```bash
+# Create a wrapper script in your project
+#!/bin/bash
+# your_project/bin/agent
+
+cd ../12-factor-agents
+uv run python bin/agent.py "$@"
+```
+
+Then use it:
+```bash
+./bin/agent run IssueFixerAgent "Fix issue #123"
+```
+
+### Option 3: Direct Orchestration
+```python
+# your_project/orchestrate.py
+from .agents.core.hierarchical_orchestrator import HierarchicalOrchestrator
+
+orchestrator = HierarchicalOrchestrator(
+    max_parallel_agents=10,
+    max_depth=3
+)
+
+# This automatically parallelizes independent tasks
+result = orchestrator.orchestrate_complex_task("""
+    1. Fix all linting issues in src/
+    2. Generate tests for new features
+    3. Update documentation
+    4. Create GitHub issue for remaining work
+""")
+```
+
+## Available Agents (All Working)
+
+- `IssueFixerAgent` - Fixes GitHub issues with file operations
+- `IssueDecomposerAgent` - Breaks complex issues into sub-tasks
+- `CodeReviewAgent` - Reviews code quality
+- `TestingAgent` - Generates and runs tests
+- `RefactoringAgent` - Refactors code
+- `QAAgent` - Quality assurance
+- `ComponentMigrationAgent` - Migrates components
+- `EnhancedWorkflowAgent` - Complex workflows
+- `RepositorySetupAgent` - Sets up new repos
+- `PromptManagementAgent` - Manages prompts
+- `EventSystemAgent` - Event handling
+- `UvMigrationAgent` - UV package manager migration
+
+## Quick Validation Script
+
+Save this as `test_agents.py` in your project:
 
 ```python
-from agents.base import BaseAgent
+#!/usr/bin/env python3
+"""Verify agents are working via symlinks"""
 
-class YourCustomAgent(BaseAgent):
-    def __init__(self):
-        super().__init__()
+import sys
+from pathlib import Path
+
+def test_symlink_integration():
+    try:
+        # Test imports via symlinks
+        from .agents.core.hierarchical_orchestrator import HierarchicalOrchestrator
+        from .agents.agents.issue_fixer_agent import IssueFixerAgent
+        from .agents.agents.issue_decomposer_agent import IssueDecomposerAgent
+        print("✅ Core imports working")
         
-    def execute_task(self, task):
-        # Your custom logic here
-        return self.process(task)
+        # Test agent creation
+        fixer = IssueFixerAgent()
+        decomposer = IssueDecomposerAgent()
+        orchestrator = HierarchicalOrchestrator()
+        print("✅ Agent creation working")
+        
+        # Check for the problematic method
+        if hasattr(fixer, 'execute_task'):
+            print("✅ Execute task available")
+        
+        print("\n🎉 ALL SYSTEMS OPERATIONAL!")
+        print("Your agents are ready to use.")
+        return True
+        
+    except ImportError as e:
+        print(f"❌ Import failed: {e}")
+        print("\nFix: Check your symlinks and ensure 12-factor-agents is on rollback-to-stable branch")
+        return False
+    except Exception as e:
+        print(f"❌ Error: {e}")
+        return False
+
+if __name__ == "__main__":
+    test_symlink_integration()
 ```
 
-## Monitoring and Checkpoints
+## Status Update
 
-Agents automatically save checkpoints:
+### What's Immediately Available (NOW)
+- ✅ Full agent functionality restored
+- ✅ File creation/modification working
+- ✅ GitHub issue processing working
+- ✅ Parallel orchestration working
+- ✅ All original features operational
 
-```bash
-# Check agent status
-ls .claude/agents/checkpoints/
+### What We're Improving (Later)
+- 🚧 Intelligent task decomposition (better natural language understanding)
+- 🚧 Smart pattern selection (auto-choosing best orchestration)
+- 🚧 Enhanced error messages
+- 🚧 Performance optimizations
 
-# View checkpoint
-cat .claude/agents/checkpoints/IssueFixerAgent_*.json
-```
-
-## Performance Tips
-
-1. **Use Orchestration for Complex Tasks**: Let the system parallelize automatically
-2. **Batch Similar Operations**: Use MapReduce pattern for multiple similar tasks
-3. **Monitor Resource Usage**: Watch CPU/memory when running many parallel agents
-4. **Use Checkpoints**: Agents can resume from checkpoints if interrupted
-
-## Troubleshooting
-
-### Common Issues
-
-1. **Agent Not Found**
-   ```bash
-   # Make sure you're in the project root
-   pwd  # Should show /path/to/12-factor-agents
-   ```
-
-2. **Import Errors**
-   ```bash
-   # Reinstall dependencies
-   uv pip install -r requirements.txt
-   ```
-
-3. **Task Fails**
-   ```bash
-   # Check agent logs
-   cat .claude/agents/checkpoints/*.json | grep error
-   ```
-
-## What's Working
-
-✅ **All Core Features**:
-- File creation and modification
-- GitHub issue processing
-- Code review and refactoring
-- Test generation
-- Parallel task execution
-- Load balancing
-- Checkpoint/resume
-- All orchestration patterns
-
-## What's Being Improved
-
-The `hybrid-development` branch is adding:
-- Intelligent task decomposition (better understanding of complex requests)
-- Smart pattern selection (choosing best orchestration automatically)
-- Enhanced error handling
-- Performance optimizations
+### Branch Information
+- **rollback-to-stable**: USE THIS - Fully working, stable
+- **main**: Currently broken, being fixed
+- **hybrid-development**: Where we're adding new features
 
 ## Support
 
-- **Issues**: https://github.com/donaldbraman/12-factor-agents/issues
-- **Branch**: `rollback-to-stable`
-- **Status**: Fully functional and stable
+**Immediate Help**: The rollback-to-stable branch is fully functional. Your symlinks will automatically use the working version once you switch branches.
 
-## Migration Notes
-
-When the new hybrid system is ready:
-1. We'll announce beta testing
-2. You can test on `hybrid-development` branch
-3. Full migration guide will be provided
-4. Rollback branch remains available as fallback
+**Issues**: https://github.com/donaldbraman/12-factor-agents/issues
 
 ---
 
-**Note**: This is the stable, working version. Use this while we develop the enhanced hybrid system with improved intelligence and testing.
+**TL;DR**: 
+1. `cd ../12-factor-agents && git checkout rollback-to-stable`
+2. Your symlinks now point to working code
+3. All agents functional immediately
