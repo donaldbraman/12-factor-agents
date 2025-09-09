@@ -14,8 +14,8 @@ cd ../12-factor-agents
 git fetch origin
 git checkout rollback-to-stable
 
-# Install dependencies
-uv pip install -r requirements.txt
+# No dependencies needed in your project!
+# The symlinks provide everything
 ```
 
 ## Step 2: Verify Your Symlinks
@@ -46,9 +46,12 @@ ln -sf ../../12-factor-agents/scripts scripts
 
 ```python
 # Quick test in your project
-python3 -c "
-from .agents.core.hierarchical_orchestrator import HierarchicalOrchestrator
-from .agents.agents.issue_fixer_agent import IssueFixerAgent
+cd your-project
+uv run python -c "
+import sys
+sys.path.insert(0, '.agents')
+from core.hierarchical_orchestrator import HierarchicalOrchestrator
+from agents.issue_processor_agent import IssueProcessorAgent
 print('✅ Agents are working!')
 "
 ```
@@ -65,13 +68,13 @@ print('✅ Agents are working!')
 ### ✅ Your Existing Workflows
 ```python
 # Your existing code continues to work
-from .agents.agents.issue_fixer_agent import IssueFixerAgent
-from .agents.agents.issue_decomposer_agent import IssueDecomposerAgent
+from .agents.agents.issue_processor_agent import IssueProcessorAgent
+from .agents.agents.issue_orchestrator_agent import IssueOrchestratorAgent
 from .agents.core.hierarchical_orchestrator import HierarchicalOrchestrator
 
 # Create and run agents as before
-agent = IssueFixerAgent()
-result = agent.execute_task("Fix issue #123")
+agent = IssueProcessorAgent()
+result = agent.execute_task("Process issue #123")
 ```
 
 ### ✅ Orchestration Patterns
@@ -94,7 +97,7 @@ your-project/
 
 Usage:
 ```python
-from .agents.framework.agents.issue_fixer_agent import IssueFixerAgent
+from .agents.framework.agents.issue_processor_agent import IssueProcessorAgent
 from .agents.framework.core.hierarchical_orchestrator import HierarchicalOrchestrator
 ```
 
@@ -110,7 +113,7 @@ your-project/
 
 Usage:
 ```python
-from .agents.agents.issue_fixer_agent import IssueFixerAgent
+from .agents.agents.issue_processor_agent import IssueProcessorAgent
 from .agents.core.hierarchical_orchestrator import HierarchicalOrchestrator
 ```
 
@@ -141,21 +144,16 @@ ln -sf ../../12-factor-agents/core core
 #!/usr/bin/env python3
 # your_project/run_agent.py
 
-from .agents.agents.issue_fixer_agent import IssueFixerAgent
-from .agents.agents.issue_decomposer_agent import IssueDecomposerAgent
+from .agents.agents.issue_processor_agent import IssueProcessorAgent
+from .agents.agents.issue_orchestrator_agent import IssueOrchestratorAgent
 
-def fix_issue(issue_number):
-    agent = IssueFixerAgent()
-    return agent.execute_task(f"Fix issue #{issue_number}")
+def process_issue(issue_number):
+    agent = IssueProcessorAgent()
+    return agent.execute_task(f"Process issue #{issue_number}")
 
-def decompose_complex_issue(issue_number):
-    decomposer = IssueDecomposerAgent()
-    sub_issues = decomposer.execute_task(f"Decompose issue #{issue_number}")
-    
-    # Fix each sub-issue
-    fixer = IssueFixerAgent()
-    for sub_issue in sub_issues:
-        fixer.execute_task(f"Fix {sub_issue}")
+def orchestrate_complex_issue(issue_number):
+    orchestrator = IssueOrchestratorAgent()
+    return orchestrator.execute_task(f"Orchestrate issue #{issue_number}")
 ```
 
 ### Option 2: Use the CLI via Symlink
@@ -170,7 +168,7 @@ uv run python bin/agent.py "$@"
 
 Then use it:
 ```bash
-./bin/agent run IssueFixerAgent "Fix issue #123"
+./bin/agent run IssueProcessorAgent "Process issue #123"
 ```
 
 ### Option 3: Direct Orchestration
@@ -194,12 +192,11 @@ result = orchestrator.orchestrate_complex_task("""
 
 ## Available Agents (All Working)
 
-- `IssueFixerAgent` - Fixes GitHub issues with file operations
-- `IssueDecomposerAgent` - Breaks complex issues into sub-tasks
+- `IssueProcessorAgent` - Processes GitHub issues
+- `IssueOrchestratorAgent` - Orchestrates complex issue workflows
+- `SimpleIssueCloser` - Closes resolved issues
 - `CodeReviewAgent` - Reviews code quality
 - `TestingAgent` - Generates and runs tests
-- `RefactoringAgent` - Refactors code
-- `QAAgent` - Quality assurance
 - `ComponentMigrationAgent` - Migrates components
 - `EnhancedWorkflowAgent` - Complex workflows
 - `RepositorySetupAgent` - Sets up new repos
@@ -221,19 +218,21 @@ from pathlib import Path
 def test_symlink_integration():
     try:
         # Test imports via symlinks
-        from .agents.core.hierarchical_orchestrator import HierarchicalOrchestrator
-        from .agents.agents.issue_fixer_agent import IssueFixerAgent
-        from .agents.agents.issue_decomposer_agent import IssueDecomposerAgent
+        import sys
+        sys.path.insert(0, '.agents')
+        from core.hierarchical_orchestrator import HierarchicalOrchestrator
+        from agents.issue_processor_agent import IssueProcessorAgent
+        from agents.issue_orchestrator_agent import IssueOrchestratorAgent
         print("✅ Core imports working")
         
         # Test agent creation
-        fixer = IssueFixerAgent()
-        decomposer = IssueDecomposerAgent()
+        processor = IssueProcessorAgent()
+        orchestrator_agent = IssueOrchestratorAgent()
         orchestrator = HierarchicalOrchestrator()
         print("✅ Agent creation working")
         
         # Check for the problematic method
-        if hasattr(fixer, 'execute_task'):
+        if hasattr(processor, 'execute_task'):
             print("✅ Execute task available")
         
         print("\n🎉 ALL SYSTEMS OPERATIONAL!")
