@@ -117,8 +117,6 @@ class AgentDispatcherTool(Tool):
                 "CLIBuilderAgent": "cli_builder_agent",
                 "RegistryBuilderAgent": "registry_builder_agent",
                 "UvMigrationAgent": "uv_migration_agent",
-                "IssueFixerAgent": "issue_fixer_agent",
-                "issue_fixer_agent": "issue_fixer_agent",
             }
 
             module_name = agent_map.get(
@@ -351,18 +349,9 @@ class IssueOrchestratorAgent(BaseAgent):
                 print(f"{'='*60}")
 
                 # Determine task for agent
-                # For IssueFixerAgent, just pass the issue number
-                if (
-                    issue["agent"] == "IssueFixerAgent"
-                    or issue["agent"] == "issue_fixer_agent"
-                ):
-                    agent_task = issue["number"]
-                else:
-                    agent_task = f"solve issue {issue['number']}"
-                    if issue["description"]:
-                        agent_task = issue["description"][
-                            :200
-                        ]  # Use description as task
+                agent_task = f"solve issue {issue['number']}"
+                if issue["description"]:
+                    agent_task = issue["description"][:200]  # Use description as task
 
                 dispatch_result = dispatcher_tool.execute(
                     agent_name=issue["agent"],

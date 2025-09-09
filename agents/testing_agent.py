@@ -562,7 +562,6 @@ class TestingAgent(BaseAgent):
 
 
 # Self-test when run directly
-# Usage: uv run agents/testing_agent.py
 if __name__ == "__main__":
     print("🧪 Running comprehensive test suite...")
     agent = TestingAgent()
