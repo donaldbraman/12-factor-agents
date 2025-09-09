@@ -7,10 +7,10 @@ import subprocess
 from pathlib import Path
 from typing import Dict, Any, List
 import json
-from datetime import datetime
 
 # Import from parent directory since we're bootstrapping
 import sys
+
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
@@ -19,142 +19,119 @@ from core.tools import Tool, ToolResponse
 
 class GitInitTool(Tool):
     """Initialize git repository"""
-    
+
     def __init__(self):
-        super().__init__(
-            name="git_init",
-            description="Initialize a git repository"
-        )
-    
+        super().__init__(name="git_init", description="Initialize a git repository")
+
     def execute(self, path: str = ".") -> ToolResponse:
         """Initialize git in specified directory"""
         try:
             repo_path = Path(path).resolve()
-            
+
             # Check if already a git repo
             if (repo_path / ".git").exists():
                 return ToolResponse(
                     success=True,
-                    data={"message": "Repository already initialized", "path": str(repo_path)}
+                    data={
+                        "message": "Repository already initialized",
+                        "path": str(repo_path),
+                    },
                 )
-            
+
             # Initialize git
             result = subprocess.run(
-                ["git", "init"],
-                cwd=repo_path,
-                capture_output=True,
-                text=True
+                ["git", "init"], cwd=repo_path, capture_output=True, text=True
             )
-            
+
             if result.returncode == 0:
                 return ToolResponse(
                     success=True,
-                    data={"message": "Git repository initialized", "path": str(repo_path)}
+                    data={
+                        "message": "Git repository initialized",
+                        "path": str(repo_path),
+                    },
                 )
             else:
-                return ToolResponse(
-                    success=False,
-                    error=result.stderr
-                )
-                
+                return ToolResponse(success=False, error=result.stderr)
+
         except Exception as e:
-            return ToolResponse(
-                success=False,
-                error=str(e)
-            )
-    
+            return ToolResponse(success=False, error=str(e))
+
     def get_parameters_schema(self) -> Dict[str, Any]:
         return {
             "type": "object",
             "properties": {
                 "path": {"type": "string", "description": "Repository path"}
-            }
+            },
         }
 
 
 class DirectoryCreatorTool(Tool):
     """Create directory structure"""
-    
+
     def __init__(self):
         super().__init__(
             name="create_directories",
-            description="Create directory structure for repository"
+            description="Create directory structure for repository",
         )
-    
+
     def execute(self, base_path: str, directories: List[str]) -> ToolResponse:
         """Create directory structure"""
         try:
             base = Path(base_path).resolve()
             created = []
-            
+
             for dir_name in directories:
                 dir_path = base / dir_name
                 dir_path.mkdir(parents=True, exist_ok=True)
                 created.append(str(dir_path))
-            
+
             return ToolResponse(
                 success=True,
-                data={
-                    "created_directories": created,
-                    "count": len(created)
-                }
+                data={"created_directories": created, "count": len(created)},
             )
-            
+
         except Exception as e:
-            return ToolResponse(
-                success=False,
-                error=str(e)
-            )
-    
+            return ToolResponse(success=False, error=str(e))
+
     def get_parameters_schema(self) -> Dict[str, Any]:
         return {
             "type": "object",
             "properties": {
                 "base_path": {"type": "string"},
-                "directories": {"type": "array", "items": {"type": "string"}}
+                "directories": {"type": "array", "items": {"type": "string"}},
             },
-            "required": ["base_path", "directories"]
+            "required": ["base_path", "directories"],
         }
 
 
 class FileCreatorTool(Tool):
     """Create files with content"""
-    
+
     def __init__(self):
         super().__init__(
-            name="create_file",
-            description="Create a file with specified content"
+            name="create_file", description="Create a file with specified content"
         )
-    
+
     def execute(self, path: str, content: str) -> ToolResponse:
         """Create file with content"""
         try:
             file_path = Path(path).resolve()
             file_path.parent.mkdir(parents=True, exist_ok=True)
             file_path.write_text(content)
-            
+
             return ToolResponse(
-                success=True,
-                data={
-                    "file": str(file_path),
-                    "size": len(content)
-                }
+                success=True, data={"file": str(file_path), "size": len(content)}
             )
-            
+
         except Exception as e:
-            return ToolResponse(
-                success=False,
-                error=str(e)
-            )
-    
+            return ToolResponse(success=False, error=str(e))
+
     def get_parameters_schema(self) -> Dict[str, Any]:
         return {
             "type": "object",
-            "properties": {
-                "path": {"type": "string"},
-                "content": {"type": "string"}
-            },
-            "required": ["path", "content"]
+            "properties": {"path": {"type": "string"}, "content": {"type": "string"}},
+            "required": ["path", "content"],
         }
 
 
@@ -163,15 +140,11 @@ class RepositorySetupAgent(BaseAgent):
     Agent responsible for setting up the 12-factor-agents repository.
     Handles Issue #001: Core Repository Setup
     """
-    
+
     def register_tools(self) -> List[Tool]:
         """Register repository setup tools"""
-        return [
-            GitInitTool(),
-            DirectoryCreatorTool(),
-            FileCreatorTool()
-        ]
-    
+        return [GitInitTool(), DirectoryCreatorTool(), FileCreatorTool()]
+
     def execute_task(self, task: str) -> ToolResponse:
         """
         Execute repository setup based on issue requirements.
@@ -182,18 +155,18 @@ class RepositorySetupAgent(BaseAgent):
             repo_path = task.split("at")[-1].strip()
         else:
             repo_path = str(Path.home() / "Documents" / "GitHub" / "12-factor-agents")
-        
+
         repo_path = Path(repo_path).resolve()
-        
+
         # Update state
         self.state.set("repo_path", str(repo_path))
-        
+
         results = []
-        
+
         # Step 1: Create directories
         directories = [
             "core",
-            "agents", 
+            "agents",
             "bin",
             "shared-state",
             "orchestration",
@@ -201,24 +174,21 @@ class RepositorySetupAgent(BaseAgent):
             "prompts/base",
             "prompts/specialized",
             "tests",
-            "examples"
+            "examples",
         ]
-        
+
         dir_tool = self.tools[1]  # DirectoryCreatorTool
-        dir_result = dir_tool.execute(
-            base_path=str(repo_path),
-            directories=directories
-        )
+        dir_result = dir_tool.execute(base_path=str(repo_path), directories=directories)
         results.append(("directories", dir_result))
-        
+
         if not dir_result.success:
             return dir_result
-        
+
         # Step 2: Initialize git
         git_tool = self.tools[0]  # GitInitTool
         git_result = git_tool.execute(path=str(repo_path))
         results.append(("git", git_result))
-        
+
         # Step 3: Create README.md
         readme_content = """# 12-Factor Agents Framework
 
@@ -259,14 +229,13 @@ See [docs/](docs/) for detailed documentation.
 
 MIT
 """
-        
+
         file_tool = self.tools[2]  # FileCreatorTool
         readme_result = file_tool.execute(
-            path=str(repo_path / "README.md"),
-            content=readme_content
+            path=str(repo_path / "README.md"), content=readme_content
         )
         results.append(("readme", readme_result))
-        
+
         # Step 4: Create .gitignore
         gitignore_content = """# Python
 __pycache__/
@@ -298,13 +267,12 @@ htmlcov/
 .coverage
 .pytest_cache/
 """
-        
+
         gitignore_result = file_tool.execute(
-            path=str(repo_path / ".gitignore"),
-            content=gitignore_content
+            path=str(repo_path / ".gitignore"), content=gitignore_content
         )
         results.append(("gitignore", gitignore_result))
-        
+
         # Step 5: Create setup.sh
         setup_content = """#!/bin/bash
 # Setup script for 12-factor-agents framework
@@ -333,19 +301,18 @@ echo "1. In your project: ln -s $(pwd)/core .claude/agents"
 echo "2. Run an agent: ./bin/agent list"
 echo ""
 """
-        
+
         setup_result = file_tool.execute(
-            path=str(repo_path / "setup.sh"),
-            content=setup_content
+            path=str(repo_path / "setup.sh"), content=setup_content
         )
         results.append(("setup", setup_result))
-        
+
         # Make setup.sh executable
         try:
             os.chmod(repo_path / "setup.sh", 0o755)
         except:
             pass
-        
+
         # Step 6: Create LICENSE
         license_content = """MIT License
 
@@ -369,53 +336,54 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 """
-        
+
         license_result = file_tool.execute(
-            path=str(repo_path / "LICENSE"),
-            content=license_content
+            path=str(repo_path / "LICENSE"), content=license_content
         )
         results.append(("license", license_result))
-        
+
         # Step 7: Create __init__.py files
         for module_dir in ["core", "agents", "shared-state", "orchestration"]:
             init_result = file_tool.execute(
                 path=str(repo_path / module_dir / "__init__.py"),
-                content=f'"""{module_dir} module for 12-factor-agents framework."""\n'
+                content=f'"""{module_dir} module for 12-factor-agents framework."""\n',
             )
             results.append((f"init_{module_dir}", init_result))
-        
+
         # Compile results
         all_success = all(r[1].success for r in results)
-        
+
         if all_success:
             # Mark issue as resolved
             self.state.set("issue_001_status", "resolved")
             self.state.set("repository_initialized", True)
-            
+
             return ToolResponse(
                 success=True,
                 data={
                     "repository": str(repo_path),
                     "directories_created": len(directories),
-                    "files_created": len([r for r in results if "file" in r[0] or "readme" in r[0]]),
+                    "files_created": len(
+                        [r for r in results if "file" in r[0] or "readme" in r[0]]
+                    ),
                     "git_initialized": git_result.success,
                     "setup_complete": True,
                     "issue": "#001",
-                    "status": "resolved"
-                }
+                    "status": "resolved",
+                },
             )
         else:
             failed = [r[0] for r in results if not r[1].success]
             return ToolResponse(
                 success=False,
                 error=f"Failed steps: {', '.join(failed)}",
-                data={"failed_steps": failed}
+                data={"failed_steps": failed},
             )
-    
+
     def _apply_action(self, action: Dict[str, Any]) -> ToolResponse:
         """Apply repository setup action"""
         action_type = action.get("type", "setup")
-        
+
         if action_type == "setup":
             return self.execute_task(action.get("task", "setup repository"))
         elif action_type == "verify":
@@ -425,18 +393,12 @@ SOFTWARE.
                 "git": (repo_path / ".git").exists(),
                 "core": (repo_path / "core").exists(),
                 "readme": (repo_path / "README.md").exists(),
-                "setup": (repo_path / "setup.sh").exists()
+                "setup": (repo_path / "setup.sh").exists(),
             }
-            
-            return ToolResponse(
-                success=all(checks.values()),
-                data={"checks": checks}
-            )
-        
-        return ToolResponse(
-            success=False,
-            error=f"Unknown action type: {action_type}"
-        )
+
+            return ToolResponse(success=all(checks.values()), data={"checks": checks})
+
+        return ToolResponse(success=False, error=f"Unknown action type: {action_type}")
 
 
 # Self-test when run directly
@@ -444,10 +406,12 @@ SOFTWARE.
 if __name__ == "__main__":
     print("Testing RepositorySetupAgent...")
     agent = RepositorySetupAgent()
-    
+
     # Test on the actual 12-factor-agents directory
-    result = agent.execute_task('setup repository at /Users/dbraman/Documents/GitHub/12-factor-agents')
-    
+    result = agent.execute_task(
+        "setup repository at /Users/dbraman/Documents/GitHub/12-factor-agents"
+    )
+
     if result.success:
         print("✅ Repository setup successful!")
         print(json.dumps(result.data, indent=2))

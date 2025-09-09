@@ -18,7 +18,7 @@ def check_orchestration_performance():
     start = time.perf_counter()
     try:
         # Test basic orchestration creation
-        if hasattr(orchestrator, 'execute_task'):
+        if hasattr(orchestrator, "execute_task"):
             result = orchestrator.execute_task("test task")
         else:
             # Just verify it initializes
@@ -47,7 +47,9 @@ def check_context_efficiency():
         # Add substantial context to test efficiency
         for i in range(50):
             # Each context is ~10 tokens
-            manager.add_context(f"This is test context number {i} with some content", priority=1)
+            manager.add_context(
+                f"This is test context number {i} with some content", priority=1
+            )
 
         efficiency = manager.get_efficiency()
 
