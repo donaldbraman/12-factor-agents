@@ -1,4 +1,5 @@
 """Comprehensive tests for 12-factor agents"""
+
 import sys
 from pathlib import Path
 

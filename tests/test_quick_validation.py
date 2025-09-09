@@ -1,4 +1,5 @@
 """Quick validation tests for pre-commit hooks"""
+
 import pytest
 import sys
 from pathlib import Path

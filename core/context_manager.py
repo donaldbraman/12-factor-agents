@@ -1,4 +1,5 @@
 """Context manager for efficient LLM context window usage"""
+
 from typing import Dict, Any, List
 
 

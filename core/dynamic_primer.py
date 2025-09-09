@@ -6,10 +6,11 @@ Enables commands like `/prime-feature`, `/prime-bug-fix`, `/prime-refactor` for
 instant context setup with 50% time reduction.
 
 Implements 12-Factor Agent methodology:
-- Factor 2: Own Your Prompts (versioned primer templates)  
+- Factor 2: Own Your Prompts (versioned primer templates)
 - Factor 3: Own Your Context Window (optimized context loading)
 - Factor 11: Small, Focused Agents (specialized primers)
 """
+
 from typing import Dict, List, Any, Optional, Callable
 from dataclasses import dataclass, field
 from datetime import datetime
@@ -1087,12 +1088,12 @@ class DynamicContextPrimer:
             "total_executions": total_executions,
             "primer_chains": len(self.primer_chains),
             "template_files": len(self.primer_templates),
-            "average_execution_time": sum(
-                stats["average_time"] for stats in self.primer_performance.values()
-            )
-            / len(self.primer_performance)
-            if self.primer_performance
-            else 0,
+            "average_execution_time": (
+                sum(stats["average_time"] for stats in self.primer_performance.values())
+                / len(self.primer_performance)
+                if self.primer_performance
+                else 0
+            ),
             "performance_by_primer": self.primer_performance.copy(),
         }
 

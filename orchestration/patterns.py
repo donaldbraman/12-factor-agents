@@ -2,7 +2,7 @@
 Orchestration Patterns for Hierarchical Agent Coordination
 
 Implements the five core coordination patterns for complex task orchestration:
-- MapReduce: Distribute work, aggregate results  
+- MapReduce: Distribute work, aggregate results
 - Pipeline: Sequential processing chain
 - Fork-Join: Parallel execution with synchronization
 - Scatter-Gather: Broadcast task, collect responses
@@ -11,6 +11,7 @@ Implements the five core coordination patterns for complex task orchestration:
 Each pattern provides different coordination semantics optimized for specific
 workflow characteristics and performance requirements.
 """
+
 import asyncio
 import uuid
 from typing import Dict, List, Any, Optional, Callable
@@ -644,9 +645,11 @@ class ScatterGatherPattern(BaseOrchestrationPattern):
             "response_count": len(responses),
             "average_confidence": avg_confidence,
             "response_diversity": len(set(response_texts)),
-            "consensus_strength": 1.0 - (len(set(response_texts)) / len(response_texts))
-            if response_texts
-            else 0,
+            "consensus_strength": (
+                1.0 - (len(set(response_texts)) / len(response_texts))
+                if response_texts
+                else 0
+            ),
         }
 
     def register_gather_strategy(self, name: str, strategy: Callable):

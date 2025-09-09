@@ -581,10 +581,11 @@ class AgentRegistry:
                 ),
                 "total_capabilities": len(self._capability_index),
                 "total_usage": sum(a.usage_count for a in self._agents.values()),
-                "average_rating": sum(a.rating for a in self._agents.values())
-                / len(self._agents)
-                if self._agents
-                else 0,
+                "average_rating": (
+                    sum(a.rating for a in self._agents.values()) / len(self._agents)
+                    if self._agents
+                    else 0
+                ),
                 "top_capabilities": [],
                 "top_agents": [],
             }

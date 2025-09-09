@@ -1,3 +1,7 @@
+[build-system]
+requires = ["setuptools>=45", "wheel"]
+build-backend = "setuptools.build_meta"
+
 [project]
 name = "12-factor-agents"
 version = "1.0.0"
@@ -12,6 +16,10 @@ dependencies = [
     "semver>=3.0.0",
 ]
 
+[project.scripts]
+agent = "bin.agent:main"
+event = "bin.event:main"
+
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
@@ -19,7 +27,11 @@ dev = [
     "ruff>=0.1",
 ]
 
+[tool.setuptools.packages.find]
+include = ["agents*", "core*", "bin*", "orchestration*"]
+
 [tool.uv]
+package = true
 dev-dependencies = [
     "pre-commit>=4.3.0",
     "pytest>=7.0",

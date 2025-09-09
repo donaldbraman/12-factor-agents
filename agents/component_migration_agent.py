@@ -2,6 +2,7 @@
 ComponentMigrationAgent - Migrates existing components to new structure.
 Designed to solve Issue #002: Migrate Existing Base Components
 """
+
 import shutil
 from pathlib import Path
 from typing import Dict, Any, List

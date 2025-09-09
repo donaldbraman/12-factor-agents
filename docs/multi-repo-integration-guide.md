@@ -78,7 +78,7 @@ All repos can immediately use these battle-tested agents:
 ```python
 # Code Quality & Maintenance
 from agents.code_review_agent import CodeReviewAgent
-from agents.issue_fixer_agent import IssueFixerAgent  
+from agents.issue_processor_agent import IssueProcessorAgent  
 from agents.testing_agent import TestingAgent
 
 # Repository Management
@@ -263,21 +263,21 @@ class ResearchAnalysisAgent(BaseAgent):
 All repositories can use shared CLI tools:
 
 ```bash
-# From any repository
-./agents/bin/agent list                    # List available agents
-./agents/bin/agent run CodeReviewAgent     # Run code review
-./agents/bin/agent orchestrate             # Run issue orchestration
+# From any repository with 12-factor-agents linked
+uv run agent list                          # List available agents
+uv run agent run CodeReviewAgent "review" # Run code review
+uv run agent orchestrate pipeline-name     # Run orchestration pipeline
 ```
 
 ### Repository-Specific CLI
 ```bash  
 # pin-citer specific commands
-./agents/bin/agent run BluebookCitationAgent
-./agents/bin/agent pipeline citation-workflow
+uv run agent run BluebookCitationAgent "analyze citations"
+uv run agent orchestrate citation-workflow
 
 # zothein specific commands  
-./agents/bin/agent run ResearchAnalysisAgent
-./agents/bin/agent pipeline research-workflow
+uv run agent run ResearchAnalysisAgent "analyze research"
+uv run agent orchestrate research-workflow
 ```
 
 ## Setup Instructions

@@ -3,17 +3,21 @@
 A local-first, multi-repository AI agent system following the 12-factor methodology.
 
 ## Features
-- ✅ 100% local operation
-- ✅ Cross-repository agent sharing
-- ✅ No external dependencies
+- ✅ 100% local operation (no cloud dependencies required)
+- ✅ Cross-repository agent sharing via symlinks
+- ✅ No external service dependencies
 - ✅ Git-friendly configuration
 - ✅ Full 12-factor compliance
+- ✅ Powered by uv for fast, reliable Python management
 
 ## Quick Start
 
-1. Run setup: `./setup.sh`
-2. Link in your project: `ln -s ../12-factor-agents/core .claude/agents`
-3. Run agents: `uv run bin/agent <name> "<task>"`
+1. Install uv: `curl -LsSf https://astral.sh/uv/install.sh | sh`
+2. Run setup: `./setup.sh`
+3. Use agents:
+   - List: `uv run agent list`
+   - Run: `uv run agent run <name> "<task>"`
+   - Info: `uv run agent info <name>`
 
 ## Structure
 

@@ -11,7 +11,7 @@ from pathlib import Path
 # Add parent to path
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.triggers import LocalEventSystem, CLITrigger
+from core.triggers import LocalEventSystem
 
 
 @click.group()
@@ -21,9 +21,9 @@ def cli():
 
 
 @cli.command()
-@click.argument('event_type')
-@click.option('--data', '-d', default='{}', help='Event data as JSON')
-@click.option('--source', '-s', default='cli', help='Event source')
+@click.argument("event_type")
+@click.option("--data", "-d", default="{}", help="Event data as JSON")
+@click.option("--source", "-s", default="cli", help="Event source")
 def emit(event_type, data, source):
     """Emit an event"""
     try:
@@ -44,11 +44,11 @@ def list():
     """List pending events"""
     event_system = LocalEventSystem()
     events = event_system.get_pending_events()
-    
+
     if not events:
         click.echo("No pending events")
         return
-    
+
     click.echo(f"Pending events ({len(events)}):")
     for event in events:
         click.echo(f"  - {event.event_type} at {event.timestamp} from {event.source}")
@@ -63,23 +63,23 @@ def process():
 
 
 @cli.command()
-@click.option('--limit', '-l', default=10, help='Number of events to show')
+@click.option("--limit", "-l", default=10, help="Number of events to show")
 def history(limit):
     """Show processed event history"""
     event_system = LocalEventSystem()
     events = event_system.get_processed_events(limit)
-    
+
     if not events:
         click.echo("No processed events")
         return
-    
+
     click.echo(f"Recent processed events (last {limit}):")
     for event in events:
         click.echo(f"  - {event.event_type} at {event.timestamp} from {event.source}")
 
 
 @cli.command()
-@click.option('--days', '-d', default=7, help='Days to keep')
+@click.option("--days", "-d", default=7, help="Days to keep")
 def cleanup(days):
     """Clean up old processed events"""
     event_system = LocalEventSystem()
@@ -88,20 +88,21 @@ def cleanup(days):
 
 
 @cli.command()
-@click.argument('path')
-@click.option('--pattern', '-p', default='*', help='File pattern to watch')
-@click.option('--event', '-e', default='file_changed', help='Event type to emit')
+@click.argument("path")
+@click.option("--pattern", "-p", default="*", help="File pattern to watch")
+@click.option("--event", "-e", default="file_changed", help="Event type to emit")
 def watch(path, pattern, event):
     """Watch a directory for changes"""
     event_system = LocalEventSystem()
     event_system.register_file_watcher(path, pattern, event)
     event_system.start()
-    
+
     click.echo(f"Watching {path} for {pattern} files...")
     click.echo("Press Ctrl+C to stop")
-    
+
     try:
         import time
+
         while True:
             time.sleep(1)
     except KeyboardInterrupt:
@@ -109,5 +110,5 @@ def watch(path, pattern, event):
         click.echo("\nStopped watching")
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     cli()

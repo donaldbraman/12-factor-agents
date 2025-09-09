@@ -4,13 +4,13 @@ Integration tests for Background Agent Executor.
 Tests the full workflow of agent spawning, execution, monitoring, and cleanup
 in realistic scenarios with multiple concurrent agents.
 """
+
 import asyncio
 import tempfile
 import pytest
 from pathlib import Path
 
 import sys
-from pathlib import Path
 
 sys.path.insert(0, str(Path(__file__).parent.parent.parent))
 

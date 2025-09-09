@@ -4,6 +4,7 @@ Tests for Dynamic Context Priming System.
 Tests all primer functionality including template rendering, variable handling,
 performance tracking, and primer chaining.
 """
+
 import pytest
 import tempfile
 import json

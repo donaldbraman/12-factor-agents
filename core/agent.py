@@ -1,6 +1,7 @@
 """
 Base Agent class implementing 12-factor methodology.
 """
+
 from abc import ABC, abstractmethod
 from typing import Dict, Any, List
 from pathlib import Path
@@ -337,9 +338,9 @@ class BaseAgent(ABC):
                 "base/system",
                 agent_type=self.__class__.__name__,
                 responsibility="General task execution",
-                tools_list=", ".join([t.name for t in self.tools])
-                if self.tools
-                else "",
+                tools_list=(
+                    ", ".join([t.name for t in self.tools]) if self.tools else ""
+                ),
                 context="",
                 task="",
             )

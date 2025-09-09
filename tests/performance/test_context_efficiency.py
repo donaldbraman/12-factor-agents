@@ -1,4 +1,5 @@
 """Context efficiency benchmarks for 12-factor agents"""
+
 import pytest
 import time
 import signal

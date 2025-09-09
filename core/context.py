@@ -2,6 +2,7 @@
 Context window management for agents.
 Factor 3: Own your context window.
 """
+
 from typing import List, Optional, Dict
 from dataclasses import dataclass
 

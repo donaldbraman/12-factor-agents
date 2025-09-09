@@ -2,6 +2,7 @@
 Local event trigger system for Factor 11 compliance.
 Factor 11: Trigger from Anywhere - Agents can be triggered through multiple entry points.
 """
+
 import json
 import time
 import threading

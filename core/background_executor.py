@@ -84,9 +84,9 @@ class BackgroundAgentInfo:
             "process_id": self.process_id,
             "status": self.status.value,
             "started_at": self.started_at.isoformat(),
-            "completed_at": self.completed_at.isoformat()
-            if self.completed_at
-            else None,
+            "completed_at": (
+                self.completed_at.isoformat() if self.completed_at else None
+            ),
             "agent_class": self.agent_class,
             "task": self.task,
             "workflow_data": self.workflow_data,
@@ -94,9 +94,9 @@ class BackgroundAgentInfo:
             "output_file": str(self.output_file) if self.output_file else None,
             "error_file": str(self.error_file) if self.error_file else None,
             "progress": self.progress,
-            "last_heartbeat": self.last_heartbeat.isoformat()
-            if self.last_heartbeat
-            else None,
+            "last_heartbeat": (
+                self.last_heartbeat.isoformat() if self.last_heartbeat else None
+            ),
         }
 
 
@@ -597,9 +597,11 @@ if __name__ == "__main__":
                 "started_at": agent_info.started_at.isoformat(),
                 "progress": progress_data.get("progress", agent_info.progress),
                 "message": progress_data.get("message", ""),
-                "last_heartbeat": agent_info.last_heartbeat.isoformat()
-                if agent_info.last_heartbeat
-                else None,
+                "last_heartbeat": (
+                    agent_info.last_heartbeat.isoformat()
+                    if agent_info.last_heartbeat
+                    else None
+                ),
                 "resource_usage": await self._get_resource_usage(agent_info),
             }
 
@@ -610,12 +612,16 @@ if __name__ == "__main__":
                 "agent_id": agent_id,
                 "status": agent_info.status.value,
                 "started_at": agent_info.started_at.isoformat(),
-                "completed_at": agent_info.completed_at.isoformat()
-                if agent_info.completed_at
-                else None,
-                "progress": 1.0
-                if agent_info.status == BackgroundStatus.COMPLETED
-                else agent_info.progress,
+                "completed_at": (
+                    agent_info.completed_at.isoformat()
+                    if agent_info.completed_at
+                    else None
+                ),
+                "progress": (
+                    1.0
+                    if agent_info.status == BackgroundStatus.COMPLETED
+                    else agent_info.progress
+                ),
             }
 
         return None
@@ -695,9 +701,11 @@ if __name__ == "__main__":
                 "agent_id": agent_id,
                 "status": agent_info.status.value,
                 "started_at": agent_info.started_at.isoformat(),
-                "completed_at": agent_info.completed_at.isoformat()
-                if agent_info.completed_at
-                else None,
+                "completed_at": (
+                    agent_info.completed_at.isoformat()
+                    if agent_info.completed_at
+                    else None
+                ),
             }
 
         return all_status

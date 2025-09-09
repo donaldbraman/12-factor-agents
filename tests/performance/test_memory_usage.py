@@ -1,4 +1,5 @@
 """Memory usage benchmarks"""
+
 import pytest
 import psutil
 import signal

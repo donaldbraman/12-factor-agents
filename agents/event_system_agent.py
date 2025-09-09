@@ -2,6 +2,7 @@
 EventSystemAgent - Implements event trigger system for Factor 11 compliance.
 Designed to solve Issue #004: Implement Event Trigger System
 """
+
 import os
 import json
 from pathlib import Path

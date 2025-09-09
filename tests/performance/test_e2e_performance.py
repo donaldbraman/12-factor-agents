@@ -1,4 +1,5 @@
 """End-to-end performance validation"""
+
 import pytest
 import time
 import signal

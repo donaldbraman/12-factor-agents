@@ -4,6 +4,7 @@ Performance tests for Hierarchical Orchestration System.
 Tests scaling behavior, coordination overhead, and performance characteristics
 under various load conditions and complexity levels.
 """
+
 import pytest
 import asyncio
 import time

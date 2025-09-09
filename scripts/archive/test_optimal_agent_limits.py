@@ -131,11 +131,13 @@ class OptimalLimitTester:
 
         return {
             "health_score": max(0, health_score),
-            "status": "healthy"
-            if health_score > 70
-            else "stressed"
-            if health_score > 40
-            else "critical",
+            "status": (
+                "healthy"
+                if health_score > 70
+                else "stressed"
+                if health_score > 40
+                else "critical"
+            ),
             "warnings": warnings,
         }
 

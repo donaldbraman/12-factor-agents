@@ -2,6 +2,7 @@
 Tool definitions for 12-factor agents.
 Factor 4: Tools are structured outputs.
 """
+
 from typing import Dict, Any, Optional
 from pydantic import BaseModel, Field
 from abc import ABC, abstractmethod

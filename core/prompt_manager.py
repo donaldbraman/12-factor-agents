@@ -2,6 +2,7 @@
 Prompt management system for Factor 2 compliance.
 Factor 2: Own Your Prompts - All prompts are externalized and version controlled.
 """
+
 from pathlib import Path
 from typing import Dict, Optional, Any, List
 import string

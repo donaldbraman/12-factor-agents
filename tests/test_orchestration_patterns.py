@@ -4,6 +4,7 @@ Unit tests for Orchestration Patterns.
 Tests all five coordination patterns: MapReduce, Pipeline, Fork-Join,
 Scatter-Gather, and Saga with comprehensive pattern selection and execution.
 """
+
 import pytest
 from datetime import datetime
 

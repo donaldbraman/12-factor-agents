@@ -4,6 +4,7 @@ Integration tests for Dynamic Context Priming System.
 Tests real-world usage scenarios, CLI integration, template file handling,
 and integration with other 12-factor agent components.
 """
+
 import pytest
 import tempfile
 import json

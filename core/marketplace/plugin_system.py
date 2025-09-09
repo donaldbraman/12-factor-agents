@@ -1,5 +1,5 @@
 """
-Plugin System - 12-Factor Agents Framework  
+Plugin System - 12-Factor Agents Framework
 Advanced plugin architecture with loading, lifecycle management, and dependency resolution
 """
 

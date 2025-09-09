@@ -4,6 +4,7 @@ Apple Silicon optimized Background Agent Executor
 Leverages Apple Silicon's exceptional efficiency for parallel agent workloads.
 Fixes event loop issues and provides Mac-specific optimizations.
 """
+
 import asyncio
 import threading
 import time

@@ -486,9 +486,9 @@ class ContextBundleManager:
             "created_at": self.metadata.created_at.isoformat(),
             "last_modified": self.metadata.last_modified.isoformat(),
             "action_types": self._count_action_types(),
-            "latest_checkpoint": self.get_latest_checkpoint().checkpoint_id
-            if self.checkpoints
-            else None,
+            "latest_checkpoint": (
+                self.get_latest_checkpoint().checkpoint_id if self.checkpoints else None
+            ),
         }
 
     def _count_action_types(self) -> Dict[str, int]:
@@ -674,9 +674,9 @@ class BundleEnabledAgent(BaseAgent):
             "agent_type": self.__class__.__name__,
             "total_actions": stats["total_actions"],
             "checkpoints": stats["total_checkpoints"],
-            "current_phase": latest_checkpoint.phase
-            if latest_checkpoint
-            else "unknown",
+            "current_phase": (
+                latest_checkpoint.phase if latest_checkpoint else "unknown"
+            ),
             "progress": latest_checkpoint.progress if latest_checkpoint else 0,
             "state_summary": {
                 k: type(v).__name__
