@@ -7,20 +7,24 @@ ln -s ../12-factor-agents/core .claude/agents
 ln -s ../12-factor-agents/scripts/universal_agent.py .claude/run_agent.py
 ```
 
-## Usage Pattern (Same for ALL tasks)
-```python
-# Your project's .claude/issue_handler.py
-from .run_agent import UniversalAgent
+## 🎯 PREFERRED Usage Pattern (Always use background execution!)
 
-# Create GitHub issue with clear objective
-issue_number = create_issue("Add feature X with metrics Y")
+### The Right Way - True Background Execution
+```bash
+# ALWAYS use this pattern for non-blocking execution
+nohup uv run .claude/run_agent.py 46 > /tmp/agent_46.log 2>&1 &
 
-# Launch agent
-agent = UniversalAgent(issue_number)
-agent.run_in_background()  # Returns immediately
+# Why this is preferred:
+# - Returns immediately (truly non-blocking)
+# - Agent runs independently 
+# - Can launch multiple agents simultaneously
+# - No blocking of main thread
+```
 
-# Check progress
-status = agent.get_status()  # {"progress": 75, "message": "..."}
+### Check Progress Without Blocking
+```bash
+# Monitor via status files (never blocks!)
+cat /tmp/agent_46_status.json | jq '.progress, .message'
 ```
 
 ## What Changed (Better for You)
@@ -30,11 +34,26 @@ status = agent.get_status()  # {"progress": 75, "message": "..."}
 - **Reliability**: All tests pass, pre-commit works
 
 ## Available Commands
+
+### Preferred: True Background Execution
+```bash
+# Launch agent in background (returns immediately!)
+nohup uv run .claude/run_agent.py 46 > /tmp/agent_46.log 2>&1 &
+
+# Launch multiple agents simultaneously
+nohup uv run .claude/run_agent.py 46 > /tmp/agent_46.log 2>&1 &
+nohup uv run .claude/run_agent.py 47 > /tmp/agent_47.log 2>&1 &
+nohup uv run .claude/run_agent.py 48 > /tmp/agent_48.log 2>&1 &
+
+# Check status via status files
+cat /tmp/agent_46_status.json | jq '.progress, .message'
+```
+
+### Alternative: Direct execution
 ```bash
 # From your project (via symlink)
-.claude/run_agent.py --issue 45        # Run specific issue
-.claude/run_agent.py --status 45       # Check progress
-.claude/run_agent.py --list            # Show all agent statuses
+.claude/run_agent.py 45                # Run specific issue
+.claude/run_agent.py 45 --status        # Check progress
 ```
 
 ## Integration Example
