@@ -73,7 +73,9 @@ class TelemetryCollector:
 
         # Remove potential API keys, tokens
         message = re.sub(r"[a-zA-Z0-9]{32,}", "***TOKEN***", message)
-        message = re.sub(r"sk-[a-zA-Z0-9]+", "***TOKEN***", message)  # OpenAI-style keys
+        message = re.sub(
+            r"sk-[a-zA-Z0-9]+", "***TOKEN***", message
+        )  # OpenAI-style keys
         message = re.sub(r"Bearer\s+[a-zA-Z0-9\-_]+", "Bearer ***TOKEN***", message)
 
         # Remove email addresses
@@ -185,29 +187,29 @@ class TelemetryCollector:
 def main():
     """Test the telemetry collector"""
     print("🔍 Testing Telemetry Collector")
-    
+
     collector = TelemetryCollector()
-    
+
     # Test recording an error
     telemetry_id = collector.record_error(
         repo_name="12-factor-agents",
         agent_name="TestAgent",
         error_type="TestError",
         error_message="Test error with /Users/testuser/secret and token sk-1234567890abcdef",
-        context={"operation": "test", "secret_key": "should_not_appear"}
+        context={"operation": "test", "secret_key": "should_not_appear"},
     )
-    
+
     print(f"✅ Recorded error with ID: {telemetry_id}")
-    
+
     # Test analysis
     summary = collector.get_error_summary()
     print(f"📊 Total errors: {summary['total_errors']}")
     print(f"📈 Error types: {summary['by_type']}")
-    
+
     # Show sanitization worked
     with open(collector.telemetry_dir / "all_errors.jsonl") as f:
         event = json.loads(f.read())
-    
+
     print(f"🔒 Sanitized message: {event['error_message']}")
     print(f"🔒 Safe context: {event['context']}")
 
