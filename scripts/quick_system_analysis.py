@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 Quick system analysis to determine optimal concurrent agent limits
 without running complex executor tests.

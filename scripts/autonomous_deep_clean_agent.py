@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 🧹 Autonomous Deep Clean Agent for Issue #49
 Remove 175+ orphaned files with comprehensive testing

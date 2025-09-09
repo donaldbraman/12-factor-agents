@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 🤖 Autonomous Performance Testing Agent for Issue #36
 Following 12-factor-agents framework with TRUE background execution

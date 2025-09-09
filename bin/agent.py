@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 12-Factor Agent CLI - Powered by uv
 Main command-line interface for running agents

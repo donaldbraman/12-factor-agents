@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 CLI interface for the Dynamic Context Priming System.
 

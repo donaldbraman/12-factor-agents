@@ -15,9 +15,21 @@ A local-first, multi-repository AI agent system following the 12-factor methodol
 1. Install uv: `curl -LsSf https://astral.sh/uv/install.sh | sh`
 2. Run setup: `./setup.sh`
 3. Use agents:
-   - List: `uv run agent list`
-   - Run: `uv run agent run <name> "<task>"`
-   - Info: `uv run agent info <name>`
+   - List: `uv run python uv run bin/agent.py list`
+   - Run: `uv run python uv run bin/agent.py run <name> "<task>"`
+   - Info: `uv run python uv run bin/agent.py info <name>`
+   - Orchestrate: `uv run python uv run bin/agent.py orchestrate <pipeline>`
+
+## Available Agents
+
+- **RepositorySetupAgent**: Initialize project structure
+- **IssueOrchestratorAgent**: Process and delegate GitHub issues
+- **IssueFixerAgent**: Apply fixes from issue descriptions
+- **TestingAgent**: Run comprehensive test suites
+- **CodeReviewAgent**: Analyze code quality and suggest improvements
+- **UvMigrationAgent**: Migrate Python operations to uv
+- **PromptManagementAgent**: Manage external prompt templates
+- **EventSystemAgent**: Handle event-driven workflows
 
 ## Structure
 

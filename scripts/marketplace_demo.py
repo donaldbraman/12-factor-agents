@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 Agent Marketplace Demo Script
 Demonstrates the comprehensive marketplace functionality for Issue #37

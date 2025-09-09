@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 Example showing how pin-citer would integrate with 12-factor-agents framework
 using symlinks for seamless access to context-conserving workflows.

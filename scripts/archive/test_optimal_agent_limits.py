@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 Test script to determine optimal concurrent agent limits without throttling the machine.
 

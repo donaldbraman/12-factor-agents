@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 Performance benchmark for R&D Framework Context Optimizer
 Validates 40-60% context reduction across various workloads

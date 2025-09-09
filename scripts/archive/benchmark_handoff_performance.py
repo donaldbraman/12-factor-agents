@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 Performance benchmark for Context Bundles System
 Validates <3 second recovery time and zero context loss

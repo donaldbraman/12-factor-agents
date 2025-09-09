@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """Quick performance regression check for pre-commit"""
 import time
 import sys

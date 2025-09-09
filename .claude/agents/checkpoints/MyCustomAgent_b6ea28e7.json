@@ -1,0 +1,30 @@
+{
+  "agent_id": "MyCustomAgent_b6ea28e7",
+  "agent_type": "MyCustomAgent",
+  "status": "idle",
+  "progress": 1.0,
+  "current_stage": "complete",
+  "total_stages": 3,
+  "state": {
+    "execution_state": {},
+    "business_state": {},
+    "history": [],
+    "metadata": {
+      "created_at": "2025-09-09T11:00:39.492541",
+      "version": "1.0.0"
+    }
+  },
+  "workflow_data": {
+    "stages": [
+      "init",
+      "process",
+      "complete"
+    ],
+    "stage_index": 0
+  },
+  "files_modified": [],
+  "branch": null,
+  "issue_number": null,
+  "created_at": "2025-09-09T11:00:39.493232",
+  "last_checkpoint": "2025-09-09T11:00:39.493737"
+}

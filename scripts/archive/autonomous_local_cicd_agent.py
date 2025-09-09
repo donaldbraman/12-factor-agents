@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 🤖 Autonomous Local CI/CD Agent for Issue #35
 Following the AGENT-ISSUE-TEMPLATE.md for local quality gates implementation
