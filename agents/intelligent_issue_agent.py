@@ -255,7 +255,7 @@ class IntelligentIssueAgent(BaseAgent):
 
         # Handle async orchestrator in sync context
         import asyncio
-        
+
         try:
             # Try to get existing event loop
             loop = asyncio.get_event_loop()
@@ -263,7 +263,7 @@ class IntelligentIssueAgent(BaseAgent):
             # Create new event loop if none exists
             loop = asyncio.new_event_loop()
             asyncio.set_event_loop(loop)
-        
+
         try:
             result = loop.run_until_complete(
                 self.orchestrator.orchestrate_complex_task(
@@ -275,7 +275,7 @@ class IntelligentIssueAgent(BaseAgent):
             return ToolResponse(
                 success=False,
                 error=f"Orchestration failed: {str(e)}. Complex issue needs manual processing.",
-                data={"intent": intent, "fallback_needed": True}
+                data={"intent": intent, "fallback_needed": True},
             )
 
         return ToolResponse(
