@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 Test suite to demonstrate the value of retry logic for failed operations.
 We'll test both WITH and WITHOUT retry to show the improvement.

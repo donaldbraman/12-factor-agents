@@ -273,6 +273,9 @@ class DynamicContextPrimer:
 ### PrimerResult
 
 ```python
+from dataclasses import dataclass, field
+from typing import Dict, Any
+
 @dataclass
 class PrimerResult:
     success: bool

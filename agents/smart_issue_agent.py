@@ -350,6 +350,7 @@ class SmartIssueAgent(BaseAgent):
 
 
 # Self-test when run directly
+# Usage: uv run agents/smart_issue_agent.py
 if __name__ == "__main__":
     import sys
 

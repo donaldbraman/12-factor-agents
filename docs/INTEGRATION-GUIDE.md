@@ -74,9 +74,14 @@ class ProcessingStage(PipelineStage):
         return processed_data, metadata
 
 # Use in agent
-self.pipeline = MultiStagePipeline()
-self.pipeline.add_stage(ProcessingStage())
-result = await self.pipeline.process_item_async(data)
+async def setup_pipeline(self):
+    self.pipeline = MultiStagePipeline(stages=[
+        CodeReviewAgent(),
+        TestingAgent(),
+        DeploymentAgent()
+    ])
+    result = await self.pipeline.process_item_async(data)
+    return result
 ```
 
 ### 2. Checkpoint System
@@ -207,9 +212,10 @@ event_system = LocalEventSystem()
 event_system.emit("task_completed", {"task_id": "123"})
 
 # Listen for events
-@event_system.on("task_completed")
 def handle_completion(event_data):
-    print(f"Task {event_data['task_id']} completed")
+    print(f"Task {event_data.data['task_id']} completed")
+
+event_system.watch("task_completed", handle_completion)
 ```
 
 

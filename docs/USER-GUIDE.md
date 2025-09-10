@@ -179,6 +179,82 @@ uv run python bin/agent.py run IssueFixerAgent "061"
 uv run python bin/agent.py orchestrate issue-pipeline
 ```
 
+## Background Research Agents (NEW!)
+
+### Launch True Parallel Research
+Claude can now spawn research agents that run **completely in the background** without blocking:
+
+```bash
+# Launch background research (returns immediately!)
+/path/to/12-factor-agents/bin/launch_background.sh "research topic"
+
+# Returns:
+# TASK_ID:research_20250910_070253_4841
+# CHECK:cat /tmp/12-factor-agents-background/research_..._status.json
+# RESULTS:cat /tmp/12-factor-agents-background/research_..._output.json
+```
+
+### Using BackgroundResearchAgent
+
+```python
+# From Python/Claude
+from agents.background_research_agent import BackgroundResearchAgent
+
+agent = BackgroundResearchAgent()
+result = agent.execute("Research quantum computing applications")
+# Returns immediately with task_id
+
+# Check status later
+status = agent.check_status(result["task_id"])
+
+# Get results when complete
+findings = agent.get_results(result["task_id"])
+```
+
+### Command Line Usage
+
+```bash
+# Launch research
+uv run python agents/background_research_agent.py launch --task "research AI safety"
+
+# Check status
+uv run python agents/background_research_agent.py status --task-id research_20250910_070253_4841
+
+# Get results
+uv run python agents/background_research_agent.py results --task-id research_20250910_070253_4841
+
+# List all active research
+uv run python agents/background_research_agent.py list
+```
+
+### Key Features
+- **Fire-and-forget**: Launches and returns immediately
+- **True parallelism**: Run 10+ research agents simultaneously  
+- **No blocking**: Claude stays responsive during research
+- **Persistent results**: Findings stored in `/tmp/12-factor-agents-background/`
+- **Multiple launch methods**: Uses disown, nohup, screen, or at
+
+### Example Workflow with Claude
+
+```
+User: "Claude, research these 3 topics in parallel"
+
+Claude: [Launches 3 background agents]
+"I've started 3 research agents:
+- research_20250910_070253_4841: Topic 1
+- research_20250910_070254_5923: Topic 2  
+- research_20250910_070255_6102: Topic 3
+
+Let's continue with other work while they run..."
+
+[5 minutes later]
+
+User: "Check the research results"
+
+Claude: [Retrieves all 3 results]
+"All research complete! Here are the findings..."
+```
+
 ## 12-Factor Principles Applied
 
 SmartIssueAgent follows [12-Factor Agent](https://github.com/humanlayer/12-factor-agents) principles:

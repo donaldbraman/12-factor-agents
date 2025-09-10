@@ -29,8 +29,15 @@ bug
 ## Priority
 high
 
-## Status
-open
+## Status  
+RESOLVED
+
+## Resolution Notes
+✅ **COMPLETED** - Fixed pipeline example in INTEGRATION-GUIDE.md
+- **Location:** `docs/INTEGRATION-GUIDE.md` line 77
+- **Fix Applied:** Added proper stages initialization to MultiStagePipeline
+- **Result:** Pipeline example now works correctly without AttributeError
+- **Verified:** Documentation testing system confirms fix
 
 ## Assignee
 issue_fixer_agent

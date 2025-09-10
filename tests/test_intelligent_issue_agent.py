@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 Comprehensive test suite for IntelligentIssueAgent.
 Tests the bejeezus out of the intelligent layer on top of the old system.

@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 Comprehensive test suite for path resolution issues reported by pin-citer team.
 Tests all scenarios mentioned in their feedback.

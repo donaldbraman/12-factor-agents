@@ -1,4 +1,4 @@
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """
 Test suite for error telemetry system.
 Collects errors from all repos using our system to identify common issues.

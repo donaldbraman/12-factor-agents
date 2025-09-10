@@ -22,10 +22,18 @@ Location: `core/telemetry.py`
 
 **Key Methods:**
 ```python
+from typing import Dict, Any
+
 class TelemetryCollector:
-    def record_error(repo_name, agent_name, error_type, error_message, context)
-    def get_error_summary() -> Dict[patterns, suggestions]
-    def _sanitize_message(message) -> str  # Remove sensitive data
+    def record_error(self, repo_name: str, agent_name: str, error_type: str, error_message: str, context: Dict[str, Any]) -> None:
+        pass
+    
+    def get_error_summary(self) -> Dict[str, Any]:
+        pass
+    
+    def _sanitize_message(self, message: str) -> str:
+        """Remove sensitive data"""
+        pass
 ```
 
 ### 2. BaseAgent Integration

@@ -4,6 +4,19 @@
 
 **You already have the new intelligent system!** Your symlinks automatically point to our latest code. No updates needed on your end.
 
+## Prerequisites
+
+This system uses **uv** for Python management, which provides:
+- ✅ **Fast execution** - Much faster than traditional Python
+- ✅ **Automatic dependency management** - No virtual env setup needed
+- ✅ **Consistent environments** - Same Python version everywhere
+- ✅ **Direct script execution** - `uv run` handles everything
+
+Install uv if you don't have it:
+```bash
+curl -LsSf https://astral.sh/uv/install.sh | sh
+```
+
 ## How It Works
 
 Your symlinks give you everything:
@@ -23,7 +36,7 @@ When we update 12-factor-agents, you instantly get the updates. No pulling, no u
 Create a file `test_intelligent_agent.py` in your project:
 
 ```python
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """Test the new intelligent agent system"""
 
 import sys
@@ -56,13 +69,13 @@ print(f"Processed: {result.success}")
 
 Run it:
 ```bash
-python test_intelligent_agent.py
+uv run test_intelligent_agent.py
 ```
 
 ### Real-World Example for pin-citer
 
 ```python
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """Process citations with intelligent understanding"""
 
 import sys
@@ -112,7 +125,7 @@ if __name__ == "__main__":
 ### Real-World Example for cite-assist
 
 ```python
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """Legal document processing with intelligence"""
 
 import sys
@@ -186,8 +199,10 @@ Your existing symlinks already provide:
 
 Quick test to verify everything works:
 
+**Save as `verify_intelligent_system.py`:**
+
 ```python
-#!/usr/bin/env python3
+#!/usr/bin/env uv run python
 """Verify intelligent system is available"""
 
 import sys
@@ -204,10 +219,164 @@ except ImportError as e:
     print("   Make sure your symlinks point to 12-factor-agents")
 ```
 
+Run it:
+```bash
+uv run verify_intelligent_system.py
+```
+
+## Quick Commands Reference
+
+All commands use **uv** for optimal performance:
+
+### Test the system:
+```bash
+uv run verify_intelligent_system.py
+```
+
+### Process a single issue:
+```bash
+uv run -c "
+from agents.intelligent_issue_agent import IntelligentIssueAgent
+agent = IntelligentIssueAgent()
+result = agent.execute_task('Fix the broken citation in paper.md')
+print(f'Success: {result.success}')
+"
+```
+
+### Run the full orchestrator:
+```bash
+cd /path/to/12-factor-agents
+uv run agents/issue_orchestrator_agent.py
+```
+
+### Create and run a custom script:
+```bash
+# Create your script with #!/usr/bin/env uv run python
+# Then just run it directly:
+uv run your_script.py
+```
+
+## Success Validation Agent (SVA) Tools
+
+The 12-factor system includes integration with the **Success Validation Agent** from pin-citer, which ensures work meets quality standards defined in GitHub issues.
+
+### Quick SVA Commands
+
+From any 12-factor-agents repository:
+
+```bash
+# Start the Unstoppable SVA (works until 95% validation)
+bin/sva start
+
+# Check current progress
+bin/sva status
+
+# View telemetry dashboard
+bin/sva dashboard
+
+# Stop all SVA processes
+bin/sva stop
+
+# Fix environment configuration
+bin/sva fix-env
+
+# View logs
+bin/sva logs
+```
+
+### Using SVA with Python
+
+```python
+#!/usr/bin/env uv run python
+"""Use SVA to validate work against GitHub issues"""
+
+import sys
+sys.path.insert(0, '.agents')
+
+from agents.sva_agent import SVAAgent
+
+# Create SVA agent
+sva = SVAAgent()
+
+# Validate against GitHub issue #134
+success = sva.validate(issue_number=134)
+print(f"Validation: {'✅ Passed' if success else '❌ Failed'}")
+
+# Start Unstoppable SVA (works autonomously to 95%)
+sva.start_unstoppable(target_score=95.0)
+
+# Check status
+status = sva.check_status()
+print(status)
+```
+
+### What the SVA Does
+
+1. **Reads Success Criteria** from GitHub issues
+2. **Validates Work** against those criteria (134+ checks)
+3. **Runs Autonomously** with 7 different strategies
+4. **Collects Telemetry** to learn what works
+5. **Only Stops** when target reached or true blocker found
+
+### SVA Features
+
+- **Unstoppable Mode**: Keeps working until 95% validation or genuine blocker
+- **Environment Aware**: Reads credentials from `.env` files
+- **Smart Strategies**: Tries different approaches if stuck
+- **Telemetry Dashboard**: Real-time progress monitoring
+- **GitHub Integration**: Pulls criteria from issues and comments
+
+### Example: Monitoring SVA Progress
+
+```bash
+# Start SVA in background
+bin/sva start
+
+# Watch dashboard (updates every 10 seconds)
+bin/sva dashboard
+
+# Output:
+# 📊 SVA TELEMETRY DASHBOARD
+# ═══════════════════════════════
+# 📈 CURRENT METRICS
+# ─────────────────────
+#   Current Score: 28.4%
+#   Target Score: 95.0%
+#   Progress: [████████░░░░░░] 30%
+#
+# 🎯 STRATEGY PERFORMANCE
+#   incremental    | Attempts: 4 | Avg: +3.2%
+#   focus_critical | Attempts: 3 | Avg: +2.8%
+```
+
+### SVA Configuration
+
+The SVA automatically loads configuration from `.env` files:
+
+```bash
+# .env file in pin-citer
+ZOTERO_API_KEY=your_key_here
+ZOTERO_LIBRARY_ID=5673253
+ZOTERO_LIBRARY_TYPE=group
+```
+
+If credentials are missing, create them:
+```bash
+bin/sva fix-env  # Apply .env values to config files
+```
+
+## Why uv?
+
+- 🚀 **10-100x faster** than pip/python
+- 🔧 **Zero configuration** - Just works
+- 📦 **Automatic dependencies** - No virtual envs needed
+- ✅ **Consistent execution** - Same environment everywhere
+- 🎯 **Modern Python** - Always uses current stable version
+
 ## That's It!
 
-No setup, no configuration, no updates needed. Your symlinks give you everything automatically. Just import and use the intelligent agent!
+No setup, no configuration, no updates needed. Your symlinks give you everything automatically. Just use `uv run` and the intelligent agent!
 
 ---
 
-**Remember**: When we update 12-factor-agents, you get the improvements instantly through your symlinks. Zero deployment!
+**Remember**: When we update 12-factor-agents, you get the improvements instantly through your symlinks. Zero deployment with maximum performance through uv!

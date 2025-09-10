@@ -30,6 +30,8 @@ A local-first, multi-repository AI agent system following the 12-factor methodol
 - **UvMigrationAgent**: Migrate Python operations to uv
 - **PromptManagementAgent**: Manage external prompt templates
 - **EventSystemAgent**: Handle event-driven workflows
+- **BackgroundResearchAgent**: Launch true parallel research tasks without blocking
+- **SVAAgent**: Success Validation Agent - validates work against GitHub issue criteria
 
 ## Structure
 

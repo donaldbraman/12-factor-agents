@@ -1,770 +1,331 @@
+#!/usr/bin/env uv run python
 """
-GitHub Integration Agent Framework
-Inspired by cite-assist's sophisticated GitHub automation and orchestration.
-Implements 12-factor compliant GitHub project management agents.
+GitHub Integration Bridge for 12-factor-agents
+Enables processing of GitHub issues from external repositories
 """
 
-import asyncio
 import json
-import logging
-from datetime import datetime
-from typing import Dict, List, Any, Optional
-from enum import Enum
+import subprocess
+import os
+from pathlib import Path
+from typing import Dict, Optional
+from dataclasses import dataclass
 
-from .agent import BaseAgent
-from .tools import Tool, ToolResponse
-from .orchestrator import ProgressAwareOrchestrator, WorkflowPhase
-
-logger = logging.getLogger(__name__)
+from core.telemetry import EnhancedTelemetryCollector
 
 
-class GitHubActionType(Enum):
-    """Types of GitHub actions that can be performed"""
+@dataclass
+class GitHubIssue:
+    """GitHub issue data structure"""
 
-    CREATE_ISSUE = "create_issue"
-    UPDATE_ISSUE = "update_issue"
-    CLOSE_ISSUE = "close_issue"
-    CREATE_PR = "create_pr"
-    UPDATE_PR = "update_pr"
-    MERGE_PR = "merge_pr"
-    ADD_COMMENT = "add_comment"
-    ADD_LABEL = "add_label"
-    CREATE_PROJECT = "create_project"
-    LINK_ISSUES = "link_issues"
+    number: int
+    title: str
+    body: str
+    state: str
+    labels: list
+    assignees: list
+    repository: str
 
 
-class IssueStatus(Enum):
-    """GitHub issue status tracking"""
-
-    CREATED = "created"
-    IN_PROGRESS = "in_progress"
-    BLOCKED = "blocked"
-    COMPLETED = "completed"
-    CLOSED = "closed"
-
-
-class GitHubIntegrationAgent(BaseAgent):
+class GitHubIssueLoader:
     """
-    Base agent for GitHub integration and automation.
-
-    Inspired by cite-assist's github_12factor_migration_agent.py but enhanced
-    with full 12-factor compliance and broader capabilities.
-
-    Key enhancements over cite-assist pattern:
-    - External state management (no /tmp files)
-    - Environment-based configuration
-    - Structured error handling
-    - Progress tracking with pause/resume
-    - Comprehensive audit logging
+    Load and convert GitHub issues for Sparky processing
     """
 
-    def __init__(self, repository: str, agent_id: str = None):
-        super().__init__(agent_id)
-        self.repository = repository
+    def __init__(self, repo: str = None):
+        self.repo = repo or os.getenv("GITHUB_REPO", "12-factor-agents")
+        self.telemetry = EnhancedTelemetryCollector()
 
-        # GitHub integration state (stored in unified state)
-        self.github_state = {
-            "repository": repository,
-            "issues_created": [],
-            "prs_created": [],
-            "actions_performed": [],
-            "last_sync": None,
-        }
-
-        # Store in workflow data for checkpointing
-        self.workflow_data.update(self.github_state)
-
-        logger.info(f"GitHubIntegrationAgent initialized for repo: {repository}")
-
-    def register_tools(self) -> List[Tool]:
-        """Register GitHub integration tools"""
-        return [
-            Tool(
-                name="create_issue",
-                description="Create GitHub issue with structured content",
-                parameters={"title": "str", "body": "str", "labels": "list"},
-            ),
-            Tool(
-                name="create_issue_hierarchy",
-                description="Create parent issue with linked sub-issues",
-                parameters={"parent_spec": "dict", "sub_issues": "list"},
-            ),
-            Tool(
-                name="manage_project",
-                description="Manage GitHub project board and tracking",
-                parameters={"project_spec": "dict", "actions": "list"},
-            ),
-            Tool(
-                name="orchestrate_workflow",
-                description="Orchestrate complex multi-issue workflows",
-                parameters={"workflow_spec": "dict"},
-            ),
-            Tool(
-                name="sync_status",
-                description="Sync issue status and update tracking",
-                parameters={"sync_options": "dict"},
-            ),
+    def fetch_issue(self, issue_number: int) -> Optional[Dict]:
+        """
+        Fetch issue from GitHub using gh CLI
+        Returns issue data or None if failed
+        """
+        cmd = [
+            "gh",
+            "issue",
+            "view",
+            str(issue_number),
+            "--json",
+            "number,title,body,assignees,labels,state",
+            "--repo",
+            self.repo,
         ]
 
-    async def execute_task(self, task: str) -> ToolResponse:
-        """Execute GitHub integration task with progress tracking"""
         try:
-            # Parse task specification
-            task_spec = self._parse_github_task(task)
-
-            # Set up progress tracking
-            self.set_progress(0.0, "initializing")
-            self.workflow_data["task_specification"] = task_spec
-
-            # Execute based on task type
-            if task_spec["type"] == "create_issue_hierarchy":
-                result = await self._create_issue_hierarchy(task_spec)
-            elif task_spec["type"] == "orchestrate_workflow":
-                result = await self._orchestrate_github_workflow(task_spec)
-            elif task_spec["type"] == "sync_project_status":
-                result = await self._sync_project_status(task_spec)
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            if result.returncode == 0:
+                data = json.loads(result.stdout)
+                data["repository"] = self.repo
+                return data
             else:
-                result = await self._execute_basic_github_action(task_spec)
-
-            # Update final state
-            self.set_progress(1.0, "completed")
-
-            return ToolResponse(
-                success=result["success"],
-                data=result,
-                metadata={
-                    "agent_id": self.agent_id,
-                    "github_integration": True,
-                    "repository": self.repository,
-                },
-            )
-
+                print(f"❌ Failed to fetch issue #{issue_number}: {result.stderr}")
+                return None
+        except subprocess.TimeoutExpired:
+            print(f"⏱️ Timeout fetching issue #{issue_number}")
+            return None
         except Exception as e:
-            self.handle_error(e, "github_integration")
-            return ToolResponse(
-                success=False, error=str(e), metadata={"agent_id": self.agent_id}
-            )
+            print(f"❌ Error fetching issue: {e}")
+            return None
 
-    async def _create_issue_hierarchy(
-        self, task_spec: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """
-        Create hierarchical issue structure with parent-child relationships.
-        Enhanced version of cite-assist's issue creation pattern.
-        """
-        self.set_progress(0.1, "creating_parent_issue")
-
-        parent_spec = task_spec.get("parent_spec", {})
-        sub_issues_spec = task_spec.get("sub_issues", [])
-
-        result = {
-            "success": False,
-            "parent_issue": None,
-            "sub_issues": [],
-            "links_created": 0,
-            "errors": [],
+    def convert_to_sparky_format(self, github_issue: Dict) -> Dict:
+        """Convert GitHub issue to Sparky's expected format"""
+        return {
+            "number": github_issue.get("number"),
+            "title": github_issue.get("title", ""),
+            "content": github_issue.get("body", ""),
+            "agent": self.determine_agent(github_issue),
+            "labels": [
+                label.get("name", "") for label in github_issue.get("labels", [])
+            ],
+            "state": github_issue.get("state", "open"),
+            "repository": github_issue.get("repository", self.repo),
         }
 
-        try:
-            # Create parent issue
-            parent_issue_num = await self._create_single_issue(
-                title=parent_spec["title"],
-                body=parent_spec["body"],
-                labels=parent_spec.get("labels", ["enhancement"]),
-            )
+    def determine_agent(self, github_issue: Dict) -> str:
+        """Determine which agent should handle this issue"""
+        title = github_issue.get("title", "").lower()
+        body = github_issue.get("body", "").lower()
+        labels = [
+            label.get("name", "").lower() for label in github_issue.get("labels", [])
+        ]
 
-            if parent_issue_num:
-                result["parent_issue"] = parent_issue_num
-                self.github_state["issues_created"].append(parent_issue_num)
-                self._log_github_action(
-                    "create_issue", f"Created parent issue #{parent_issue_num}"
-                )
+        # Check labels first
+        if "bug" in labels:
+            return "IntelligentIssueAgent"
+        elif "enhancement" in labels:
+            return "IntelligentIssueAgent"
+        elif "documentation" in labels:
+            return "DocumentationAgent"
 
-            # Create sub-issues and link them
-            self.set_progress(0.3, "creating_sub_issues")
+        # Check title/body content
+        if "test" in title or "test" in body:
+            return "TestingAgent"
+        elif "performance" in title:
+            return "PerformanceAgent"
+        elif "security" in title:
+            return "SecurityAgent"
+        else:
+            return "IntelligentIssueAgent"  # Default
 
-            for i, sub_issue_spec in enumerate(sub_issues_spec):
-                # Add parent reference to sub-issue body
-                enhanced_body = f"{sub_issue_spec['body']}\n\n---\n📋 Parent Issue: #{parent_issue_num}"
+    def save_as_issue_file(self, issue_data: Dict) -> Path:
+        """Save GitHub issue as local file for processing"""
+        # Create issues directory if needed
+        issues_dir = Path("issues")
+        issues_dir.mkdir(exist_ok=True)
 
-                sub_issue_num = await self._create_single_issue(
-                    title=sub_issue_spec["title"],
-                    body=enhanced_body,
-                    labels=sub_issue_spec.get("labels", ["enhancement"]),
-                )
+        # Generate filename
+        issue_number = issue_data["number"]
+        safe_title = issue_data["title"][:50].replace(" ", "-").replace("/", "-")
+        issue_path = issues_dir / f"{issue_number}-github-{safe_title}.md"
 
-                if sub_issue_num:
-                    result["sub_issues"].append(sub_issue_num)
-                    self.github_state["issues_created"].append(sub_issue_num)
+        # Generate content
+        content = f"""# Issue #{issue_data['number']}: {issue_data['title']}
 
-                    # Link back to parent
-                    await self._add_issue_comment(
-                        parent_issue_num,
-                        f"Created sub-issue #{sub_issue_num}: {sub_issue_spec['title']}",
-                    )
-                    result["links_created"] += 1
+## Description
+{issue_data['content']}
 
-                    self._log_github_action(
-                        "create_sub_issue", f"Created sub-issue #{sub_issue_num}"
-                    )
+## Metadata
+- **Repository**: {issue_data['repository']}
+- **State**: {issue_data['state']}
+- **Labels**: {', '.join(issue_data['labels']) if issue_data['labels'] else 'None'}
 
-                # Update progress
-                progress = 0.3 + (i + 1) / len(sub_issues_spec) * 0.5
-                self.set_progress(progress, f"creating_sub_issue_{i+1}")
+## Agent Assignment
+{issue_data['agent']}
 
-            # Create project summary
-            self.set_progress(0.8, "creating_summary")
-            summary = self._generate_project_summary(result, task_spec)
-            await self._add_issue_comment(parent_issue_num, summary)
+## Status
+OPEN
+"""
 
-            result["success"] = True
-            self.save_checkpoint()
+        issue_path.write_text(content)
+        print(f"📝 Saved GitHub issue to {issue_path}")
+        return issue_path
 
-            return result
 
-        except Exception as e:
-            result["errors"].append(str(e))
-            self.handle_error(e, "create_issue_hierarchy")
-            return result
+class CrossRepoContextManager:
+    """
+    Manage context switching between repositories
+    """
 
-    async def _orchestrate_github_workflow(
-        self, task_spec: Dict[str, Any]
-    ) -> Dict[str, Any]:
+    def __init__(self):
+        self.original_cwd = os.getcwd()
+        self.original_env = dict(os.environ)
+        self.contexts = {}
+
+    def switch_to_repo(self, repo_path: str) -> bool:
         """
-        Orchestrate complex multi-phase GitHub workflows.
-        Based on cite-assist's workflow orchestration patterns.
+        Switch working directory to target repository
+        Returns True if successful
         """
-        self.set_progress(0.1, "planning_workflow")
+        repo_path = Path(repo_path).expanduser().resolve()
 
-        workflow_spec = task_spec.get("workflow_spec", {})
-        phases = workflow_spec.get("phases", [])
+        if not repo_path.exists():
+            print(f"❌ Repository not found: {repo_path}")
+            return False
 
-        result = {
-            "success": False,
-            "workflow_id": workflow_spec.get("name", "unnamed_workflow"),
-            "phases_completed": [],
-            "total_issues_created": 0,
-            "total_prs_created": 0,
-            "errors": [],
-        }
+        if not repo_path.is_dir():
+            print(f"❌ Not a directory: {repo_path}")
+            return False
 
+        # Save current context
+        self.contexts[self.original_cwd] = {"env": dict(os.environ), "cwd": os.getcwd()}
+
+        # Switch to new repo
         try:
-            for i, phase in enumerate(phases):
-                phase_name = phase.get("name", f"phase_{i+1}")
-                self.set_progress(
-                    0.2 + i * 0.6 / len(phases), f"executing_{phase_name}"
-                )
-
-                phase_result = await self._execute_workflow_phase(phase, result)
-                result["phases_completed"].append(phase_name)
-
-                # Aggregate results
-                result["total_issues_created"] += phase_result.get("issues_created", 0)
-                result["total_prs_created"] += phase_result.get("prs_created", 0)
-
-                # Check for phase failure
-                if not phase_result.get("success", False):
-                    result["errors"].append(f"Phase {phase_name} failed")
-                    break
-
-            result["success"] = len(result["phases_completed"]) == len(phases)
-            self.save_checkpoint()
-
-            return result
-
+            os.chdir(repo_path)
+            os.environ["GITHUB_REPO"] = repo_path.name
+            print(f"📂 Switched to repository: {repo_path}")
+            return True
         except Exception as e:
-            result["errors"].append(str(e))
-            self.handle_error(e, "orchestrate_workflow")
-            return result
+            print(f"❌ Failed to switch context: {e}")
+            return False
 
-    async def _execute_workflow_phase(
-        self, phase: Dict[str, Any], context: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Execute a single workflow phase"""
-        phase_name = phase.get("name", "unnamed_phase")
-        phase_actions = phase.get("actions", [])
-
-        phase_result = {
-            "success": False,
-            "phase_name": phase_name,
-            "actions_completed": 0,
-            "issues_created": 0,
-            "prs_created": 0,
-            "errors": [],
-        }
-
+    def restore_context(self):
+        """Restore original working context"""
         try:
-            for action in phase_actions:
-                action_result = await self._execute_phase_action(action, context)
-
-                if action_result["success"]:
-                    phase_result["actions_completed"] += 1
-
-                    # Count specific action types
-                    if action["type"] == "create_issue":
-                        phase_result["issues_created"] += 1
-                    elif action["type"] == "create_pr":
-                        phase_result["prs_created"] += 1
-                else:
-                    phase_result["errors"].append(
-                        action_result.get("error", "Unknown error")
-                    )
-
-            phase_result["success"] = phase_result["actions_completed"] == len(
-                phase_actions
-            )
-            self._log_github_action("complete_phase", f"Completed phase: {phase_name}")
-
-            return phase_result
-
+            os.chdir(self.original_cwd)
+            os.environ.clear()
+            os.environ.update(self.original_env)
+            print(f"📂 Restored context to: {self.original_cwd}")
         except Exception as e:
-            phase_result["errors"].append(str(e))
-            return phase_result
+            print(f"⚠️ Error restoring context: {e}")
 
-    async def _execute_phase_action(
-        self, action: Dict[str, Any], context: Dict[str, Any]
-    ) -> Dict[str, Any]:
-        """Execute a single action within a workflow phase"""
-        action_type = action.get("type")
-        action_params = action.get("params", {})
 
-        try:
-            if action_type == "create_issue":
-                issue_num = await self._create_single_issue(**action_params)
-                return {"success": True, "issue_number": issue_num}
+class ExternalIssueProcessor:
+    """
+    Process GitHub issues from external repositories
+    """
 
-            elif action_type == "create_pr":
-                pr_num = await self._create_pull_request(**action_params)
-                return {"success": True, "pr_number": pr_num}
+    def __init__(self):
+        self.telemetry = EnhancedTelemetryCollector()
 
-            elif action_type == "add_comment":
-                await self._add_issue_comment(**action_params)
-                return {"success": True}
+    def process_external_issue(
+        self, repo: str, issue_number: int, repo_path: Optional[str] = None
+    ) -> Dict:
+        """
+        Full pipeline for external issue processing
 
-            else:
+        Args:
+            repo: GitHub repository (e.g., "donaldbraman/cite-assist")
+            issue_number: Issue number to process
+            repo_path: Optional local path to repository
+
+        Returns:
+            Processing result dictionary
+        """
+        print(f"\n🚀 Processing external issue: {repo}#{issue_number}")
+
+        # 1. Load issue from GitHub
+        loader = GitHubIssueLoader(repo)
+        github_issue = loader.fetch_issue(issue_number)
+
+        if not github_issue:
+            return {
+                "success": False,
+                "error": f"Could not fetch issue #{issue_number} from {repo}",
+            }
+
+        # 2. Convert to Sparky format
+        sparky_issue = loader.convert_to_sparky_format(github_issue)
+        print(f"📋 Issue: {sparky_issue['title']}")
+        print(f"🤖 Agent: {sparky_issue['agent']}")
+
+        # 3. Save as local issue file
+        issue_file = loader.save_as_issue_file(sparky_issue)
+
+        # 4. Process with IntelligentIssueAgent
+        # Import here to avoid circular dependency
+        from agents.intelligent_issue_agent import IntelligentIssueAgent
+
+        agent = IntelligentIssueAgent()
+
+        # If repo path provided, switch context
+        context_manager = None
+        if repo_path:
+            context_manager = CrossRepoContextManager()
+            if not context_manager.switch_to_repo(repo_path):
                 return {
                     "success": False,
-                    "error": f"Unknown action type: {action_type}",
+                    "error": f"Could not switch to repository: {repo_path}",
                 }
 
-        except Exception as e:
-            return {"success": False, "error": str(e)}
-
-    async def _sync_project_status(self, task_spec: Dict[str, Any]) -> Dict[str, Any]:
-        """
-        Sync project status and update tracking information.
-        Enhanced version of cite-assist's status monitoring.
-        """
-        self.set_progress(0.1, "fetching_current_status")
-
-        sync_options = task_spec.get("sync_options", {})
-
-        result = {
-            "success": False,
-            "synced_issues": [],
-            "status_updates": 0,
-            "errors": [],
-        }
-
         try:
-            # Get all issues for repository
-            issues = await self._fetch_repository_issues()
+            # Process the issue
+            result = agent.execute_task(f"Process issue #{issue_number}")
 
-            self.set_progress(0.3, "analyzing_status")
+            if result.success:
+                print(f"✅ Successfully processed {repo}#{issue_number}")
 
-            # Analyze and update status for each issue
-            for i, issue in enumerate(issues):
-                issue_analysis = await self._analyze_issue_status(issue)
-
-                if issue_analysis["needs_update"]:
-                    await self._update_issue_status(issue, issue_analysis)
-                    result["synced_issues"].append(issue["number"])
-                    result["status_updates"] += 1
-
-                # Update progress
-                progress = 0.3 + (i + 1) / len(issues) * 0.6
-                self.set_progress(progress, f"syncing_issue_{issue['number']}")
-
-            # Update last sync time
-            self.github_state["last_sync"] = datetime.now().isoformat()
-            result["success"] = True
-            self.save_checkpoint()
-
-            return result
-
-        except Exception as e:
-            result["errors"].append(str(e))
-            self.handle_error(e, "sync_project_status")
-            return result
-
-    async def _create_single_issue(
-        self, title: str, body: str, labels: List[str] = None
-    ) -> Optional[int]:
-        """Create a single GitHub issue"""
-        cmd = ["gh", "issue", "create", "--title", title, "--body", body]
-
-        # Add labels if specified
-        if labels:
-            # Only use labels that exist in the repository
-            valid_labels = await self._get_valid_labels()
-            filtered_labels = [label for label in labels if label in valid_labels]
-            if filtered_labels:
-                cmd.extend(["--label", ",".join(filtered_labels)])
-
-        try:
-            result = await self._run_gh_command(*cmd)
-
-            # Extract issue number from URL
-            if "issues/" in result:
-                issue_num = int(result.split("/issues/")[1])
-                self._log_github_action(
-                    "create_issue", f"Created issue #{issue_num}: {title}"
+                # Update GitHub issue with comment (optional)
+                self.add_github_comment(
+                    repo,
+                    issue_number,
+                    "🤖 Processed by 12-factor-agents. Result: Success",
                 )
-                return issue_num
+            else:
+                print(f"❌ Failed to process: {result.error}")
 
-        except Exception as e:
-            self._log_github_action(
-                "create_issue_failed", f"Failed to create issue: {str(e)}"
-            )
+            return {
+                "success": result.success,
+                "issue": sparky_issue,
+                "result": result.data if result.success else None,
+                "error": result.error if not result.success else None,
+            }
 
-        return None
+        finally:
+            # Always restore context
+            if context_manager:
+                context_manager.restore_context()
 
-    async def _create_pull_request(
-        self, title: str, body: str, branch: str = None
-    ) -> Optional[int]:
-        """Create a GitHub pull request"""
-        cmd = ["gh", "pr", "create", "--title", title, "--body", body]
-
-        if branch:
-            cmd.extend(["--head", branch])
-
+    def add_github_comment(self, repo: str, issue_number: int, comment: str):
+        """Add a comment to GitHub issue (optional feedback)"""
         try:
-            result = await self._run_gh_command(*cmd)
-
-            # Extract PR number from URL
-            if "/pull/" in result:
-                pr_num = int(result.split("/pull/")[1])
-                self._log_github_action("create_pr", f"Created PR #{pr_num}: {title}")
-                return pr_num
-
-        except Exception as e:
-            self._log_github_action(
-                "create_pr_failed", f"Failed to create PR: {str(e)}"
-            )
-
-        return None
-
-    async def _add_issue_comment(self, issue_number: int, comment: str):
-        """Add comment to GitHub issue"""
-        try:
-            await self._run_gh_command(
-                "issue", "comment", str(issue_number), "--body", comment
-            )
-            self._log_github_action(
-                "add_comment", f"Added comment to issue #{issue_number}"
-            )
-        except Exception as e:
-            self._log_github_action(
-                "add_comment_failed", f"Failed to add comment: {str(e)}"
-            )
-
-    async def _fetch_repository_issues(self) -> List[Dict[str, Any]]:
-        """Fetch all issues for the repository"""
-        try:
-            result = await self._run_gh_command(
-                "issue", "list", "--json", "number,title,state,labels"
-            )
-            return json.loads(result)
-        except Exception as e:
-            self._log_github_action(
-                "fetch_issues_failed", f"Failed to fetch issues: {str(e)}"
-            )
-            return []
-
-    async def _analyze_issue_status(self, issue: Dict[str, Any]) -> Dict[str, Any]:
-        """Analyze issue status and determine if updates are needed"""
-        # Placeholder implementation - would analyze issue content, labels, comments, etc.
-        return {
-            "needs_update": False,
-            "suggested_status": issue.get("state", "open"),
-            "suggested_labels": issue.get("labels", []),
-        }
-
-    async def _update_issue_status(
-        self, issue: Dict[str, Any], analysis: Dict[str, Any]
-    ):
-        """Update issue status based on analysis"""
-        # Implementation would update labels, status, etc. based on analysis
-        pass
-
-    async def _get_valid_labels(self) -> List[str]:
-        """Get list of valid labels for the repository"""
-        try:
-            result = await self._run_gh_command("label", "list", "--json", "name")
-            labels_data = json.loads(result)
-            return [label["name"] for label in labels_data]
-        except Exception:
-            # Return common default labels if fetch fails
-            return ["bug", "enhancement", "documentation", "good first issue"]
-
-    async def _run_gh_command(self, *args) -> str:
-        """Run GitHub CLI command asynchronously"""
-        cmd = ["gh"] + list(args)
-
-        # Run command asynchronously
-        process = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE,
-            cwd=None,
-        )
-
-        stdout, stderr = await process.communicate()
-
-        if process.returncode != 0:
-            raise Exception(f"GitHub CLI error: {stderr.decode()}")
-
-        return stdout.decode().strip()
-
-    def _parse_github_task(self, task: str) -> Dict[str, Any]:
-        """Parse task string into structured GitHub task specification"""
-        lines = task.split("\n")
-
-        # Default task spec
-        task_spec = {"type": "create_issue", "title": task[:100], "body": task}
-
-        # Parse structured task format
-        for line in lines:
-            if line.startswith("type:"):
-                task_spec["type"] = line.split(":", 1)[1].strip()
-            elif line.startswith("title:"):
-                task_spec["title"] = line.split(":", 1)[1].strip()
-            elif line.startswith("labels:"):
-                labels_text = line.split(":", 1)[1].strip()
-                task_spec["labels"] = [l.strip() for l in labels_text.split(",")]
-
-        return task_spec
-
-    def _generate_project_summary(
-        self, result: Dict[str, Any], task_spec: Dict[str, Any]
-    ) -> str:
-        """Generate project summary for parent issue"""
-        parent_issue = result.get("parent_issue")
-        sub_issues = result.get("sub_issues", [])
-
-        summary = f"""## 🚀 Project Plan Activated!
-
-I've created the complete issue hierarchy for this project:
-
-### Parent Issue
-- #{parent_issue} - Project coordination and tracking
-
-### Sub-Issues Created
-{chr(10).join(f'- #{issue}' for issue in sub_issues)}
-
-### Project Status
-- **Total Issues Created**: {1 + len(sub_issues)}
-- **Links Created**: {result.get("links_created", 0)}
-- **Ready for Development**: ✅
-
-### Next Steps
-1. **Team Assignment**: Assign team members to specific sub-issues
-2. **Development**: Start with foundational issues first
-3. **Progress Tracking**: Update issues as work progresses
-
-Each sub-issue links back to this parent issue for tracking and coordination.
-
-🎯 **All systems ready for collaborative development!**"""
-
-        return summary
-
-    def _log_github_action(self, action_type: str, message: str, data: Any = None):
-        """Log GitHub actions for audit trail"""
-        action = {
-            "timestamp": datetime.now().isoformat(),
-            "action_type": action_type,
-            "message": message,
-            "repository": self.repository,
-            "data": data,
-        }
-
-        self.github_state["actions_performed"].append(action)
-        logger.info(f"[{self.repository}] {message}")
-
-    def _apply_action(self, action: Dict[str, Any]) -> ToolResponse:
-        """Apply action to GitHub integration state"""
-        action_type = action.get("type", "unknown")
-
-        if action_type == "sync_issues":
-            # Trigger issue synchronization
-            return ToolResponse(success=True, data={"action": "sync_triggered"})
-
-        elif action_type == "create_milestone":
-            milestone_data = action.get("milestone_data", {})
-            # Create milestone implementation
-            return ToolResponse(success=True, data={"milestone_created": True})
-
-        else:
-            return ToolResponse(
-                success=False, error=f"Unknown action type: {action_type}"
-            )
-
-
-class GitHubProjectOrchestrator(ProgressAwareOrchestrator):
-    """
-    Specialized orchestrator for GitHub project management.
-
-    Based on cite-assist's project orchestration patterns but with
-    full 12-factor compliance and enhanced capabilities.
-    """
-
-    def __init__(
-        self,
-        repository: str,
-        project_name: str = "github_project",
-        agent_id: str = None,
-    ):
-        super().__init__(project_name, agent_id)
-        self.repository = repository
-        self.github_agent = GitHubIntegrationAgent(repository)
-
-        # Register custom phase processors for GitHub workflows
-        self.register_phase_processor(
-            WorkflowPhase.INITIALIZATION, self._initialize_github_project
-        )
-        self.register_phase_processor(
-            WorkflowPhase.ANALYSIS, self._analyze_project_requirements
-        )
-        self.register_phase_processor(
-            WorkflowPhase.PROCESSING, self._create_github_structure
-        )
-        self.register_phase_processor(
-            WorkflowPhase.APPROVAL, self._request_project_approval
-        )
-        self.register_phase_processor(
-            WorkflowPhase.FINALIZATION, self._finalize_github_project
-        )
-
-    async def _initialize_github_project(self, workflow_data: Dict):
-        """Initialize GitHub project structure"""
-        self.set_progress(0.1, "initializing_github_project")
-
-        # Set up project metadata
-        workflow_data["github_repository"] = self.repository
-        workflow_data["project_initialized_at"] = datetime.now().isoformat()
-
-        self.set_progress(0.2, "github_project_ready")
-        logger.info(f"GitHub project initialized for {self.repository}")
-
-    async def _analyze_project_requirements(self, workflow_data: Dict):
-        """Analyze project requirements for GitHub structure"""
-        self.set_progress(0.3, "analyzing_requirements")
-
-        # Analyze what GitHub structure is needed
-        requirements = workflow_data.get("requirements", [])
-
-        analysis = {
-            "issues_needed": len(requirements),
-            "milestones_needed": 1,
-            "labels_needed": ["enhancement", "bug", "documentation"],
-            "project_complexity": "medium",
-        }
-
-        workflow_data["github_analysis"] = analysis
-        self.set_progress(0.5, "requirements_analyzed")
-        logger.info(f"Analyzed requirements: {analysis['issues_needed']} issues needed")
-
-    async def _create_github_structure(self, workflow_data: Dict):
-        """Create GitHub project structure"""
-        self.set_progress(0.6, "creating_github_structure")
-
-        analysis = workflow_data.get("github_analysis", {})
-
-        # Create issue hierarchy using GitHub agent
-        task = f"""
-        type: create_issue_hierarchy
-        parent_spec: {{
-            "title": "{workflow_data.get('project_name', 'Project')} - Implementation Plan",
-            "body": "Coordinating implementation of {workflow_data.get('project_name', 'project')}",
-            "labels": ["enhancement", "epic"]
-        }}
-        sub_issues: {analysis.get('issues_needed', 3)}
-        """
-
-        result = await self.github_agent.execute_task(task)
-        workflow_data["github_structure_result"] = result.data
-
-        self.set_progress(0.8, "github_structure_created")
-        logger.info("GitHub project structure created successfully")
-
-    async def _request_project_approval(self, workflow_data: Dict):
-        """Request approval for GitHub project"""
-        self.set_progress(0.85, "requesting_approval")
-
-        # In a real implementation, this might notify stakeholders
-        workflow_data["approval_requested_at"] = datetime.now().isoformat()
-        workflow_data["auto_approved"] = True  # For demo purposes
-
-        logger.info("Project approval requested and auto-approved")
-
-    async def _finalize_github_project(self, workflow_data: Dict):
-        """Finalize GitHub project setup"""
-        self.set_progress(0.9, "finalizing_project")
-
-        # Add final project documentation, summaries, etc.
-        structure_result = workflow_data.get("github_structure_result", {})
-
-        finalization_summary = {
-            "project_name": workflow_data.get("project_name"),
-            "repository": self.repository,
-            "issues_created": len(structure_result.get("sub_issues", [])),
-            "ready_for_development": True,
-            "finalized_at": datetime.now().isoformat(),
-        }
-
-        workflow_data["finalization_summary"] = finalization_summary
-        self.set_progress(1.0, "project_complete")
-        logger.info(f"GitHub project finalized: {finalization_summary}")
-
-
-# Example usage and testing
-async def demo_github_integration():
-    """Demonstrate GitHub integration capabilities"""
-
-    # Example 1: Basic issue creation
-    github_agent = GitHubIntegrationAgent("example/repository")
-
-    task = """
-    type: create_issue
-    title: Implement user authentication system
-    body: Need to implement secure user authentication with JWT tokens
-    labels: enhancement, security
-    """
-
-    print("Creating GitHub issue...")
-    result = await github_agent.execute_task(task)
-    print(f"Result: {result.success}")
-
-    # Example 2: Project orchestration
-    orchestrator = GitHubProjectOrchestrator("example/repository", "auth_system")
-
-    workflow_data = {
-        "project_name": "User Authentication System",
-        "requirements": [
-            "JWT token implementation",
-            "User registration endpoint",
-            "Login/logout functionality",
-            "Password reset system",
-        ],
-    }
-
-    print("Orchestrating GitHub project...")
-    project_result = await orchestrator.start_workflow_async(workflow_data)
-    print(f"Project orchestration: {project_result.success}")
-
-    return result, project_result
+            cmd = [
+                "gh",
+                "issue",
+                "comment",
+                str(issue_number),
+                "--repo",
+                repo,
+                "--body",
+                comment,
+            ]
+            subprocess.run(cmd, capture_output=True, timeout=5)
+        except:
+            pass  # Optional, don't fail if comment fails
+
+
+def main():
+    """Test GitHub integration"""
+    print("🔧 Testing GitHub Integration Bridge")
+
+    # Test 1: Load a GitHub issue
+    print("\n1. Testing GitHub issue loading:")
+    loader = GitHubIssueLoader("12-factor-agents")
+
+    # Try to fetch a test issue (might not exist)
+    issue_data = loader.fetch_issue(1)
+    if issue_data:
+        print(f"   Loaded issue: {issue_data.get('title', 'Unknown')}")
+        sparky_format = loader.convert_to_sparky_format(issue_data)
+        print(f"   Agent assignment: {sparky_format['agent']}")
+    else:
+        print("   No issue #1 found (expected if doesn't exist)")
+
+    # Test 2: Context switching
+    print("\n2. Testing context switching:")
+    context = CrossRepoContextManager()
+    original = os.getcwd()
+
+    # Try switching to parent directory
+    if context.switch_to_repo(".."):
+        print(f"   Current dir: {os.getcwd()}")
+        context.restore_context()
+        print(f"   Restored to: {os.getcwd()}")
+        assert os.getcwd() == original, "Context not restored properly!"
+
+    print("\n✅ GitHub integration ready!")
 
 
 if __name__ == "__main__":
-    # Run demonstration
-    asyncio.run(demo_github_integration())
+    main()

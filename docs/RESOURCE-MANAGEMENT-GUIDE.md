@@ -25,6 +25,9 @@ Example calculations:
 ### Enhanced Background Executor
 
 ```python
+import psutil
+from core.agent_executor import BackgroundAgentExecutor
+
 class AdaptiveBackgroundAgentExecutor(BackgroundAgentExecutor):
     def __init__(self, max_parallel_agents: int = None):
         # Auto-detect optimal limit if not specified
@@ -244,6 +247,9 @@ def check_system_health():
 ### Production Monitoring
 
 ```python
+from core.orchestrator import WorkflowOrchestrator
+import logging
+
 # Add to your agent orchestrator
 class ProductionWorkflowOrchestrator(WorkflowOrchestrator):
     async def process_document_with_monitoring(self, doc_url, **kwargs):
@@ -304,9 +310,11 @@ maximum_limit = 200
 ### Environment-Based Configuration
 
 ```python
+import os
+
 # .env or config file
-SYSTEM_TYPE=laptop  # laptop, desktop, server
-AGENT_LIMIT_MODE=auto  # auto, conservative, optimal, maximum
+# SYSTEM_TYPE=laptop  # laptop, desktop, server
+# AGENT_LIMIT_MODE=auto  # auto, conservative, optimal, maximum
 
 # In code
 def get_agent_limit():
@@ -326,6 +334,8 @@ def get_agent_limit():
 ### User-Configurable Limits
 
 ```python
+from core.agent_executor import BackgroundAgentExecutor
+
 # Allow users to override
 class UserConfigurableExecutor(BackgroundAgentExecutor):
     def __init__(self, user_preference: str = "auto"):

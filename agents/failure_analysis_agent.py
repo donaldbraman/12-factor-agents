@@ -428,6 +428,7 @@ class FailureAnalysisAgent(BaseAgent):
 
 
 # Self-test when run directly
+# Usage: uv run agents/failure_analysis_agent.py
 if __name__ == "__main__":
     import sys
 
