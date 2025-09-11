@@ -11,7 +11,10 @@ from .plugin_system import (
     PluginType,
     PluginState,
 )
-from .security import (
+
+# Alias for backward compatibility
+PluginSystem = PluginManager
+from .security import (  # noqa: E402
     SecurityManager,
     SecurityValidator,
     SecurityPolicy,
@@ -25,6 +28,7 @@ __all__ = [
     "AgentMetadata",
     "AgentCapability",
     "PluginManager",
+    "PluginSystem",  # Alias for backward compatibility
     "AgentPlugin",
     "PluginManifest",
     "PluginType",

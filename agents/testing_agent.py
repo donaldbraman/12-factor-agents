@@ -12,8 +12,8 @@ import traceback
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.agent import BaseAgent
-from core.tools import Tool, ToolResponse
+from core.agent import BaseAgent  # noqa: E402
+from core.tools import Tool, ToolResponse  # noqa: E402
 
 
 class UnitTestTool(Tool):
@@ -61,7 +61,10 @@ class UnitTestTool(Tool):
 
             for module in agent_modules:
                 try:
-                    exec(f"from agents.{module} import *")
+                    # Use importlib instead of exec for safety
+                    import importlib
+
+                    importlib.import_module(f"agents.{module}")
                     test_results.append(
                         {
                             "test": f"import_{module}",

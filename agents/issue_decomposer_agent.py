@@ -106,8 +106,15 @@ class ComplexityAnalyzerTool(Tool):
                 "quick",
             ]
 
-            # Count file references
-            file_refs = len(re.findall(r"[/\w.-]+\.\w+", issue_content))
+            # Count file references (only actual file paths)
+            # Look for patterns like: path/to/file.ext, ./file.py, /absolute/path.txt
+            # Exclude email addresses, URLs, and version numbers
+            file_refs = len(
+                re.findall(
+                    r"(?:^|[\s\"'/])(?:[./]?[\w/-]+/)?[\w-]+\.(?:py|js|ts|md|txt|json|yaml|yml|toml|cfg|conf|sh|bash|gitignore)(?:$|[\s\"'])",
+                    issue_content,
+                )
+            )
 
             # Count sections/problems
             sections = len(re.findall(r"###?\s+\d+\.", issue_content))

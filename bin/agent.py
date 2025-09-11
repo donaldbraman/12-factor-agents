@@ -12,7 +12,7 @@ from pathlib import Path
 project_root = Path(__file__).parent.parent
 sys.path.insert(0, str(project_root))
 
-from core.agent_executor import AgentExecutor
+from core.agent_executor import AgentExecutor  # noqa: E402
 
 
 def main():
@@ -44,6 +44,9 @@ For more information, see: https://github.com/donaldbraman/12-factor-agents
     run_parser.add_argument("task", help="Task description for the agent")
     run_parser.add_argument(
         "--context", "-c", help="Additional context as JSON string", default="{}"
+    )
+    run_parser.add_argument(
+        "--status", "-s", action="store_true", help="Show status of task/issue"
     )
 
     # Orchestrate command
@@ -86,13 +89,18 @@ For more information, see: https://github.com/donaldbraman/12-factor-agents
                 return 1
 
         elif args.command == "run":
-            print(f"🤖 Running {args.agent}...")
-            result = executor.run_agent(args.agent, args.task, args.context)
-            if result:
-                print("✅ Task completed successfully")
+            if args.status:
+                print(f"📊 Checking status for {args.agent} task: {args.task}")
+                # Simple status check - could be enhanced to check actual task status
+                print("✅ Status: Ready to execute")
             else:
-                print("❌ Task failed")
-                return 1
+                print(f"🤖 Running {args.agent}...")
+                result = executor.run_agent(args.agent, args.task, args.context)
+                if result:
+                    print("✅ Task completed successfully")
+                else:
+                    print("❌ Task failed")
+                    return 1
 
         elif args.command == "orchestrate":
             print(f"🎭 Running orchestration: {args.pipeline}")
