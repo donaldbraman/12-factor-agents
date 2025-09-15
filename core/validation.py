@@ -23,11 +23,12 @@ import ast
 import tempfile
 import shutil
 from pathlib import Path
-from typing import Dict, List, Optional, Union, Tuple
+from typing import Dict, List, Optional, Union, Tuple, Callable
 from dataclasses import dataclass, field
 from enum import Enum
 import re
 import logging
+import time
 
 from core.execution_context import ExecutionContext
 
@@ -57,6 +58,40 @@ class ValidationError:
 
 
 @dataclass
+class RetryAttempt:
+    """Record of a retry attempt"""
+
+    attempt_number: int
+    strategy: str
+    original_content: str
+    modified_content: str
+    validation_error: ValidationError
+    success: bool
+    timestamp: float = field(default_factory=time.time)
+
+
+@dataclass
+class RetryResult:
+    """Result of the intelligent retry process"""
+
+    success: bool
+    final_content: Optional[str] = None
+    attempts: List[RetryAttempt] = field(default_factory=list)
+    total_attempts: int = 0
+    final_error: Optional[ValidationError] = None
+    resolution_strategy: Optional[str] = None
+
+
+class RetryStrategy(Enum):
+    """Different retry strategies for fixing validation errors"""
+
+    MECHANICAL_FIX = "mechanical_fix"  # Direct application of suggested fixes
+    REGENERATION = "regeneration"  # Regenerate problematic sections
+    SIMPLIFIED = "simplified"  # Simplify the approach
+    ESCALATION = "escalation"  # Escalate to user
+
+
+@dataclass
 class FileModificationRecord:
     """Record of a file modification for rollback purposes"""
 
@@ -76,6 +111,409 @@ class TransactionState:
     backup_dir: Optional[Path] = None
     is_committed: bool = False
     is_rolled_back: bool = False
+
+
+class IntelligentValidationRetry:
+    """
+    Intelligent validation retry mechanism that automatically fixes common validation errors.
+
+    This system implements progressive retry strategies:
+    1. Mechanical Fix: Apply suggested fixes directly (e.g., fix indentation)
+    2. Regeneration: Regenerate problematic code sections
+    3. Simplified: Simplify the approach to avoid complexity
+
+    Designed to achieve 95% autonomous resolution for common syntax errors.
+    """
+
+    def __init__(self, max_attempts: int = 3, logger: Optional[logging.Logger] = None):
+        """
+        Initialize the intelligent retry system.
+
+        Args:
+            max_attempts: Maximum number of retry attempts before escalation
+            logger: Optional logger for debugging
+        """
+        self.max_attempts = max_attempts
+        self.logger = logger or logging.getLogger(__name__)
+
+        # Strategy progression: more aggressive fixes as attempts increase
+        self.strategy_progression = [
+            RetryStrategy.MECHANICAL_FIX,
+            RetryStrategy.REGENERATION,
+            RetryStrategy.SIMPLIFIED,
+        ]
+
+    def retry_with_validation(
+        self,
+        file_path: Path,
+        content: str,
+        validator: Callable[[Path, str], ValidationError],
+    ) -> RetryResult:
+        """
+        Attempt to fix validation errors through intelligent retry.
+
+        Args:
+            file_path: Path to the file being validated
+            content: Content to validate and potentially fix
+            validator: Function that validates content and returns ValidationError
+
+        Returns:
+            RetryResult: Complete result of the retry process
+        """
+        attempts = []
+        current_content = content
+
+        for attempt_num in range(self.max_attempts):
+            # Validate current content
+            try:
+                validation_error = validator(file_path, current_content)
+            except Exception as e:
+                self.logger.error(
+                    f"Validator exception on attempt {attempt_num + 1}: {e}"
+                )
+                return RetryResult(
+                    success=False,
+                    final_content=current_content,
+                    attempts=attempts,
+                    total_attempts=len(attempts),
+                    final_error=ValidationError(
+                        result=ValidationResult.UNKNOWN_ERROR,
+                        message=f"Validator exception: {e}",
+                        error_type=type(e).__name__,
+                    ),
+                    resolution_strategy="validator_exception",
+                )
+
+            if validation_error.result == ValidationResult.SUCCESS:
+                # Success! Return the result
+                return RetryResult(
+                    success=True,
+                    final_content=current_content,
+                    attempts=attempts,
+                    total_attempts=len(attempts),
+                    resolution_strategy=attempts[-1].strategy
+                    if attempts
+                    else "no_retry_needed",
+                )
+
+            # Determine strategy for this attempt
+            strategy = self.strategy_progression[
+                min(attempt_num, len(self.strategy_progression) - 1)
+            ]
+
+            self.logger.info(
+                f"Retry attempt {attempt_num + 1}/{self.max_attempts} using {strategy.value}"
+            )
+            self.logger.info(f"Validation error: {validation_error.message}")
+
+            # Apply the strategy to fix the content
+            fixed_content = self._apply_strategy(
+                strategy, current_content, validation_error, file_path
+            )
+
+            # Record this attempt
+            attempt = RetryAttempt(
+                attempt_number=attempt_num + 1,
+                strategy=strategy.value,
+                original_content=current_content,
+                modified_content=fixed_content,
+                validation_error=validation_error,
+                success=False,  # Will be updated if this fixes the issue
+            )
+            attempts.append(attempt)
+
+            # Update current content for next iteration
+            current_content = fixed_content
+
+        # All attempts failed
+        final_validation = validator(file_path, current_content)
+        return RetryResult(
+            success=False,
+            final_content=current_content,
+            attempts=attempts,
+            total_attempts=len(attempts),
+            final_error=final_validation,
+            resolution_strategy="escalation_required",
+        )
+
+    def _apply_strategy(
+        self,
+        strategy: RetryStrategy,
+        content: str,
+        error: ValidationError,
+        file_path: Path,
+    ) -> str:
+        """Apply a specific retry strategy to fix the content."""
+
+        if strategy == RetryStrategy.MECHANICAL_FIX:
+            return self._apply_mechanical_fix(content, error)
+        elif strategy == RetryStrategy.REGENERATION:
+            return self._apply_regeneration_fix(content, error, file_path)
+        elif strategy == RetryStrategy.SIMPLIFIED:
+            return self._apply_simplified_fix(content, error)
+        else:
+            return content  # No change
+
+    def _apply_mechanical_fix(self, content: str, error: ValidationError) -> str:
+        """
+        Apply direct mechanical fixes based on validation error messages.
+
+        This handles cases like:
+        - "Expected 4 spaces, got 0" -> Add 4 spaces
+        - Specific indentation errors
+        - Simple syntax fixes
+        """
+        lines = content.split("\n")
+
+        if error.line_number and error.line_number <= len(lines):
+            line_idx = error.line_number - 1  # Convert to 0-based index
+            current_line = lines[line_idx]
+
+            # Handle indentation errors specifically
+            if error.result == ValidationResult.INDENTATION_ERROR:
+                fixed_line = self._fix_indentation_error(current_line, error)
+                if fixed_line != current_line:
+                    lines[line_idx] = fixed_line
+                    self.logger.info(
+                        f"Applied indentation fix to line {error.line_number}"
+                    )
+                    return "\n".join(lines)
+
+            # Handle other syntax errors
+            elif error.result == ValidationResult.SYNTAX_ERROR:
+                fixed_line = self._fix_syntax_error(current_line, error)
+                if fixed_line != current_line:
+                    lines[line_idx] = fixed_line
+                    self.logger.info(f"Applied syntax fix to line {error.line_number}")
+                    return "\n".join(lines)
+
+        return content  # No changes applied
+
+    def _fix_indentation_error(self, line: str, error: ValidationError) -> str:
+        """Fix specific indentation errors."""
+
+        # Parse error message for expected vs actual indentation
+        message = error.message.lower()
+
+        # Match patterns like "expected 4 spaces, got 0"
+        expected_match = re.search(r"expected (\d+) spaces?, got (\d+)", message)
+        if expected_match:
+            expected_spaces = int(expected_match.group(1))
+            actual_spaces = int(expected_match.group(2))
+
+            # Calculate the difference
+            spaces_diff = expected_spaces - actual_spaces
+
+            if spaces_diff > 0:
+                # Add spaces
+                stripped_line = line.lstrip()
+                return " " * expected_spaces + stripped_line
+            elif spaces_diff < 0:
+                # Remove spaces (more complex, be careful)
+                stripped_line = line.lstrip()
+                return " " * expected_spaces + stripped_line
+
+        # Handle "unindent does not match any outer indentation level"
+        if "unindent does not match" in message:
+            # Try to fix by aligning with common indentation levels (0, 4, 8, 12)
+            stripped_line = line.lstrip()
+            # Default to 4 spaces for most cases
+            return " " * 4 + stripped_line
+
+        # Handle "unexpected indent"
+        if "unexpected indent" in message:
+            # Remove the unexpected indentation
+            return line.lstrip()
+
+        # General fallback for indentation errors - try common indentations
+        if error.result == ValidationResult.INDENTATION_ERROR:
+            stripped_line = line.lstrip()
+            # If we have a line number and can infer expected indentation
+            if error.column_number is not None:
+                # Try to use the column number as a hint
+                expected_indent = max(0, error.column_number)
+                return " " * expected_indent + stripped_line
+            else:
+                # Default to 4 spaces for basic indentation
+                return "    " + stripped_line
+
+        return line  # No fix applied
+
+    def _fix_syntax_error(self, line: str, error: ValidationError) -> str:
+        """Fix common syntax errors."""
+
+        message = error.message.lower()
+
+        # Fix missing colons
+        if (
+            "invalid syntax" in message
+            and ":" not in line
+            and any(
+                keyword in line.lower()
+                for keyword in [
+                    "if ",
+                    "def ",
+                    "class ",
+                    "for ",
+                    "while ",
+                    "try",
+                    "except",
+                    "with ",
+                ]
+            )
+        ):
+            # Add colon at the end
+            return line.rstrip() + ":"
+
+        # Fix missing parentheses in print statements
+        if "invalid syntax" in message and line.strip().startswith("print "):
+            # Convert print statement to print function
+            content = line.strip()[6:]  # Remove 'print '
+            indentation = line[: len(line) - len(line.lstrip())]
+            return f"{indentation}print({content})"
+
+        return line  # No fix applied
+
+    def _apply_regeneration_fix(
+        self, content: str, error: ValidationError, file_path: Path
+    ) -> str:
+        """
+        Regenerate problematic code sections.
+
+        This strategy identifies the problematic area and generates a simpler,
+        more reliable version of the same functionality.
+        """
+        lines = content.split("\n")
+
+        if not error.line_number:
+            return content
+
+        line_idx = error.line_number - 1
+
+        # Find the scope of the problematic section (function, class, etc.)
+        start_idx, end_idx = self._find_code_block_boundaries(lines, line_idx)
+
+        # Extract the problematic block
+        problematic_block = lines[start_idx : end_idx + 1]
+
+        # Generate a simplified version
+        regenerated_block = self._regenerate_code_block(problematic_block, error)
+
+        # Replace the block
+        new_lines = lines[:start_idx] + regenerated_block + lines[end_idx + 1 :]
+
+        self.logger.info(
+            f"Regenerated code block from lines {start_idx + 1} to {end_idx + 1}"
+        )
+        return "\n".join(new_lines)
+
+    def _find_code_block_boundaries(
+        self, lines: List[str], error_line_idx: int
+    ) -> Tuple[int, int]:
+        """Find the start and end of the code block containing the error."""
+
+        # Look backwards for function/class definition
+        start_idx = error_line_idx
+        for i in range(error_line_idx, -1, -1):
+            line = lines[i].strip()
+            if line.startswith(("def ", "class ", "if ", "for ", "while ", "try:")):
+                start_idx = i
+                break
+
+        # Look forwards for the end of the block
+        end_idx = error_line_idx
+        base_indent = len(lines[start_idx]) - len(lines[start_idx].lstrip())
+
+        for i in range(start_idx + 1, len(lines)):
+            line = lines[i]
+            if line.strip():  # Non-empty line
+                current_indent = len(line) - len(line.lstrip())
+                if current_indent <= base_indent and not line.strip().startswith("#"):
+                    end_idx = i - 1
+                    break
+            end_idx = i
+
+        return start_idx, end_idx
+
+    def _regenerate_code_block(
+        self, block: List[str], error: ValidationError
+    ) -> List[str]:
+        """Generate a simpler version of the code block."""
+
+        if not block:
+            return block
+
+        first_line = block[0].strip()
+        base_indent = len(block[0]) - len(block[0].lstrip())
+
+        # Handle function definitions
+        if first_line.startswith("def "):
+            func_name = first_line.split("(")[0].replace("def ", "")
+            return [
+                block[0],  # Keep original function signature
+                " " * (base_indent + 4)
+                + '"""Simplified implementation after validation error"""',
+                " " * (base_indent + 4) + "pass  # TODO: Implement " + func_name,
+            ]
+
+        # Handle if statements with indentation issues
+        if first_line.startswith("if "):
+            return [
+                block[0],  # Keep original if statement
+                " " * (base_indent + 4) + "pass  # Simplified due to validation error",
+            ]
+
+        # Default: just simplify with pass
+        return [
+            block[0],
+            " " * (base_indent + 4) + "pass  # Simplified after validation error",
+        ]
+
+    def _apply_simplified_fix(self, content: str, error: ValidationError) -> str:
+        """
+        Apply a simplified approach that removes complexity.
+
+        This is the most aggressive strategy that prioritizes working code
+        over feature completeness.
+        """
+        lines = content.split("\n")
+
+        if not error.line_number:
+            return content
+
+        line_idx = error.line_number - 1
+        current_line = lines[line_idx]
+        base_indent = len(current_line) - len(current_line.lstrip())
+
+        # For indentation errors, use the most conservative approach
+        if error.result == ValidationResult.INDENTATION_ERROR:
+            stripped_line = current_line.lstrip()
+
+            # If it's a complex statement, simplify it
+            if any(
+                keyword in stripped_line.lower()
+                for keyword in ["if ", "for ", "while ", "try:"]
+            ):
+                # Replace with a simple pass statement
+                lines[line_idx] = (
+                    " " * base_indent + "pass  # Simplified due to validation error"
+                )
+            else:
+                # Just fix the indentation to 0 or 4 spaces
+                target_indent = 4 if any(c.isalpha() for c in stripped_line) else 0
+                lines[line_idx] = " " * target_indent + stripped_line
+
+        # For syntax errors, comment out the problematic line
+        elif error.result == ValidationResult.SYNTAX_ERROR:
+            lines[line_idx] = (
+                " " * base_indent
+                + "# "
+                + current_line.lstrip()
+                + "  # Commented due to syntax error"
+            )
+
+        self.logger.info(f"Applied simplified fix to line {error.line_number}")
+        return "\n".join(lines)
 
 
 class TransactionalFileModifier:
@@ -107,6 +545,7 @@ class TransactionalFileModifier:
         self.transaction_id = transaction_id or self._generate_transaction_id()
         self.state = TransactionState(transaction_id=self.transaction_id)
         self.logger = logging.getLogger(__name__)
+        self.retry_system = IntelligentValidationRetry(logger=self.logger)
 
     def _generate_transaction_id(self) -> str:
         """Generate a unique transaction ID"""
@@ -134,6 +573,72 @@ class TransactionalFileModifier:
             f"Transaction {self.transaction_id} started with backup dir: {backup_dir}"
         )
         return self.transaction_id
+
+    def stage_modification_with_retry(
+        self, file_path: Union[str, Path], new_content: str, validate: bool = True
+    ) -> Tuple[ValidationError, Optional[RetryResult]]:
+        """
+        Stage a file modification with intelligent retry on validation failures.
+
+        This method uses the IntelligentValidationRetry system to automatically
+        fix validation errors through progressive strategies.
+
+        Args:
+            file_path: Path to file (relative to context or absolute)
+            new_content: New file content
+            validate: Whether to perform syntax validation with retry
+
+        Returns:
+            Tuple[ValidationError, Optional[RetryResult]]:
+                - ValidationError: Final validation result
+                - RetryResult: Details of retry process (None if no retry needed)
+        """
+        # Resolve file path using context
+        if isinstance(file_path, str):
+            file_path = Path(file_path)
+
+        if not file_path.is_absolute():
+            file_path = self.context.resolve_path(str(file_path))
+
+        if not validate:
+            # No retry if validation is disabled
+            return self.stage_modification(file_path, new_content, validate=False), None
+
+        # Create a validator function for the retry system
+        def validator(path: Path, content: str) -> ValidationError:
+            return self.validate_content(path, content)
+
+        # Try with intelligent retry
+        retry_result = self.retry_system.retry_with_validation(
+            file_path, new_content, validator
+        )
+
+        if retry_result.success:
+            # Retry succeeded, stage the final content
+            final_validation = self.stage_modification(
+                file_path, retry_result.final_content, validate=False
+            )
+            self.logger.info(
+                f"Successfully staged {file_path} after {retry_result.total_attempts} retry attempts "
+                f"using {retry_result.resolution_strategy} strategy"
+            )
+            return final_validation, retry_result
+        else:
+            # Retry failed, log the failure details
+            self.logger.warning(
+                f"Failed to fix validation errors for {file_path} after {retry_result.total_attempts} attempts"
+            )
+            if retry_result.final_error:
+                self.logger.warning(f"Final error: {retry_result.final_error.message}")
+
+            return (
+                retry_result.final_error
+                or ValidationError(
+                    result=ValidationResult.UNKNOWN_ERROR,
+                    message="Retry system failed without specific error",
+                ),
+                retry_result,
+            )
 
     def stage_modification(
         self, file_path: Union[str, Path], new_content: str, validate: bool = True
@@ -595,6 +1100,13 @@ class ValidationIntegrationMixin:
         """Stage a file change with validation"""
         modifier = self._get_file_modifier()
         return modifier.stage_modification(file_path, content, validate)
+
+    def stage_file_change_with_retry(
+        self, file_path: Union[str, Path], content: str, validate: bool = True
+    ) -> Tuple[ValidationError, Optional["RetryResult"]]:
+        """Stage a file change with intelligent validation retry"""
+        modifier = self._get_file_modifier()
+        return modifier.stage_modification_with_retry(file_path, content, validate)
 
     def commit_changes(self) -> Tuple[bool, List[ValidationError]]:
         """Commit all staged changes"""

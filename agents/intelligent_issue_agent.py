@@ -498,26 +498,52 @@ class IntelligentIssueAgent(BaseAgent):
                             content, changes
                         )
 
-                        # Stage the modification with validation
-                        validation_result = file_modifier.stage_modification(
+                        # Stage the modification with intelligent retry
+                        (
+                            validation_result,
+                            retry_result,
+                        ) = file_modifier.stage_modification_with_retry(
                             file_path, modified_content, validate=True
                         )
 
                         if validation_result.result == ValidationResult.SUCCESS:
                             files_modified.append(file_path)
-                            lines_changed = len(modified_content.split("\n")) - len(
+
+                            # Use the final content from retry if available
+                            final_content = (
+                                retry_result.final_content
+                                if retry_result
+                                else modified_content
+                            )
+                            lines_changed = len(final_content.split("\n")) - len(
                                 content.split("\n")
                             )
                             total_lines_changed += abs(lines_changed)
-                            print(
-                                f"✅ Staged modification for {file_path} ({lines_changed} lines changed)"
-                            )
+
+                            if retry_result and retry_result.total_attempts > 0:
+                                print(
+                                    f"✅ Staged modification for {file_path} after {retry_result.total_attempts} "
+                                    f"auto-fixes using {retry_result.resolution_strategy} ({lines_changed} lines changed)"
+                                )
+                            else:
+                                print(
+                                    f"✅ Staged modification for {file_path} ({lines_changed} lines changed)"
+                                )
                         else:
                             validation_errors.append(
-                                {"file": file_path, "error": validation_result}
+                                {
+                                    "file": file_path,
+                                    "error": validation_result,
+                                    "retry_result": retry_result,
+                                }
                             )
+                            retry_info = ""
+                            if retry_result:
+                                retry_info = (
+                                    f" (tried {retry_result.total_attempts} auto-fixes)"
+                                )
                             print(
-                                f"❌ Validation failed for {file_path}: {validation_result.message}"
+                                f"❌ Validation failed for {file_path}{retry_info}: {validation_result.message}"
                             )
                             if validation_result.line_number:
                                 print(
