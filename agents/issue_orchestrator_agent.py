@@ -27,6 +27,10 @@ from core.feedback_templates import (  # noqa: E402
     generate_mismatch_feedback,
     get_success_confirmation,
 )
+from core.execution_context import (  # noqa: E402
+    ExecutionContext,
+    create_default_context,
+)
 import time  # noqa: E402
 
 
@@ -126,7 +130,11 @@ class AgentDispatcherTool(Tool):
         )
 
     def execute(
-        self, agent_name: str, task: str, background: bool = False
+        self,
+        agent_name: str,
+        task: str,
+        background: bool = False,
+        context: ExecutionContext = None,
     ) -> ToolResponse:
         """Dispatch agent to execute task"""
         try:
@@ -222,7 +230,9 @@ print(f"Result: {{result.success}}")
 
                 agent_class = getattr(module, agent_name)
                 agent = agent_class()
-                result = agent.execute_task(task)
+
+                # Pass context to agent execution
+                result = agent.execute_task(task, context=context)
 
                 return result
 
@@ -413,22 +423,30 @@ class IssueOrchestratorAgent(BaseAgent):
             IssueStatusUpdaterTool(),
         ]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(self, task: str, context: ExecutionContext = None) -> ToolResponse:
         """
         Execute orchestration task with enhanced telemetry.
         Expected task: "resolve all issues" or "resolve issue #XXX"
+
+        Args:
+            task: The orchestration task to execute
+            context: Optional execution context for cross-repository operations
         """
         workflow_start_time = time.time()
 
-        base_path = Path.home() / "Documents" / "GitHub" / "12-factor-agents"
+        # Store execution context
+        self.context = context or create_default_context()
+
+        # Use context to determine base path and issues directory
+        base_path = self.context.repo_path
         issues_dir = base_path / "issues"
 
         results = []
         resolved_issues = []
         failed_issues = []
 
-        # Start workflow telemetry
-        repo_name = "12-factor-agents"
+        # Start workflow telemetry - use context repo name
+        repo_name = self.context.repo_name
 
         # Determine which issues to process
         if "all issues" in task:
@@ -660,6 +678,7 @@ class IssueOrchestratorAgent(BaseAgent):
                             agent_name=issue["agent"],
                             task=agent_task,
                             background=False,  # Run synchronously for now
+                            context=self.context,  # Pass execution context to agents
                         )
 
                     try:

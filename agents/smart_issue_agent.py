@@ -11,13 +11,14 @@ This provides the ideal UX: one agent handles everything, no matter the complexi
 
 import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 from agents.issue_decomposer_agent import IssueDecomposerAgent
 from agents.issue_fixer_agent import IssueFixerAgent
 
@@ -255,7 +256,9 @@ class SmartIssueAgent(BaseAgent):
         """Register smart processing tool"""
         return [SmartIssueProcessor()]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Intelligently handle any issue regardless of complexity.
         Task format: issue number or path to issue file

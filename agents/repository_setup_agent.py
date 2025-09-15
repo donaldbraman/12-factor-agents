@@ -6,7 +6,7 @@ Designed to solve Issue #001: Core Repository Setup
 import os
 import subprocess
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import json
 
 # Import from parent directory since we're bootstrapping
@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 
 class GitInitTool(Tool):
@@ -146,7 +147,9 @@ class RepositorySetupAgent(BaseAgent):
         """Register repository setup tools"""
         return [GitInitTool(), DirectoryCreatorTool(), FileCreatorTool()]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Execute repository setup based on issue requirements.
         Expected task format: "setup repository at <path>" or "solve issue #001"

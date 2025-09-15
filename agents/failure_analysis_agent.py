@@ -20,6 +20,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 
 @dataclass
@@ -342,7 +343,9 @@ class FailureAnalysisAgent(BaseAgent):
         """Register failure analysis tools"""
         return [FailureInvestigationTool(), ActionableIssueCreatorTool()]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Analyze a failure and create actionable follow-up.
         Task format: JSON with failure context

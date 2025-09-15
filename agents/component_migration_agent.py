@@ -5,7 +5,7 @@ Designed to solve Issue #002: Migrate Existing Base Components
 
 import shutil
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import json
 
 # Import from parent directory
@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 
 class FileMigrationTool(Tool):
@@ -158,7 +159,9 @@ class ComponentMigrationAgent(BaseAgent):
         """Register migration tools"""
         return [FileMigrationTool(), ComponentVerificationTool()]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Execute component migration.
         Expected task: "migrate components" or "solve issue #002"

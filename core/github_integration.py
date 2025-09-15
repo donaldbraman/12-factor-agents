@@ -11,7 +11,8 @@ from pathlib import Path
 from typing import Dict, Optional
 from dataclasses import dataclass
 
-from core.telemetry import EnhancedTelemetryCollector
+from core.telemetry import EnhancedTelemetryCollector, EventType
+from core.execution_context import ExecutionContext, create_external_context
 
 
 @dataclass
@@ -215,11 +216,30 @@ class ExternalIssueProcessor:
         """
         print(f"\n🚀 Processing external issue: {repo}#{issue_number}")
 
+        # Record external issue received event
+        external_issue_event_id = self.telemetry.record_workflow_event(
+            EventType.EXTERNAL_ISSUE_RECEIVED,
+            repo.split("/")[-1],  # Extract repo name
+            "ExternalIssueProcessor",
+            f"Received external issue #{issue_number} from {repo}",
+            {"repo": repo, "issue_number": issue_number, "repo_path": repo_path},
+        )
+
         # 1. Load issue from GitHub
         loader = GitHubIssueLoader(repo)
         github_issue = loader.fetch_issue(issue_number)
 
         if not github_issue:
+            # Record failure
+            self.telemetry.record_workflow_event(
+                EventType.EXTERNAL_ISSUE_COMPLETED,
+                repo.split("/")[-1],
+                "ExternalIssueProcessor",
+                f"Failed to fetch external issue #{issue_number} from {repo}",
+                {"success": False, "error": "Could not fetch issue"},
+                success=False,
+                parent_event_id=external_issue_event_id,
+            )
             return {
                 "success": False,
                 "error": f"Could not fetch issue #{issue_number} from {repo}",
@@ -233,49 +253,126 @@ class ExternalIssueProcessor:
         # 3. Save as local issue file
         issue_file = loader.save_as_issue_file(sparky_issue)
 
-        # 4. Process with IntelligentIssueAgent
-        # Import here to avoid circular dependency
-        from agents.intelligent_issue_agent import IntelligentIssueAgent
-
-        agent = IntelligentIssueAgent()
-
-        # If repo path provided, switch context
-        context_manager = None
+        # 4. Create execution context for external repository
         if repo_path:
-            context_manager = CrossRepoContextManager()
-            if not context_manager.switch_to_repo(repo_path):
+            repo_path_obj = Path(repo_path).expanduser().resolve()
+            if not repo_path_obj.exists():
+                # Record failure
+                self.telemetry.record_workflow_event(
+                    EventType.EXTERNAL_ISSUE_COMPLETED,
+                    repo.split("/")[-1],
+                    "ExternalIssueProcessor",
+                    f"Repository path does not exist: {repo_path}",
+                    {"success": False, "error": "Invalid repo path"},
+                    success=False,
+                    parent_event_id=external_issue_event_id,
+                )
                 return {
                     "success": False,
-                    "error": f"Could not switch to repository: {repo_path}",
+                    "error": f"Repository path does not exist: {repo_path}",
                 }
 
+            # Record context switch event
+            self.telemetry.record_workflow_event(
+                EventType.CROSS_REPO_CONTEXT_SWITCH,
+                repo.split("/")[-1],
+                "ExternalIssueProcessor",
+                f"Switching context to external repo: {repo_path}",
+                {"source_repo": repo, "target_path": str(repo_path_obj)},
+                parent_event_id=external_issue_event_id,
+            )
+
+            # Create external execution context
+            context = create_external_context(
+                repo=repo, repo_path=repo_path_obj, issue_number=issue_number
+            )
+            print(f"🔧 Created execution context: {context}")
+        else:
+            # Create context for current directory (fallback)
+            context = ExecutionContext(
+                repo_name=repo.split("/")[-1],
+                source_repo=repo,
+                issue_number=issue_number,
+                is_external=True,
+            )
+
+        # 5. Route through Sparky (IssueOrchestratorAgent) instead of direct agent call
+        # Import here to avoid circular dependency
+        from agents.issue_orchestrator_agent import IssueOrchestratorAgent
+
+        sparky = IssueOrchestratorAgent()
+
         try:
-            # Process the issue
-            result = agent.execute_task(f"Process issue #{issue_number}")
+            # Process the issue through Sparky with execution context
+            task_description = f"Process external issue #{issue_number} from {repo}"
+            result = sparky.execute_task(task_description, context=context)
 
             if result.success:
                 print(f"✅ Successfully processed {repo}#{issue_number}")
+
+                # Record successful completion
+                self.telemetry.record_workflow_event(
+                    EventType.EXTERNAL_ISSUE_COMPLETED,
+                    repo.split("/")[-1],
+                    "ExternalIssueProcessor",
+                    f"Successfully processed external issue #{issue_number} from {repo}",
+                    {
+                        "success": True,
+                        "issue_title": sparky_issue["title"],
+                        "agent": sparky_issue["agent"],
+                    },
+                    success=True,
+                    parent_event_id=external_issue_event_id,
+                )
 
                 # Update GitHub issue with comment (optional)
                 self.add_github_comment(
                     repo,
                     issue_number,
-                    "🤖 Processed by 12-factor-agents. Result: Success",
+                    "🤖 Processed by 12-factor-agents via Sparky orchestrator. Result: Success",
                 )
             else:
                 print(f"❌ Failed to process: {result.error}")
+
+                # Record failure
+                self.telemetry.record_workflow_event(
+                    EventType.EXTERNAL_ISSUE_COMPLETED,
+                    repo.split("/")[-1],
+                    "ExternalIssueProcessor",
+                    f"Failed to process external issue #{issue_number}: {result.error}",
+                    {"success": False, "error": result.error},
+                    success=False,
+                    parent_event_id=external_issue_event_id,
+                )
 
             return {
                 "success": result.success,
                 "issue": sparky_issue,
                 "result": result.data if result.success else None,
                 "error": result.error if not result.success else None,
+                "context": context.to_dict(),  # Include context info for debugging
             }
 
-        finally:
-            # Always restore context
-            if context_manager:
-                context_manager.restore_context()
+        except Exception as e:
+            print(f"❌ Error during processing: {e}")
+
+            # Record exception
+            self.telemetry.record_workflow_event(
+                EventType.EXTERNAL_ISSUE_COMPLETED,
+                repo.split("/")[-1],
+                "ExternalIssueProcessor",
+                f"Exception during processing of external issue #{issue_number}: {str(e)}",
+                {"success": False, "error": str(e), "exception_type": type(e).__name__},
+                success=False,
+                parent_event_id=external_issue_event_id,
+            )
+
+            return {
+                "success": False,
+                "error": f"Processing failed: {str(e)}",
+                "issue": sparky_issue,
+                "context": context.to_dict() if "context" in locals() else None,
+            }
 
     def add_github_comment(self, repo: str, issue_number: int, comment: str):
         """Add a comment to GitHub issue (optional feedback)"""
@@ -291,7 +388,7 @@ class ExternalIssueProcessor:
                 comment,
             ]
             subprocess.run(cmd, capture_output=True, timeout=5)
-        except:
+        except Exception:
             pass  # Optional, don't fail if comment fails
 
 

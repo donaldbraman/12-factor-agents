@@ -6,7 +6,7 @@ Analyzes codebase for compliance, best practices, and potential improvements.
 import subprocess
 import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 import re
 
@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 
 class CodeAnalyzerTool(Tool):
@@ -353,7 +354,9 @@ class CodeReviewAgent(BaseAgent):
             GitHubIssueTool(),
         ]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Execute comprehensive code review.
         Task format: "review codebase" or "review <directory>"
