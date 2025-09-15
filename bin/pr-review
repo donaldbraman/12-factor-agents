@@ -1,0 +1,29 @@
+#!/bin/bash
+# Wrapper script for PR Review Agent that uses gh CLI token
+
+# Load GitHub token from gh CLI
+export GITHUB_TOKEN=$(gh auth token 2>/dev/null)
+export GITHUB_DEFAULT_REPO="${GITHUB_DEFAULT_REPO:-donaldbraman/12-factor-agents}"
+
+# Check for Anthropic API key in .env file
+if [ -f .env ]; then
+    export $(cat .env | grep ANTHROPIC_API_KEY | xargs) 2>/dev/null
+fi
+
+# Check credentials
+if [ -z "$GITHUB_TOKEN" ]; then
+    echo "❌ GitHub token not found. Please run: gh auth login"
+    exit 1
+fi
+
+if [ -z "$ANTHROPIC_API_KEY" ]; then
+    echo "❌ ANTHROPIC_API_KEY not set"
+    echo "   Please either:"
+    echo "   1. Export it: export ANTHROPIC_API_KEY=your_key"
+    echo "   2. Add to .env: echo 'ANTHROPIC_API_KEY=your_key' >> .env"
+    echo "   Get your key from: https://console.anthropic.com/settings/keys"
+    exit 1
+fi
+
+# Run PR Review Agent
+uv run agent run PRReviewAgent "$@"
