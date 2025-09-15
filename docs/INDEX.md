@@ -84,9 +84,9 @@ docs/
 
 ### ✅ **Sister Repository Integration**
 - Zero-configuration integration with existing projects
-- Symlink-based sharing for instant updates
+- Relative path-based access for instant updates
 - Cross-repository context management
-- Relative path access for seamless operation
+- Standard import patterns for seamless operation
 
 ### ✅ **Production-Ready Architecture**
 - Full 12-factor methodology compliance

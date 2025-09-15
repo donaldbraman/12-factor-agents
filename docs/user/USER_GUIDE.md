@@ -40,8 +40,8 @@ uv run python bin/agent.py run SmartIssueAgent "issue-number"
 ## Installation
 
 1. Run setup: `./setup.sh`
-2. Link in your project: `ln -s ../12-factor-agents/core .claude/agents`
-3. Run agents: `bin/agent <name> "<task>"`
+2. Clone/place the framework as a sister repository to your projects
+3. Run agents: `uv run python ../12-factor-agents/bin/agent.py <name> "<task>"`
 
 ## Using the Intelligent System
 
@@ -141,13 +141,13 @@ parent-directory/
 
 ### For Sister Repositories (pin-citer, cite-assist, etc.)
 
-**You already have the new intelligent system!** Your symlinks automatically point to our latest code. No updates needed on your end.
+**You already have the new intelligent system!** The relative path integration automatically provides access to our latest code. No updates needed on your end.
 
-Your symlinks give you everything:
+The framework gives you everything:
 ```
-your-project/.agents/
-  ├── agents -> ../../12-factor-agents/agents  # Automatically includes IntelligentIssueAgent
-  ├── core -> ../../12-factor-agents/core      # All core functionality
+parent-directory/
+  ├── 12-factor-agents/  # Framework with IntelligentIssueAgent and all core functionality
+  └── your-project/      # Your project automatically accesses framework via relative paths
   └── framework -> ../../12-factor-agents      # Everything
 ```
 
@@ -168,12 +168,11 @@ uv run python ../12-factor-agents/bin/agent.py run IntelligentIssueAgent "Proces
 ```bash
 cd /path/to/your-project
 
-# Create symlink to sister repo
-ln -s ../12-factor-agents .agents
-echo ".agents/" >> .gitignore
+# Verify framework is accessible
+ls ../12-factor-agents
 
 # Test it works
-uv run python .agents/bin/agent.py list
+uv run python ../12-factor-agents/bin/agent.py list
 ```
 
 ## CLI Commands Reference
@@ -516,7 +515,7 @@ try:
     print(f"   Has orchestrator: {hasattr(agent, 'orchestrator')}")
 except ImportError as e:
     print(f"❌ Import failed: {e}")
-    print("   Make sure your symlinks point to 12-factor-agents")
+    print("   Make sure 12-factor-agents is accessible at ../12-factor-agents")
 ```
 
 Run it:
@@ -545,7 +544,7 @@ uv run verify_intelligent_system.py
 → **Normal:** System errs on the side of caution. Still handles correctly.
 
 ### Import Errors
-→ **Solution:** Ensure symlinks are created correctly
+→ **Solution:** Ensure 12-factor-agents is placed as a sister repository
 
 ### Agent Not Found
 → **Solution:** Check agent class name matches file name
@@ -581,7 +580,7 @@ This ensures reliable, predictable, production-ready agent behavior.
 
 ## No Configuration Needed
 
-Your existing symlinks already provide:
+The relative path integration already provides:
 - ✅ `IntelligentIssueAgent` - The new smart layer
 - ✅ `FileTool` - File operations
 - ✅ `HierarchicalOrchestrator` - Parallel execution
@@ -589,7 +588,7 @@ Your existing symlinks already provide:
 
 ## That's It!
 
-No setup, no configuration, no updates needed. Your symlinks give you everything automatically. Just use `uv run` and the intelligent agent!
+No setup, no configuration, no updates needed. The relative path integration gives you everything automatically. Just use `uv run` and the intelligent agent!
 
 **You now know everything needed to be productive with the 12-Factor Agents framework.**
 
@@ -597,6 +596,6 @@ Submit issues, get results. The system handles all complexity automatically.
 
 ---
 
-**Remember**: When we update 12-factor-agents, you get the improvements instantly through your symlinks. Zero deployment with maximum performance through uv!
+**Remember**: When we update 12-factor-agents, you get the improvements instantly through the relative path integration. Zero deployment with maximum performance through uv!
 
 *Built with 12-Factor Agent principles for production reliability.*
