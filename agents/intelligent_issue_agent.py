@@ -12,6 +12,7 @@ from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
 from core.telemetry import EnhancedTelemetryCollector
 from core.loop_protection import LOOP_PROTECTION
+from core.execution_context import ExecutionContext, create_default_context
 
 
 class IntelligentIssueAgent(BaseAgent):
@@ -28,7 +29,7 @@ class IntelligentIssueAgent(BaseAgent):
         """Register tools for intelligent issue processing"""
         return []
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(self, task: str, context: ExecutionContext = None) -> ToolResponse:
         """
         Execute intelligent issue processing task.
 
@@ -36,8 +37,14 @@ class IntelligentIssueAgent(BaseAgent):
             "Process issue #218"
             "Implement telemetry enhancements from issue #218"
             "Fix parsing bug described in issue #219"
+
+        Args:
+            task: The task to execute
+            context: Optional execution context for cross-repository operations
         """
         try:
+            # Store execution context for file operations
+            self.context = context or create_default_context()
             # Extract issue reference
             issue_ref = self._extract_issue_reference(task)
 
@@ -95,16 +102,19 @@ class IntelligentIssueAgent(BaseAgent):
             match = re.search(pattern, task, re.IGNORECASE)
             if match:
                 issue_num = match.group(1)
-                # Try to find the issue file
-                issue_files = list(Path("issues").glob(f"{issue_num}-*.md"))
+                # Try to find the issue file using context
+                issues_dir = self.context.resolve_path("issues")
+                issue_files = list(issues_dir.glob(f"{issue_num}-*.md"))
                 if issue_files:
                     return str(issue_files[0])
 
         # Check for direct file path
         if "issues/" in task:
             path_match = re.search(r"issues/[\w\-]+\.md", task)
-            if path_match and Path(path_match.group(0)).exists():
-                return path_match.group(0)
+            if path_match:
+                full_path = self.context.resolve_path(path_match.group(0))
+                if full_path.exists():
+                    return str(full_path)
 
         # IMPORTANT FIX: When task is a description (from orchestrator),
         # try to extract issue number from the parent context
@@ -118,26 +128,28 @@ class IntelligentIssueAgent(BaseAgent):
 
             # Last resort: Check if we're being called in a loop
             # and can infer the issue from recent files
-            recent_issues = sorted(
-                Path("issues").glob("*.md"),
-                key=lambda x: x.stat().st_mtime,
-                reverse=True,
-            )
-            for issue_file in recent_issues[:5]:  # Check 5 most recent
-                try:
-                    content = issue_file.read_text()
-                    # Check if task description appears in issue
-                    if task[:100] in content:
-                        return str(issue_file)
-                except Exception:
-                    continue
+            issues_dir = self.context.resolve_path("issues")
+            if issues_dir.exists():
+                recent_issues = sorted(
+                    issues_dir.glob("*.md"),
+                    key=lambda x: x.stat().st_mtime,
+                    reverse=True,
+                )
+                for issue_file in recent_issues[:5]:  # Check 5 most recent
+                    try:
+                        content = issue_file.read_text()
+                        # Check if task description appears in issue
+                        if task[:100] in content:
+                            return str(issue_file)
+                    except Exception:
+                        continue
 
         return None
 
     def _find_issue_by_content_match(self, task_description: str) -> Optional[str]:
         """Find issue file by matching task description to issue content"""
 
-        issues_dir = Path("issues")
+        issues_dir = self.context.resolve_path("issues")
         if not issues_dir.exists():
             return None
 
@@ -183,7 +195,12 @@ class IntelligentIssueAgent(BaseAgent):
     def _read_issue(self, issue_path: str) -> Optional[Dict]:
         """Read and parse issue file"""
         try:
-            path = Path(issue_path)
+            # Use context to resolve path if it's relative
+            if Path(issue_path).is_absolute():
+                path = Path(issue_path)
+            else:
+                path = self.context.resolve_path(issue_path)
+
             if not path.exists():
                 return None
 
@@ -440,17 +457,22 @@ class IntelligentIssueAgent(BaseAgent):
             file_contents = {}
 
             for file_path in files_to_analyze:
-                path = Path(file_path)
+                # Use context to resolve file paths
+                if Path(file_path).is_absolute():
+                    path = Path(file_path)
+                else:
+                    path = self.context.resolve_path(file_path)
+
                 if path.exists():
                     try:
                         content = path.read_text()
-                        file_contents[file_path] = content
-                        files_read.append(file_path)
-                        print(f"📖 Read {file_path} ({len(content)} chars)")
+                        file_contents[str(path)] = content
+                        files_read.append(str(path))
+                        print(f"📖 Read {path} ({len(content)} chars)")
                     except Exception as e:
-                        print(f"⚠️ Could not read {file_path}: {e}")
+                        print(f"⚠️ Could not read {path}: {e}")
                 else:
-                    print(f"⚠️ File not found: {file_path}")
+                    print(f"⚠️ File not found: {path}")
 
             # Step 5: Generate and apply fixes
             files_modified = []
@@ -469,7 +491,11 @@ class IntelligentIssueAgent(BaseAgent):
                         )
 
                         # Write the modified content back to the file
-                        path = Path(file_path)
+                        # Use the already resolved path from above
+                        if Path(file_path).is_absolute():
+                            path = Path(file_path)
+                        else:
+                            path = self.context.resolve_path(file_path)
                         path.write_text(modified_content)
 
                         files_modified.append(file_path)
