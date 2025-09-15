@@ -2,9 +2,62 @@
 
 > **Agent-Ready Documentation**: This guide is designed to be used directly by AI agents in sister repositories for seamless 12-factor-agents framework integration.
 
+## 🚨 CRITICAL: Common Mistakes to Avoid
+
+**Sister repositories MUST follow the issue-orchestration pattern. Direct agent calls break the entire framework.**
+
+### ❌ WRONG: Direct Agent Calls
+```python
+# NEVER DO THIS - Breaks orchestration
+run_framework_agent("SmartIssueAgent", "fix the bug")
+agent.execute_task("implement feature X")
+subprocess.run(["python", "bin/agent.py", "run", "SomeAgent", "task"])
+```
+
+### ✅ CORRECT: Issue-Number-Only Pattern
+```python
+# ALWAYS DO THIS - Submit issue numbers to Sparky
+from core.github_integration import ExternalIssueProcessor
+
+processor = ExternalIssueProcessor()
+result = processor.process_external_issue("your-org/your-repo", 123)
+```
+
+### Why This Matters
+- **Sparky orchestrates everything**: Direct calls bypass dependency management, routing logic, and telemetry
+- **Context preservation**: Only Sparky understands cross-repo relationships and issue dependencies  
+- **Error handling**: Direct calls skip comprehensive error recovery and status tracking
+- **Telemetry**: Direct calls break monitoring and performance analytics
+
+### Integration Workflow (REQUIRED)
+```
+Sister Repo                    12-factor-agents
+    |                              |
+    | 1. Create GitHub issue       |
+    |    with task description     |
+    |                              |
+    | 2. Submit issue NUMBER       |
+    |    (not description!)        |
+    |--------------------------->  |
+    |                              | 3. ExternalIssueProcessor
+    |                              |    fetches issue content
+    |                              |
+    |                              | 4. Sparky analyzes issue
+    |                              |    and routes to agent
+    |                              |
+    |                              | 5. Agent executes task
+    |                              |    with full context
+    |                              |
+    | 6. Results posted back       |
+    |    to GitHub issue          |
+    |<-----------------------------|
+```
+
+**KEY PRINCIPLE**: Never pass task descriptions directly. Always create GitHub issues first.
+
 ## Overview
 
-The 12-factor-agents framework provides seamless integration for sister repositories through a standardized agent bridge pattern. This guide contains all the code and instructions needed for complete integration.
+The 12-factor-agents framework provides seamless integration for sister repositories through a standardized GitHub issue orchestration pattern. Sister repositories submit issue numbers to Sparky for intelligent agent routing and execution.
 
 ## Quick Setup (2 Minutes)
 
@@ -226,176 +279,308 @@ uv run python ../12-factor-agents/bin/agent.py run SmartIssueAgent "test-issue"
 
 ## Complete Integration Examples
 
-### A. Basic Agent Integration
+### A. Basic Agent Integration (CORRECT PATTERN)
 
 Create `agents/your_agent.py` in your project:
 
 ```python
 #!/usr/bin/env python3
 """
-Example agent for your project that uses 12-factor-agents framework.
+CORRECT: Sister repository agent using issue-orchestration pattern.
+
+This agent creates GitHub issues and submits them to Sparky for processing.
+NEVER calls framework agents directly - always goes through orchestration.
 """
 
 # Import framework bridge (auto-sets up path)
-from utils.agent_bridge import get_framework_path, run_framework_agent
+from utils.agent_bridge import get_framework_path
+import subprocess
+import sys
+from pathlib import Path
 
-# Now framework imports work
+# Add framework to path for imports
+sys.path.insert(0, str(get_framework_path()))
+from core.github_integration import ExternalIssueProcessor
 from core.agent import BaseAgent
-from core.tools import ToolResponse
 
 
 class YourProjectAgent(BaseAgent):
     """
-    Custom agent that leverages the 12-factor-agents framework.
+    Custom agent that uses CORRECT 12-factor-agents integration pattern.
+    
+    Key principles:
+    - Never calls agents directly
+    - Always creates GitHub issues first  
+    - Submits issue numbers to ExternalIssueProcessor
+    - Lets Sparky orchestrate execution
     """
 
     def __init__(self):
         super().__init__(agent_id="your_project_agent")
         self.framework_path = get_framework_path()
+        self.external_processor = ExternalIssueProcessor()
 
     async def execute_task(self, task: str) -> dict:
         """
-        Execute a task using both your logic and framework agents.
+        Execute task using CORRECT orchestration pattern.
+        
+        Steps:
+        1. Create GitHub issue with task description
+        2. Submit issue number to ExternalIssueProcessor
+        3. Let Sparky handle agent routing and execution
         """
-        print(f"🤖 Executing task: {task}")
+        print(f"🤖 Processing task: {task}")
         
-        # Your custom logic here
-        result = {"task": task, "status": "processing"}
+        # Step 1: Create GitHub issue (you would implement this)
+        issue_number = self.create_github_issue(task)
         
-        # Delegate complex tasks to framework agents
-        if "analyze" in task.lower():
-            # Use SmartIssueAgent for analysis
-            framework_cmd = run_framework_agent("SmartIssueAgent", task)
-            print(f"🚀 Delegating to framework: {framework_cmd}")
+        if not issue_number:
+            return {"status": "failed", "error": "Could not create GitHub issue"}
         
-        result["status"] = "completed"
-        return result
+        # Step 2: Submit to Sparky via ExternalIssueProcessor
+        print(f"🚀 Submitting issue #{issue_number} to Sparky for orchestration")
+        
+        result = self.external_processor.process_external_issue(
+            repo=self.get_repo_name(),
+            issue_number=issue_number
+        )
+        
+        if result.get("success"):
+            print(f"✅ Task completed via issue #{issue_number}")
+            print(f"🎯 Agent used: {result.get('issue', {}).get('agent', 'Unknown')}")
+            return {
+                "status": "completed",
+                "issue_number": issue_number,
+                "agent_used": result.get('issue', {}).get('agent'),
+                "result": result.get('result')
+            }
+        else:
+            print(f"❌ Task failed: {result.get('error')}")
+            return {
+                "status": "failed", 
+                "issue_number": issue_number,
+                "error": result.get('error')
+            }
 
-    def get_available_framework_agents(self) -> list:
+    def create_github_issue(self, task_description: str) -> int:
         """
-        Get list of available framework agents.
+        Create GitHub issue with task description.
+        
+        Returns issue number if successful, None if failed.
         """
-        import subprocess
-        
-        cmd = f"uv run python {self.framework_path}/bin/agent.py list"
-        result = subprocess.run(cmd, shell=True, capture_output=True, text=True)
-        
-        # Parse agent list from output
-        agents = []
-        lines = result.stdout.split('\n')
-        for line in lines:
-            if "🤖" in line:
-                agent_name = line.split("🤖")[1].strip()
-                agents.append(agent_name)
-        
-        return agents
+        try:
+            # Use GitHub CLI to create issue
+            cmd = [
+                "gh", "issue", "create",
+                "--title", f"Agent Task: {task_description[:50]}...",
+                "--body", f"Task: {task_description}\n\nCreated by YourProjectAgent"
+            ]
+            
+            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            
+            if result.returncode == 0:
+                # Extract issue number from output
+                # gh creates output like: "https://github.com/org/repo/issues/123"
+                output = result.stdout.strip()
+                issue_number = int(output.split("/")[-1])
+                print(f"📝 Created GitHub issue #{issue_number}")
+                return issue_number
+            else:
+                print(f"❌ Failed to create GitHub issue: {result.stderr}")
+                return None
+                
+        except Exception as e:
+            print(f"❌ Error creating GitHub issue: {e}")
+            return None
+
+    def get_repo_name(self) -> str:
+        """Get current repository name in org/repo format."""
+        try:
+            result = subprocess.run(
+                ["git", "remote", "get-url", "origin"],
+                capture_output=True, text=True, timeout=5
+            )
+            if result.returncode == 0:
+                url = result.stdout.strip()
+                if "github.com" in url:
+                    parts = url.split("/")[-2:]
+                    return f"{parts[0]}/{parts[1].replace('.git', '')}"
+        except:
+            pass
+        return "your-org/your-repo"  # Fallback
 ```
 
-### B. Submit to Agents Helper
+### B. Submit to Agents Helper (CORRECT PATTERN)
 
 Create `scripts/submit_to_agents.py` in your project:
 
 ```python
 #!/usr/bin/env python3
 """
-Utility script for submitting tasks to 12-factor-agents from your project.
+CRITICAL: Sister Repository Issue Submission Script
 
-This script provides a convenient interface for running framework agents
-from within your project directory structure.
+This script enforces the CORRECT integration pattern:
+- NEVER calls agents directly 
+- ONLY submits GitHub issue numbers to ExternalIssueProcessor
+- Lets Sparky orchestrate all agent routing and execution
+
+Usage:
+  python scripts/submit_to_agents.py 123  # Submit issue #123
+  python scripts/submit_to_agents.py 456 --repo your-org/your-repo
 """
 
 import argparse
-import subprocess
 import sys
+import re
 from pathlib import Path
 
-# Import framework bridge
+# Import framework bridge  
 sys.path.append(str(Path(__file__).parent.parent))
 from utils.agent_bridge import get_framework_path, verify_framework_access
 
-
-def submit_to_agent(agent_name: str, task: str, show_output: bool = True) -> bool:
+def validate_issue_number(issue_str: str) -> int:
     """
-    Submit a task to a framework agent.
+    Validate that input is a GitHub issue number (not a task description).
     
     Args:
-        agent_name: Name of the agent to run
-        task: Task description
-        show_output: Whether to show agent output
+        issue_str: Input string that should be an issue number
+        
+    Returns:
+        int: Valid issue number
+        
+    Raises:
+        ValueError: If input is not a valid issue number
+    """
+    # Remove common prefixes
+    clean_str = issue_str.strip().replace("#", "").replace("issue", "").strip()
+    
+    if not clean_str.isdigit():
+        raise ValueError(
+            f"❌ INVALID INPUT: '{issue_str}' is not an issue number.\n"
+            f"\n🚨 SISTER REPOSITORIES MUST ONLY SUBMIT ISSUE NUMBERS!\n"
+            f"\n✅ CORRECT: python submit_to_agents.py 123"
+            f"\n❌ WRONG:   python submit_to_agents.py 'fix the bug'"
+            f"\n❌ WRONG:   Direct agent calls break Sparky orchestration!"
+        )
+    
+    issue_num = int(clean_str)
+    if issue_num <= 0:
+        raise ValueError("Issue number must be positive")
+        
+    return issue_num
+
+def detect_task_description(input_str: str) -> bool:
+    """
+    Detect if input looks like a task description rather than issue number.
+    
+    Returns True if input appears to be a task description.
+    """
+    # Common task description patterns
+    task_indicators = [
+        r'\b(fix|create|implement|update|add|remove|refactor|test)\b',
+        r'\b(bug|feature|documentation|api|ui|database)\b', 
+        r'\s+(the|a|an)\s+',  # Articles suggest descriptions
+        r'[.!?]',  # Punctuation suggests sentences
+        r'\s+.*\s+',  # Multiple words with spaces
+    ]
+    
+    input_lower = input_str.lower()
+    return any(re.search(pattern, input_lower) for pattern in task_indicators)
+
+def submit_issue_to_sparky(issue_number: int, repo: str = None) -> bool:
+    """
+    Submit GitHub issue number to Sparky via ExternalIssueProcessor.
+    
+    Args:
+        issue_number: GitHub issue number
+        repo: Repository in format "org/repo" (optional)
     
     Returns:
-        bool: True if agent execution succeeded
+        bool: True if submission succeeded
     """
     try:
+        # Import ExternalIssueProcessor from framework
         framework_path = get_framework_path()
-        cmd = [
-            "uv", "run", "python", 
-            str(framework_path / "bin" / "agent.py"), 
-            "run", agent_name, task
-        ]
+        sys.path.insert(0, str(framework_path))
+        from core.github_integration import ExternalIssueProcessor
         
-        print(f"🚀 Submitting to {agent_name}: {task}")
-        print(f"📋 Command: {' '.join(cmd)}")
+        processor = ExternalIssueProcessor()
         
-        if show_output:
-            result = subprocess.run(cmd, check=True)
-            return result.returncode == 0
-        else:
-            result = subprocess.run(cmd, capture_output=True, text=True)
-            if result.returncode == 0:
-                print("✅ Task completed successfully")
-                return True
-            else:
-                print(f"❌ Task failed: {result.stderr}")
-                return False
-                
-    except Exception as e:
-        print(f"❌ Error submitting task: {e}")
-        return False
-
-
-def list_available_agents() -> list:
-    """
-    Get list of available framework agents.
-    """
-    try:
-        framework_path = get_framework_path()
-        cmd = ["uv", "run", "python", str(framework_path / "bin" / "agent.py"), "list"]
+        # Determine repository
+        if not repo:
+            # Try to auto-detect from git remote
+            import subprocess
+            try:
+                result = subprocess.run(
+                    ["git", "remote", "get-url", "origin"], 
+                    capture_output=True, text=True, timeout=5
+                )
+                if result.returncode == 0:
+                    # Extract org/repo from git URL
+                    url = result.stdout.strip()
+                    if "github.com" in url:
+                        parts = url.split("/")[-2:]
+                        repo = f"{parts[0]}/{parts[1].replace('.git', '')}"
+            except:
+                pass
         
-        result = subprocess.run(cmd, capture_output=True, text=True)
-        
-        if result.returncode == 0:
-            return result.stdout.split('\n')
-        else:
-            print(f"❌ Error listing agents: {result.stderr}")
-            return []
+        if not repo:
+            repo = "current-repository"  # Fallback
             
+        print(f"🚀 Submitting issue #{issue_number} from {repo} to Sparky")
+        print(f"🤖 Sparky will determine agent routing and orchestration")
+        
+        # Submit to ExternalIssueProcessor
+        result = processor.process_external_issue(repo, issue_number)
+        
+        if result.get("success"):
+            print(f"✅ Issue #{issue_number} processed successfully")
+            print(f"🎯 Agent used: {result.get('issue', {}).get('agent', 'Unknown')}")
+            return True
+        else:
+            print(f"❌ Failed to process issue #{issue_number}")
+            if result.get("error"):
+                print(f"   Error: {result['error']}")
+            return False
+            
+    except ImportError as e:
+        print(f"❌ Framework integration error: {e}")
+        print("   Make sure 12-factor-agents is set up as sister repository")
+        return False
     except Exception as e:
-        print(f"❌ Error listing agents: {e}")
-        return []
-
+        print(f"❌ Error submitting to Sparky: {e}")
+        return False
 
 def main():
     """
-    Command-line interface for submitting tasks to agents.
+    Command-line interface enforcing issue-number-only pattern.
     """
     parser = argparse.ArgumentParser(
-        description="Submit tasks to 12-factor-agents framework",
+        description="Submit GitHub issue numbers to 12-factor-agents Sparky",
         formatter_class=argparse.RawDescriptionHelpFormatter,
         epilog="""
-Examples:
-  python scripts/submit_to_agents.py SmartIssueAgent "Fix bug #123"
-  python scripts/submit_to_agents.py --list
-  python scripts/submit_to_agents.py --verify
-  python scripts/submit_to_agents.py IntelligentIssueAgent "Create API docs" --quiet
+🚨 CRITICAL: Sister repositories MUST only submit issue numbers!
+
+✅ CORRECT Examples:
+  python scripts/submit_to_agents.py 123
+  python scripts/submit_to_agents.py 456 --repo your-org/your-repo
+  python scripts/submit_to_agents.py "#789"
+
+❌ WRONG Examples (will be rejected):
+  python scripts/submit_to_agents.py "fix the bug"      # Task description
+  python scripts/submit_to_agents.py "create feature"   # Task description
+  
+Integration Pattern:
+  1. Create GitHub issue in your repository  
+  2. Submit ONLY the issue number to this script
+  3. Sparky orchestrates agent selection and execution
+  4. Never call agents directly - breaks orchestration!
         """
     )
     
-    parser.add_argument("agent", nargs="?", help="Agent name to run")
-    parser.add_argument("task", nargs="?", help="Task description")
-    parser.add_argument("--list", "-l", action="store_true", help="List available agents")
+    parser.add_argument("issue", help="GitHub issue number (REQUIRED)")
+    parser.add_argument("--repo", "-r", help="Repository in format 'org/repo'")
     parser.add_argument("--verify", "-v", action="store_true", help="Verify framework access")
-    parser.add_argument("--quiet", "-q", action="store_true", help="Quiet mode (no output)")
     
     args = parser.parse_args()
     
@@ -410,22 +595,29 @@ Examples:
     if args.verify:
         print("✅ Framework access verified")
         print(f"📁 Framework path: {status['framework_path']}")
+        print("🤖 ExternalIssueProcessor integration ready")
         return 0
     
-    if args.list:
-        print("📦 Available agents:")
-        agents = list_available_agents()
-        for line in agents:
-            if "🤖" in line:
-                print(f"  {line}")
-        return 0
-    
-    if not args.agent or not args.task:
-        parser.print_help()
+    # Validate input is an issue number (not task description)
+    try:
+        if detect_task_description(args.issue):
+            print(f"❌ DETECTED TASK DESCRIPTION: '{args.issue}'")
+            print(f"\n🚨 SISTER REPOSITORIES CANNOT SUBMIT TASK DESCRIPTIONS!")
+            print(f"\n✅ CORRECT PATTERN:")
+            print(f"   1. Create GitHub issue with your task description")
+            print(f"   2. Submit the issue NUMBER: python submit_to_agents.py 123")
+            print(f"   3. Let Sparky orchestrate agent selection")
+            print(f"\n❌ Direct agent calls break the entire framework!")
+            return 1
+            
+        issue_number = validate_issue_number(args.issue)
+        
+    except ValueError as e:
+        print(str(e))
         return 1
     
-    # Submit task to agent
-    success = submit_to_agent(args.agent, args.task, not args.quiet)
+    # Submit issue number to Sparky
+    success = submit_issue_to_sparky(issue_number, args.repo)
     return 0 if success else 1
 
 
@@ -544,7 +736,7 @@ if __name__ == "__main__":
     pytest.main([__file__, "-v"])
 ```
 
-## Project-Specific Examples
+## Project-Specific Examples (CORRECT PATTERNS)
 
 ### Pin-Citer Integration
 
@@ -552,28 +744,56 @@ For citation management projects like pin-citer:
 
 ```python
 # pin_citer/agents/citation_agent.py
-from utils.agent_bridge import run_framework_agent, get_framework_path
+from utils.agent_bridge import get_framework_path
+import sys
+sys.path.insert(0, str(get_framework_path()))
+from core.github_integration import ExternalIssueProcessor
 from core.agent import BaseAgent
 
 class PinCiterAgent(BaseAgent):
-    """Citation processing agent with framework integration."""
+    """
+    CORRECT: Citation processing using issue-orchestration pattern.
+    """
+    
+    def __init__(self):
+        super().__init__(agent_id="pin_citer_agent")
+        self.external_processor = ExternalIssueProcessor()
     
     async def process_citations(self, document_path: str) -> dict:
-        """Process citations using framework agents."""
+        """
+        Process citations using CORRECT orchestration pattern.
         
-        # Use SmartIssueAgent for complex citation analysis
-        analysis_task = f"analyze citations in {document_path}"
-        analysis_cmd = run_framework_agent("SmartIssueAgent", analysis_task)
+        Steps:
+        1. Create GitHub issue with citation analysis request
+        2. Submit issue number to Sparky
+        3. Let Sparky route to appropriate agent
+        """
         
-        # Use IntelligentIssueAgent for validation
-        validation_task = f"validate citation format in {document_path}"
-        validation_cmd = run_framework_agent("IntelligentIssueAgent", validation_task)
+        # Create GitHub issue for citation analysis
+        issue_number = self.create_citation_issue(document_path)
+        
+        if not issue_number:
+            return {"status": "failed", "error": "Could not create GitHub issue"}
+        
+        # Submit to Sparky for orchestration
+        result = self.external_processor.process_external_issue(
+            repo="your-org/pin-citer",
+            issue_number=issue_number
+        )
         
         return {
-            "analysis_command": analysis_cmd,
-            "validation_command": validation_cmd,
-            "status": "ready"
+            "status": "completed" if result.get("success") else "failed",
+            "issue_number": issue_number,
+            "document": document_path,
+            "agent_used": result.get('issue', {}).get('agent'),
+            "sparky_handled": True  # Key indicator of correct pattern
         }
+    
+    def create_citation_issue(self, document_path: str) -> int:
+        """Create GitHub issue for citation processing."""
+        # Implementation to create GitHub issue
+        # Returns issue number
+        pass
 ```
 
 ### Cite-Assist Integration
@@ -582,23 +802,53 @@ For legal document processing projects:
 
 ```python
 # cite_assist/agents/legal_agent.py
-from utils.agent_bridge import run_framework_agent
+from utils.agent_bridge import get_framework_path
+import sys
+sys.path.insert(0, str(get_framework_path()))
+from core.github_integration import ExternalIssueProcessor
 from core.agent import BaseAgent
 
 class LegalCitationAgent(BaseAgent):
-    """Legal citation processing with framework support."""
+    """
+    CORRECT: Legal citation processing using issue-orchestration pattern.
+    """
+    
+    def __init__(self):
+        super().__init__(agent_id="legal_citation_agent")
+        self.external_processor = ExternalIssueProcessor()
     
     async def process_legal_document(self, case_file: str) -> dict:
-        """Process legal documents using framework agents."""
+        """
+        Process legal documents using CORRECT orchestration pattern.
         
-        # Use framework for issue decomposition
-        complex_task = f"analyze legal citations and format according to Bluebook rules in {case_file}"
-        decomposition_cmd = run_framework_agent("SmartIssueAgent", complex_task)
+        Never calls agents directly - always creates issues first.
+        """
+        
+        # Create detailed GitHub issue for legal citation analysis
+        issue_title = f"Legal Citation Analysis: {case_file}"
+        issue_body = f"""
+        Analyze legal citations and format according to Bluebook rules in {case_file}
+        
+        Requirements:
+        - Validate all case citations
+        - Check citation format compliance
+        - Ensure proper legal citation structure
+        - Generate correction recommendations
+        """
+        
+        issue_number = self.create_legal_issue(issue_title, issue_body)
+        
+        # Submit to Sparky (never call agents directly!)
+        result = self.external_processor.process_external_issue(
+            repo="your-org/cite-assist", 
+            issue_number=issue_number
+        )
         
         return {
-            "framework_command": decomposition_cmd,
-            "document": case_file,
-            "processing_status": "delegated_to_framework"
+            "status": "orchestrated_via_sparky",
+            "issue_number": issue_number,
+            "case_file": case_file,
+            "framework_handles_execution": True
         }
 ```
 
@@ -608,27 +858,56 @@ For software development projects:
 
 ```python
 # dev_project/agents/code_agent.py
-from utils.agent_bridge import run_framework_agent
+from utils.agent_bridge import get_framework_path
+import sys
+sys.path.insert(0, str(get_framework_path()))
+from core.github_integration import ExternalIssueProcessor
 from core.agent import BaseAgent
 
 class CodeAnalysisAgent(BaseAgent):
-    """Code analysis with framework integration."""
+    """
+    CORRECT: Code analysis using issue-orchestration pattern.
+    """
+    
+    def __init__(self):
+        super().__init__(agent_id="code_analysis_agent")
+        self.external_processor = ExternalIssueProcessor()
     
     async def analyze_codebase(self, repo_path: str) -> dict:
-        """Analyze codebase using framework agents."""
+        """
+        Analyze codebase using CORRECT orchestration pattern.
         
-        # Use framework for code review
-        review_task = f"perform comprehensive code review of {repo_path}"
-        review_cmd = run_framework_agent("CodeReviewAgent", review_task)
+        Creates comprehensive GitHub issue and lets Sparky handle routing.
+        """
         
-        # Use framework for testing
-        test_task = f"analyze and improve test coverage in {repo_path}"
-        test_cmd = run_framework_agent("TestingAgent", test_task)
+        # Create comprehensive GitHub issue
+        issue_body = f"""
+        Comprehensive codebase analysis for {repo_path}
+        
+        Analysis Requirements:
+        - Code quality assessment
+        - Security vulnerability scan  
+        - Performance bottleneck identification
+        - Test coverage analysis
+        - Documentation completeness review
+        
+        Let Sparky determine which specialized agents handle each aspect.
+        """
+        
+        issue_number = self.create_analysis_issue(repo_path, issue_body)
+        
+        # Submit to Sparky for intelligent agent routing
+        result = self.external_processor.process_external_issue(
+            repo="your-org/dev-project",
+            issue_number=issue_number
+        )
         
         return {
-            "review_command": review_cmd,
-            "test_command": test_cmd,
-            "repository": repo_path
+            "status": "submitted_to_sparky",
+            "issue_number": issue_number,
+            "repository": repo_path,
+            "orchestration_complete": result.get("success", False),
+            "agents_called_directly": False  # This should ALWAYS be False!
         }
 ```
 
@@ -662,6 +941,43 @@ Use this checklist to verify your integration:
 - [ ] Team trained on framework usage
 
 ## Troubleshooting
+
+### CRITICAL: Integration Pattern Issues
+
+#### ❌ Issue: "My agents aren't working correctly"
+
+**Symptoms:**
+- Inconsistent results
+- Missing context
+- Broken dependencies
+- Poor error handling
+
+**Root Cause:** Calling agents directly instead of using orchestration
+
+**Solution:**
+```python
+# ❌ WRONG - Direct agent calls
+run_framework_agent("SmartIssueAgent", "task description")
+
+# ✅ CORRECT - Issue orchestration  
+processor = ExternalIssueProcessor()
+result = processor.process_external_issue("your-repo", 123)
+```
+
+#### ❌ Issue: "Sister repo integration is unreliable"
+
+**Symptoms:**
+- Random failures
+- Inconsistent behavior
+- Missing telemetry data
+
+**Root Cause:** Bypassing Sparky orchestration
+
+**Solution:**
+1. Always create GitHub issues first
+2. Submit issue numbers (not descriptions)
+3. Let Sparky handle all agent routing
+4. Never call `bin/agent.py run` directly
 
 ### Common Issues and Solutions
 
@@ -881,116 +1197,137 @@ if __name__ == "__main__":
 | `subprocess.TimeoutExpired` | Agent execution timeout | Increase timeout or check agent task complexity |
 | `JSON decode error` | Invalid agent response | Check agent output format and error handling |
 
-## Advanced Integration Patterns
+## Advanced Integration Patterns (CORRECT)
 
-### Pattern 1: Background Agent Execution
+### Pattern 1: Batch Issue Processing
 
 ```python
 import asyncio
-import subprocess
 from utils.agent_bridge import get_framework_path
+import sys
+sys.path.insert(0, str(get_framework_path()))
+from core.github_integration import ExternalIssueProcessor
 
-class BackgroundAgentRunner:
-    """Run framework agents in background."""
+class BatchIssueProcessor:
+    """
+    CORRECT: Process multiple GitHub issues via Sparky orchestration.
+    Never calls agents directly.
+    """
     
-    @staticmethod
-    async def run_agent_background(agent_name: str, task: str) -> str:
-        """Run agent in background and return process ID."""
-        framework_path = get_framework_path()
-        cmd = [
-            "uv", "run", "python",
-            str(framework_path / "bin" / "agent.py"),
-            "run", agent_name, task
-        ]
+    def __init__(self, repo: str):
+        self.repo = repo
+        self.external_processor = ExternalIssueProcessor()
+    
+    async def process_issue_batch(self, issue_numbers: List[int]) -> List[Dict]:
+        """Process multiple issues through Sparky orchestration."""
+        tasks = []
         
-        # Start process in background
-        process = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+        for issue_number in issue_numbers:
+            task = self._create_issue_task(issue_number)
+            tasks.append(task)
+        
+        results = await asyncio.gather(*tasks, return_exceptions=True)
+        return results
+    
+    async def _create_issue_task(self, issue_number: int):
+        """Create async task for issue processing via Sparky."""
+        return await asyncio.to_thread(
+            self.external_processor.process_external_issue,
+            self.repo, 
+            issue_number
         )
-        
-        return f"background_agent_{process.pid}"
 ```
 
-### Pattern 2: Agent Result Processing
+### Pattern 2: Issue Status Monitoring
 
 ```python
-from utils.agent_bridge import run_framework_agent
-import subprocess
-import json
+from utils.agent_bridge import get_framework_path
+import sys
+sys.path.insert(0, str(get_framework_path()))
+from core.github_integration import ExternalIssueProcessor
 
-class AgentResultProcessor:
-    """Process and parse framework agent results."""
+class IssueStatusMonitor:
+    """
+    CORRECT: Monitor issue processing through GitHub API.
+    Uses only orchestration pattern.
+    """
     
-    @staticmethod
-    def run_agent_with_result(agent_name: str, task: str) -> dict:
-        """Run agent and parse structured result."""
-        framework_path = get_framework_path()
-        cmd = [
-            "uv", "run", "python",
-            str(framework_path / "bin" / "agent.py"),
-            "run", agent_name, task
-        ]
+    def __init__(self, repo: str):
+        self.repo = repo
+        self.external_processor = ExternalIssueProcessor()
+    
+    def submit_and_monitor(self, issue_number: int) -> Dict:
+        """Submit issue to Sparky and monitor progress."""
         
-        result = subprocess.run(cmd, capture_output=True, text=True)
+        print(f"🚀 Submitting issue #{issue_number} to Sparky")
         
-        return {
-            "success": result.returncode == 0,
-            "stdout": result.stdout,
-            "stderr": result.stderr,
-            "agent": agent_name,
-            "task": task
-        }
+        # Submit via ExternalIssueProcessor (CORRECT way)
+        result = self.external_processor.process_external_issue(
+            self.repo, issue_number
+        )
+        
+        if result.get("success"):
+            print(f"✅ Issue #{issue_number} processed successfully")
+            return {
+                "status": "completed",
+                "issue_number": issue_number,
+                "agent_used": result.get('issue', {}).get('agent'),
+                "orchestrated_by_sparky": True
+            }
+        else:
+            print(f"❌ Issue processing failed: {result.get('error')}")
+            return {
+                "status": "failed",
+                "issue_number": issue_number,
+                "error": result.get('error'),
+                "orchestrated_by_sparky": True
+            }
 ```
 
-### Pattern 3: Multi-Agent Coordination
+### Pattern 3: Multi-Repository Coordination
 
 ```python
 from typing import List, Dict
-import asyncio
 from utils.agent_bridge import get_framework_path
+import sys
+sys.path.insert(0, str(get_framework_path()))
+from core.github_integration import ExternalIssueProcessor
 
-class MultiAgentCoordinator:
-    """Coordinate multiple framework agents."""
+class MultiRepoCoordinator:
+    """
+    CORRECT: Coordinate issues across multiple repositories.
+    All processing goes through Sparky orchestration.
+    """
     
-    async def coordinate_agents(self, agent_tasks: List[Dict]) -> List[Dict]:
-        """Run multiple agents concurrently."""
+    def __init__(self):
+        self.external_processor = ExternalIssueProcessor()
+    
+    async def coordinate_cross_repo_issues(self, repo_issues: List[Dict]) -> List[Dict]:
+        """
+        Process issues across multiple repositories via Sparky.
+        
+        Args:
+            repo_issues: List of {"repo": "org/repo", "issue": 123}
+        """
         tasks = []
         
-        for config in agent_tasks:
-            task = self._create_agent_task(
-                config["agent"], 
-                config["task"]
+        for config in repo_issues:
+            task = self._create_cross_repo_task(
+                config["repo"], 
+                config["issue"]
             )
             tasks.append(task)
         
         results = await asyncio.gather(*tasks, return_exceptions=True)
         return results
     
-    async def _create_agent_task(self, agent_name: str, task: str):
-        """Create async task for agent execution."""
-        framework_path = get_framework_path()
-        cmd = [
-            "uv", "run", "python",
-            str(framework_path / "bin" / "agent.py"),
-            "run", agent_name, task
-        ]
-        
-        process = await asyncio.create_subprocess_exec(
-            *cmd,
-            stdout=asyncio.subprocess.PIPE,
-            stderr=asyncio.subprocess.PIPE
+    async def _create_cross_repo_task(self, repo: str, issue_number: int):
+        """Create task for cross-repo issue processing."""
+        return await asyncio.to_thread(
+            self.external_processor.process_external_issue,
+            repo,
+            issue_number
         )
-        
-        stdout, stderr = await process.communicate()
-        return {
-            "agent": agent_name,
-            "task": task,
-            "success": process.returncode == 0,
-            "output": stdout.decode(),
-            "error": stderr.decode()
-        }
 ```
 
 ## Framework Updates
@@ -1037,21 +1374,43 @@ echo "12-factor-agents-commit: $(git rev-parse HEAD)" > framework-version.lock
 
 ## Summary
 
-This integration guide provides everything needed for sister repositories to seamlessly access the 12-factor-agents framework. The key components are:
+This integration guide provides the CORRECT pattern for sister repositories to integrate with 12-factor-agents. The critical components are:
 
-1. **Agent Bridge**: Copy `utils/agent_bridge.py` for path resolution
-2. **Submit Script**: Use `scripts/submit_to_agents.py` for task submission  
-3. **Integration Tests**: Implement `tests/test_framework_integration.py`
-4. **Verification**: Follow the checklist and run diagnostics
-5. **Troubleshooting**: Use the error reference for quick fixes
+## 🚨 REMEMBER: Issue-Orchestration Pattern ONLY
 
-The framework provides powerful agent capabilities with zero configuration - just clone as a sister repository and start using relative paths for access.
+**NEVER call agents directly. ALWAYS use GitHub issues + Sparky orchestration.**
+
+### Key Integration Components:
+
+1. **GitHub Issues First**: Always create GitHub issues with task descriptions
+2. **ExternalIssueProcessor**: Submit issue numbers (not descriptions) to Sparky  
+3. **Agent Bridge**: Copy `utils/agent_bridge.py` for framework access
+4. **Correct Submit Script**: Use updated `scripts/submit_to_agents.py` with validation
+5. **Integration Tests**: Verify orchestration pattern works correctly
+
+### The ONLY Correct Pattern:
+```python
+# 1. Create GitHub issue (with gh CLI or GitHub web interface)
+# 2. Submit issue number to Sparky
+from core.github_integration import ExternalIssueProcessor
+processor = ExternalIssueProcessor()
+result = processor.process_external_issue("your-org/your-repo", 123)
+```
+
+### What This Fixes:
+- **Sister repo confusion**: Clear distinction between direct calls (wrong) vs orchestration (right)
+- **Broken integrations**: pin-citer and other repos were calling agents directly
+- **Missing context**: Sparky provides full issue context and intelligent routing
+- **Poor error handling**: Direct calls skip comprehensive error recovery
+- **No telemetry**: Direct calls break monitoring and analytics
 
 **Next Steps:**
-1. Copy the agent bridge to your project
-2. Run verification commands  
-3. Create your first integrated agent
-4. Add integration tests
-5. Start leveraging framework agents for complex tasks
+1. Copy the corrected agent bridge to your project
+2. Use the validated submit script that prevents direct calls
+3. Create GitHub issues for all tasks  
+4. Submit issue numbers (not task descriptions) to ExternalIssueProcessor
+5. Let Sparky handle all agent routing and execution
 
-For additional examples and documentation, explore the framework's `docs/` directory using relative paths from your project.
+**Critical Reminder**: If you're calling `run_framework_agent()` or `bin/agent.py run` directly, you're doing it wrong. Create GitHub issues and submit the numbers to Sparky instead.
+
+For additional examples, see the corrected patterns throughout this document.
