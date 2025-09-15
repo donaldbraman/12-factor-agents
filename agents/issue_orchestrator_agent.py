@@ -19,10 +19,18 @@ from core.agent import BaseAgent  # noqa: E402
 from core.tools import Tool, ToolResponse  # noqa: E402
 from core.telemetry import EnhancedTelemetryCollector  # noqa: E402
 from core.loop_protection import LOOP_PROTECTION  # noqa: E402
-from core.execution_context import (
+from core.capabilities import (  # noqa: E402
+    detect_intent_from_issue,
+    get_routing_mismatch_feedback,
+)
+from core.feedback_templates import (  # noqa: E402
+    generate_mismatch_feedback,
+    get_success_confirmation,
+)
+from core.execution_context import (  # noqa: E402
     ExecutionContext,
     create_default_context,
-)  # noqa: E402
+)
 import time  # noqa: E402
 
 
@@ -243,6 +251,99 @@ print(f"Result: {{result.success}}")
         }
 
 
+class RoutingFeedbackTool(Tool):
+    """Analyze issue routing and provide helpful feedback"""
+
+    def __init__(self):
+        super().__init__(
+            name="analyze_routing",
+            description="Analyze issue routing and provide feedback on potential mismatches",
+        )
+
+    def execute(self, issue_data: Dict[str, Any]) -> ToolResponse:
+        """Analyze routing and provide feedback"""
+        try:
+            # Extract issue information
+            title = issue_data.get("title", "")
+            description = issue_data.get("description", "")
+            assigned_agent = issue_data.get("agent", "")
+
+            if not assigned_agent:
+                return ToolResponse(
+                    success=True,
+                    data={
+                        "feedback_type": "no_agent_assigned",
+                        "message": "⚠️ **No Agent Assigned**\n\nThis issue doesn't have an agent assigned. Please add an agent assignment to the issue.",
+                        "suggestions": [
+                            "Add an **Agent Assignment** section to the issue",
+                            "Choose an appropriate agent based on the issue content",
+                        ],
+                    },
+                )
+
+            # Detect intent from issue content
+            detected_intent = detect_intent_from_issue(title, description)
+
+            # Check for routing mismatches
+            mismatch_feedback = get_routing_mismatch_feedback(
+                assigned_agent, detected_intent, f"{title} {description}"
+            )
+
+            if mismatch_feedback is None:
+                # No mismatch - routing looks good
+                success_message = get_success_confirmation(
+                    assigned_agent, detected_intent
+                )
+                return ToolResponse(
+                    success=True,
+                    data={
+                        "feedback_type": "routing_confirmed",
+                        "message": success_message,
+                        "detected_intent": detected_intent.value,
+                        "assigned_agent": assigned_agent,
+                    },
+                )
+            else:
+                # Mismatch detected - provide detailed feedback
+                detailed_feedback = generate_mismatch_feedback(
+                    assigned_agent,
+                    detected_intent,
+                    {"title": title, "description": description},
+                )
+
+                return ToolResponse(
+                    success=True,
+                    data={
+                        "feedback_type": "routing_mismatch",
+                        "mismatch_detected": True,
+                        "detected_intent": detected_intent.value,
+                        "assigned_agent": assigned_agent,
+                        **detailed_feedback,
+                        "raw_mismatch_data": mismatch_feedback,
+                    },
+                )
+
+        except Exception as e:
+            return ToolResponse(success=False, error=str(e))
+
+    def get_parameters_schema(self) -> Dict[str, Any]:
+        return {
+            "type": "object",
+            "properties": {
+                "issue_data": {
+                    "type": "object",
+                    "properties": {
+                        "title": {"type": "string"},
+                        "description": {"type": "string"},
+                        "agent": {"type": "string"},
+                        "number": {"type": "string"},
+                    },
+                }
+            },
+            "required": ["issue_data"],
+        }
+
+
 class IssueStatusUpdaterTool(Tool):
     """Update issue status"""
 
@@ -315,7 +416,12 @@ class IssueOrchestratorAgent(BaseAgent):
 
     def register_tools(self) -> List[Tool]:
         """Register orchestration tools"""
-        return [IssueReaderTool(), AgentDispatcherTool(), IssueStatusUpdaterTool()]
+        return [
+            IssueReaderTool(),
+            AgentDispatcherTool(),
+            RoutingFeedbackTool(),
+            IssueStatusUpdaterTool(),
+        ]
 
     def execute_task(self, task: str, context: ExecutionContext = None) -> ToolResponse:
         """
@@ -399,7 +505,8 @@ class IssueOrchestratorAgent(BaseAgent):
 
         # Process issues
         dispatcher_tool = self.tools[1]  # AgentDispatcherTool
-        updater_tool = self.tools[2]  # IssueStatusUpdaterTool
+        routing_feedback_tool = self.tools[2]  # RoutingFeedbackTool
+        updater_tool = self.tools[3]  # IssueStatusUpdaterTool
 
         for issue in issues:
             # Loop protection check
@@ -467,13 +574,65 @@ class IssueOrchestratorAgent(BaseAgent):
                 )
                 continue
 
+            # Analyze routing and provide feedback BEFORE dispatching
+            print(f"\n{'='*60}")
+            print(f"Processing Issue {issue['number']}: {issue['title']}")
+            if issue["agent"]:
+                print(f"Assigned Agent: {issue['agent']}")
+
+                # Analyze routing for potential mismatches
+                print(f"\n🔍 Analyzing routing for Issue {issue['number']}...")
+                feedback_result = routing_feedback_tool.execute(issue_data=issue)
+
+                if feedback_result.success:
+                    feedback_data = feedback_result.data
+                    feedback_type = feedback_data.get("feedback_type", "unknown")
+
+                    if feedback_type == "routing_mismatch":
+                        print("\n" + "🚫" * 20)
+                        print(feedback_data.get("message", "Routing mismatch detected"))
+                        if "suggestions" in feedback_data:
+                            print("\n💡 **Suggestions:**")
+                            for suggestion in feedback_data["suggestions"]:
+                                print(f"   • {suggestion}")
+                        if "recommended_actions" in feedback_data:
+                            print("\n📋 **Recommended Actions:**")
+                            for action in feedback_data["recommended_actions"]:
+                                print(f"   • {action}")
+                        print("🚫" * 20)
+
+                        # Log mismatch for telemetry
+                        self.telemetry.record_implementation_gap(
+                            repo_name=repo_name,
+                            agent_name="IssueOrchestratorAgent",
+                            gap_type="routing_mismatch",
+                            description=f"Issue {issue['number']} routing mismatch: {feedback_data.get('assigned_agent')} assigned for {feedback_data.get('detected_intent')}",
+                            context=feedback_data,
+                        )
+
+                        # Still proceed with original assignment, but with warning
+                        print(
+                            f"\n⚠️ Proceeding with original assignment ({issue['agent']}) despite mismatch warning..."
+                        )
+
+                    elif feedback_type == "routing_confirmed":
+                        print(
+                            f"✅ Routing confirmed: {issue['agent']} is appropriate for this issue"
+                        )
+                        print(
+                            f"   Detected intent: {feedback_data.get('detected_intent', 'unknown')}"
+                        )
+
+                    elif feedback_type == "no_agent_assigned":
+                        print(feedback_data.get("message", "No agent assigned"))
+                else:
+                    print(f"⚠️ Could not analyze routing: {feedback_result.error}")
+            else:
+                print("⚠️ No agent assigned")
+            print(f"{'='*60}")
+
             # Dispatch agent
             if issue["agent"]:
-                print(f"\n{'='*60}")
-                print(f"Processing Issue {issue['number']}: {issue['title']}")
-                print(f"Agent: {issue['agent']}")
-                print(f"{'='*60}")
-
                 # Determine task for agent
                 # ALWAYS include issue number so agents can find the file
                 agent_task = f"Process issue #{issue['number']}"
