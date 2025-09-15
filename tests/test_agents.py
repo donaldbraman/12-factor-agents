@@ -17,7 +17,19 @@ class TestCore:
 
     def test_base_agent(self):
         """Test BaseAgent creation"""
-        agent = BaseAgent()
+
+        # BaseAgent is abstract, need to create a concrete implementation
+        class TestAgentImpl(BaseAgent):
+            def register_tools(self):
+                return []
+
+            def execute_task(self, task):
+                return ToolResponse(success=True, data={"test": "pass"})
+
+            def _apply_action(self, action):
+                return ToolResponse(success=True, data={"test": "pass"})
+
+        agent = TestAgentImpl()
         assert agent is not None
         assert hasattr(agent, "execute_task")
         assert hasattr(agent, "register_tools")
