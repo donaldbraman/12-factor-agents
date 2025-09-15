@@ -6,7 +6,7 @@ Orchestrates the complete review → issue → fix → test → merge pipeline.
 import json
 import subprocess
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from datetime import datetime
 import time
 
@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 
 class FilteredIssueTool(Tool):
@@ -291,6 +292,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 
 def test_base_agent():
@@ -437,7 +439,9 @@ class IssueProcessorAgent(BaseAgent):
             PullRequestTool(),
         ]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Execute the complete pipeline.
         Task format: "process review report" or "process <report_path>"

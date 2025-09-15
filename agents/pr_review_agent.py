@@ -7,12 +7,13 @@ import os
 import json
 import re
 from pathlib import Path
-from typing import Dict, List, Any
+from typing import Dict, List, Any, Optional
 from anthropic import Anthropic
 from github import Github
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 
 class FetchPRTool(Tool):
@@ -416,7 +417,9 @@ class PRReviewAgent(BaseAgent):
             "update_description": True,
         }
 
-    def execute_task(self, task: str) -> Any:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> Any:
         """Execute PR review task"""
         print(f"🔍 PRReviewAgent executing: {task}")
 

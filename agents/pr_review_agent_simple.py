@@ -7,11 +7,12 @@ import os
 import json
 import subprocess
 from pathlib import Path
-from typing import Dict, Any
+from typing import Dict, Any, Optional
 from github import Github
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 
 class FetchPRTool(Tool):
@@ -306,7 +307,9 @@ class SimplePRReviewAgent(BaseAgent):
         else:
             return {"error": f"Unknown action: {action_name}"}
 
-    def execute_task(self, task: str) -> Any:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> Any:
         """Execute PR review task"""
         print(f"🔍 SimplePRReviewAgent executing: {task}")
 
