@@ -1,7 +1,7 @@
 #!/usr/bin/env uv run python
 """
 Example showing how pin-citer would integrate with 12-factor-agents framework
-using symlinks for seamless access to context-conserving workflows.
+using relative paths for seamless access to context-conserving workflows.
 
 This demonstrates the before/after integration for pin-citer's citation pipeline.
 """
@@ -9,17 +9,17 @@ import asyncio
 from dataclasses import dataclass
 from typing import List
 
-# This is how pin-citer would import after symlink setup
+# This is how pin-citer would import using relative paths
 try:
-    # Import framework components via symlinks
+    # Import framework components via relative path
     from agents.framework.core.context_bundles import ContextBundle, BundleEnabledAgent
     from agents.framework.core.background_executor import BackgroundAgentExecutor
 
     framework_available = True
-    print("✅ Framework imports successful via symlinks")
+    print("✅ Framework imports successful via relative paths")
 except ImportError:
     # Fallback for demonstration
-    print("ℹ️ Framework not available via symlinks - using mock implementations")
+    print("ℹ️ Framework not available via relative paths - using mock implementations")
     framework_available = False
 
     # Mock implementations for demonstration
@@ -81,17 +81,17 @@ class PinCiterWorkflowOrchestrator_BEFORE:
         # Step 1: Document analysis (blocks)
         print("1️⃣ Analyzing document structure...")
         await asyncio.sleep(1)  # Simulate work
-        analysis = {"structure": "academic_paper", "sections": 5}
+        _ = {"structure": "academic_paper", "sections": 5}  # analysis placeholder
 
         # Step 2: Citation extraction (blocks)
         print("2️⃣ Extracting citations...")
         await asyncio.sleep(2)  # Simulate work
-        raw_citations = ["Citation 1", "Citation 2", "Citation 3"]
+        _ = ["Citation 1", "Citation 2", "Citation 3"]  # raw_citations placeholder
 
         # Step 3: Zotero search (blocks)
         print("3️⃣ Searching Zotero library...")
         await asyncio.sleep(3)  # Simulate work
-        zotero_matches = ["Match 1", "Match 2"]
+        _ = ["Match 1", "Match 2"]  # zotero_matches placeholder
 
         # Step 4: Quality validation (blocks)
         print("4️⃣ Validating citation quality...")
@@ -218,9 +218,9 @@ class PinCiterWorkflowOrchestrator_AFTER(BundleEnabledAgent):
         )
 
         # Perfect handoff to coordination agent (preserves full context)
-        coordination_result = await self.handoff_to_agent(
+        _ = await self.handoff_to_agent(
             "CitationCoordinationAgent", coordination_context
-        )
+        )  # coordination_result placeholder
 
         print("🔄 AFTER: Perfect handoff completed with zero context loss")
 
@@ -246,21 +246,21 @@ class PinCiterWorkflowOrchestrator_AFTER(BundleEnabledAgent):
 
 class PinCiterDocumentationAccess:
     """
-    Demonstrates how pin-citer can access framework documentation locally via symlinks
+    Demonstrates how pin-citer can access framework documentation locally via relative paths
     """
 
     @staticmethod
     def access_local_docs():
-        """Show local documentation access via symlinks"""
-        print("\n📚 LOCAL DOCUMENTATION ACCESS VIA SYMLINKS")
+        """Show local documentation access via relative paths"""
+        print("\n📚 LOCAL DOCUMENTATION ACCESS VIA RELATIVE PATHS")
         print("=" * 50)
 
         # Pin-citer can read these locally in their IDE/editor
         local_docs = [
-            ".agents/framework/docs/12-FACTOR-AGENTS.md",
-            ".agents/framework/docs/CONTEXT-BUNDLES.md",
-            ".agents/framework/docs/BACKGROUND-EXECUTOR.md",
-            ".agents/framework/docs/SYMLINK-INTEGRATION-GUIDE.md",
+            "../12-factor-agents/docs/user/USER_GUIDE.md",
+            "../12-factor-agents/docs/developer/DEVELOPER_GUIDE.md",
+            "../12-factor-agents/docs/architecture/ARCHITECTURE_OVERVIEW.md",
+            "../12-factor-agents/docs/HIERARCHICAL-ORCHESTRATION.md",
         ]
 
         print("📖 Available documentation (local access):")
@@ -269,9 +269,9 @@ class PinCiterDocumentationAccess:
 
         print("\n🔧 Available examples (copy & customize):")
         example_commands = [
-            "cp .agents/framework/examples/context_bundle_example.py ./pin_citer/",
-            "cp .agents/framework/examples/background_executor_example.py ./pin_citer/",
-            "cp .agents/framework/scripts/launch_agent.py ./pin_citer/scripts/",
+            "cp ../12-factor-agents/examples/pin_citer_integration_example.py ./pin_citer/",
+            "cp ../12-factor-agents/utils/agent_bridge.py ./pin_citer/utils/",
+            "cp ../12-factor-agents/bin/agent.py ./pin_citer/scripts/",
         ]
 
         for cmd in example_commands:
@@ -279,9 +279,9 @@ class PinCiterDocumentationAccess:
 
         print("\n🚀 Launch framework scripts directly:")
         script_examples = [
-            ".agents/framework/scripts/benchmark_performance.py",
-            ".agents/framework/scripts/validate_compliance.py",
-            "python .agents/framework/scripts/setup_external_integration.sh",
+            'uv run python ../12-factor-agents/bin/agent.py run SmartIssueAgent "123"',
+            "uv run python ../12-factor-agents/scripts/quick_performance_check.py",
+            "bash ../12-factor-agents/scripts/setup_external_integration.sh",
         ]
 
         for script in script_examples:
@@ -343,9 +343,9 @@ async def main():
     print("✅ Context Bundles: Perfect handoffs with zero context loss")
     print("✅ Background Executor: 20-30+ concurrent agents")
     print("✅ R&D Framework: Systematic context optimization")
-    print("✅ Local Documentation: All guides accessible via symlinks")
+    print("✅ Local Documentation: All guides accessible via relative paths")
     print("✅ Automatic Updates: git pull in framework updates all repos")
-    print("✅ Clean Integration: Single symlink provides everything")
+    print("✅ Clean Integration: Relative path access provides everything")
 
 
 if __name__ == "__main__":

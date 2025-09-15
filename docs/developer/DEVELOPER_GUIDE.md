@@ -38,9 +38,10 @@ parent-directory/
 └── other-projects/       # Other sister repos
 ```
 
-### Integration Methods
+### Integration Method: Relative Path Access
 
-#### Method 1: Direct Relative Path Access
+**The 12-Factor Agents framework uses a zero-setup relative path approach for sister repository integration.**
+
 ```python
 from pathlib import Path
 import sys
@@ -55,14 +56,80 @@ result = processor.process_external_issue(
 )
 ```
 
-#### Method 2: Symlink Setup (Recommended)
-```bash
-cd /path/to/your-project
-ln -s ../12-factor-agents .agents
-echo ".agents/" >> .gitignore
+**Key Benefits:**
+- Zero configuration required
+- No symlinks to manage or ignore
+- Works consistently across all environments
+- Standard pattern for all sister repositories
 
-# Test it works
-uv run python .agents/bin/agent.py list
+## Cross-Repository Setup
+
+### Directory Layout
+Organize your repositories as siblings in a parent directory:
+
+```
+parent-directory/
+├── 12-factor-agents/     # The framework (this repository)
+├── project-alpha/        # Your first project
+├── project-beta/         # Your second project  
+├── legacy-system/        # Existing system to integrate
+└── experimental/         # Research projects
+```
+
+### Helper Pattern for Sister Repos
+Create a standard helper in each project for consistent imports:
+
+```python
+# your_project/utils/agent_bridge.py
+"""
+Standard bridge to 12-factor-agents framework.
+Use this in all sister repositories for consistent access.
+"""
+import sys
+from pathlib import Path
+
+def setup_agent_framework():
+    """Setup path to 12-factor-agents framework."""
+    framework_path = Path(__file__).parent.parent.parent / "12-factor-agents"
+    if framework_path.exists():
+        sys.path.insert(0, str(framework_path))
+        return True
+    else:
+        raise ImportError(f"12-factor-agents not found at {framework_path}")
+
+def get_framework_path():
+    """Get absolute path to the framework."""
+    return Path(__file__).parent.parent.parent / "12-factor-agents"
+
+# Auto-setup when imported
+setup_agent_framework()
+```
+
+### Usage in Your Projects
+```python
+# your_project/agents/my_agent.py
+from utils.agent_bridge import setup_agent_framework
+
+# Framework is now available
+from core.agent import BaseAgent
+from core.tools import ToolResponse
+
+class MyProjectAgent(BaseAgent):
+    def execute_task(self, task: str) -> ToolResponse:
+        # Your agent implementation
+        return ToolResponse(success=True, data={"result": "completed"})
+```
+
+### Running Agents from Sister Repos
+```bash
+# From your project directory
+cd /path/to/your-project
+
+# Run framework agents directly
+uv run python ../12-factor-agents/bin/agent.py run SmartIssueAgent "123"
+
+# Run your custom agents
+uv run python agents/my_agent.py
 ```
 
 ## Creating Your First Agent
@@ -72,7 +139,7 @@ uv run python .agents/bin/agent.py list
 # your_project/custom_agent.py
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent / ".agents"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "12-factor-agents"))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
@@ -380,16 +447,18 @@ SISTER_REPO_BASE_PATH=/path/to/parent-directory
 
 ### Project Structure
 ```
-your-project/
-├── .agents/              # Symlink to 12-factor-agents
-├── agents/               # Your custom agents
-│   ├── __init__.py
-│   └── custom_agent.py
-├── prompts/              # Externalized prompts
-│   └── templates/
-├── tests/
-│   └── test_agents.py
-└── .env                  # Environment configuration
+parent-directory/
+├── 12-factor-agents/     # Framework repository
+├── your-project/         # Your project
+│   ├── agents/           # Your custom agents
+│   │   ├── __init__.py
+│   │   └── custom_agent.py
+│   ├── prompts/          # Externalized prompts
+│   │   └── templates/
+│   ├── tests/
+│   │   └── test_agents.py
+│   └── .env              # Environment configuration
+└── other-projects/       # Other sister repositories
 ```
 
 ## Performance Optimization
@@ -468,7 +537,7 @@ class MonitoredAgent(BaseAgent):
 ```python
 import sys
 from pathlib import Path
-sys.path.insert(0, str(Path(__file__).parent / ".agents"))
+sys.path.insert(0, str(Path(__file__).parent.parent / "12-factor-agents"))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
@@ -515,7 +584,7 @@ class SimpleReviewAgent(BaseAgent):
 
 | Issue | Solution |
 |-------|----------|
-| Import errors | Ensure symlinks are created correctly |
+| Import errors | Ensure relative path to 12-factor-agents is correct |
 | Agent not found | Check agent class name matches file name |
 | Checkpoint failures | Verify CHECKPOINT_DIR exists and is writable |
 | Performance issues | Use pipeline stages to parallelize work |

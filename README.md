@@ -23,12 +23,11 @@ curl -LsSf https://astral.sh/uv/install.sh | sh
 # 1. Setup framework
 ./setup.sh
 
-# 2. Link in your project (from your project directory)
-ln -s ../12-factor-agents .agents
-echo ".agents/" >> .gitignore
+# 2. Verify framework accessibility (from your project directory)
+ls ../12-factor-agents
 
 # 3. Test the integration
-uv run python .agents/bin/agent.py list
+uv run python ../12-factor-agents/bin/agent.py list
 ```
 
 ### Basic Usage
@@ -70,15 +69,14 @@ parent-directory/
 ```
 
 ### Zero-Configuration Setup
-Your projects automatically get access to the intelligent agent system through symlinks:
+Your projects automatically get access to the intelligent agent system through relative paths:
 
 ```bash
 # From any project directory
 cd /path/to/your-project
-ln -s ../12-factor-agents .agents
 
-# Now you have access to everything
-uv run python .agents/bin/agent.py run IntelligentIssueAgent "Create a citation template"
+# Now you have access to everything via relative paths
+uv run python ../12-factor-agents/bin/agent.py run IntelligentIssueAgent "Create a citation template"
 ```
 
 ## What Makes This Different
@@ -149,7 +147,7 @@ Launch truly parallel research that doesn't block your workflow:
 uv run python ../12-factor-agents/bin/agent.py run SmartIssueAgent "123"
 
 # Access intelligent agents
-uv run python .agents/bin/agent.py run IntelligentIssueAgent "Create API documentation"
+uv run python ../12-factor-agents/bin/agent.py run IntelligentIssueAgent "Create API documentation"
 ```
 
 ### From Framework Directory
