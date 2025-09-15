@@ -3,7 +3,7 @@ Base Agent class implementing 12-factor methodology.
 """
 
 from abc import ABC, abstractmethod
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 from pathlib import Path
 import json
 from datetime import datetime
@@ -12,6 +12,7 @@ from .state import UnifiedState
 from .context import ContextManager
 from .prompt_manager import PromptManager
 from .tools import Tool, ToolResponse
+from .execution_context import ExecutionContext, create_default_context
 
 
 class BaseAgent(ABC):
@@ -35,6 +36,9 @@ class BaseAgent(ABC):
         self.checkpoint_path = Path(f".claude/agents/checkpoints/{self.agent_id}.json")
         self.status = "idle"
         self.created_at = datetime.now()
+
+        # Execution context for cross-repository operations
+        self.context: Optional[ExecutionContext] = None
 
         # Enhanced progress tracking (pin-citer pattern)
         self.progress = 0.0
@@ -67,23 +71,39 @@ class BaseAgent(ABC):
         pass
 
     @abstractmethod
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Execute the agent's primary task.
         Factor 10: Small, focused agents with single responsibility.
+
+        Args:
+            task: The task to execute
+            context: Optional execution context for cross-repository operations
         """
         pass
 
-    def launch(self, task: str) -> ToolResponse:
+    def launch(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Launch agent execution.
         Factor 6: Simple launch API.
+
+        Args:
+            task: The task to execute
+            context: Optional execution context for cross-repository operations
         """
         self.status = "running"
+
+        # Set the execution context
+        self.context = context or create_default_context()
+
         self.save_checkpoint()
 
         try:
-            result = self.execute_task(task)
+            result = self.execute_task(task, self.context)
             self.status = "completed"
             return result
         except Exception as e:
