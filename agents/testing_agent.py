@@ -6,7 +6,7 @@ Runs unit tests, integration tests, and validates agent functionality.
 import subprocess
 import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import sys
 import traceback
 
@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent  # noqa: E402
 from core.tools import Tool, ToolResponse  # noqa: E402
+from core.execution_context import ExecutionContext  # noqa: E402
 
 
 class UnitTestTool(Tool):
@@ -445,7 +446,9 @@ class TestingAgent(BaseAgent):
         """Register testing tools"""
         return [UnitTestTool(), IntegrationTestTool(), PytestTool(), LintTool()]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Execute comprehensive testing.
         Task format: "run tests" or "test <specific_area>"

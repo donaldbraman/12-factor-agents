@@ -16,6 +16,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent  # noqa: E402
 from core.tools import Tool, ToolResponse  # noqa: E402
+from core.execution_context import ExecutionContext  # noqa: E402
 
 
 class IssueComplexity(Enum):
@@ -771,7 +772,9 @@ class IssueDecomposerAgent(BaseAgent):
         """Register decomposition tools"""
         return [ComplexityAnalyzerTool(), IssueDecomposerTool(), SubIssueCreatorTool()]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Analyze and decompose an issue.
         Task format: issue number or path to issue file

@@ -4,7 +4,7 @@ Designed to solve Issue #009: Migrate All Python Operations to UV
 """
 
 from pathlib import Path
-from typing import Dict, Any, List, Tuple
+from typing import Dict, Any, List, Tuple, Optional
 
 # Import from parent directory
 import sys
@@ -13,6 +13,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 
 class FileUpdaterTool(Tool):
@@ -217,7 +218,9 @@ class UvMigrationAgent(BaseAgent):
         """Register migration tools"""
         return [FileUpdaterTool(), ShebangUpdaterTool(), DocumentationUpdaterTool()]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Execute uv migration across the codebase.
         Expected task: "migrate to uv" or "solve issue #009"
