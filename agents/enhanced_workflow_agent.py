@@ -18,6 +18,7 @@ from core.agent import BaseAgent
 from core.pipeline import MultiStagePipeline, PipelineStage, PipelineDecision
 from core.orchestrator import ProgressAwareOrchestrator, WorkflowPhase
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 logger = logging.getLogger(__name__)
 
@@ -339,7 +340,9 @@ class EnhancedWorkflowAgent(BaseAgent):
             f"Processing completed. {len(successful)}/{len(results)} successful"
         )
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Execute enhanced workflow task.
         Demonstrates comprehensive pin-citer patterns.

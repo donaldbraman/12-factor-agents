@@ -4,7 +4,7 @@ Designed to solve Issue #003: Implement Prompt Management
 """
 
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 import json
 from datetime import datetime
 
@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 
 class PromptCreatorTool(Tool):
@@ -437,7 +438,9 @@ class PromptManagementAgent(BaseAgent):
         """Register prompt management tools"""
         return [PromptCreatorTool(), PromptManagerCreatorTool(), BaseAgentUpdaterTool()]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Execute prompt management setup.
         Expected task: "implement prompt management" or "solve issue #003"

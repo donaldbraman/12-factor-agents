@@ -6,7 +6,7 @@ Designed to solve Issue #004: Implement Event Trigger System
 import os
 import json
 from pathlib import Path
-from typing import Dict, Any, List
+from typing import Dict, Any, List, Optional
 
 # Import from parent directory
 import sys
@@ -15,6 +15,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext
 
 
 class EventSystemCreatorTool(Tool):
@@ -626,7 +627,9 @@ class EventSystemAgent(BaseAgent):
         """Register event system tools"""
         return [EventSystemCreatorTool(), EventCLICreatorTool()]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(
+        self, task: str, context: Optional[ExecutionContext] = None
+    ) -> ToolResponse:
         """
         Execute event system implementation.
         Expected task: "implement event system" or "solve issue #004"
