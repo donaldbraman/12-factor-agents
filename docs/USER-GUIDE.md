@@ -1,4 +1,4 @@
-# SmartIssueAgent User Guide
+# Sparky User Guide - Intelligent Issue Resolution System
 **Zero-to-productive in 2 minutes. No fluff, only actionable intelligence.**
 
 ## Quick Start (30 seconds)

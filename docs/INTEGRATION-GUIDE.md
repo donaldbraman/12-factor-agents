@@ -1,20 +1,122 @@
-# 12-Factor Agents Usage Guide
+# 12-Factor Agents Integration Guide
 
-## Setup (2 minutes)
+**Sparky** - Your intelligent issue resolution system for automated GitHub issue processing and implementation.
 
+## What is Sparky?
+
+Sparky is the 12-Factor Agents framework configured as an intelligent issue resolution system. It automatically:
+- Analyzes GitHub issues for complexity and requirements
+- Decomposes complex issues into manageable sub-tasks
+- Routes tasks to specialized agents (testing, code review, implementation)
+- Implements actual code changes based on issue descriptions
+- Tracks progress with granular telemetry
+
+## Setup for Sister Repositories (2 minutes)
+
+Sparky (12-factor-agents) works as a sister repository alongside your project repos, accessing them via relative paths from your mutual parent directory.
+
+### Directory Structure
+```
+parent-directory/
+├── 12-factor-agents/     # Sparky issue resolution system
+├── your-project-1/       # Sister repo 1
+├── your-project-2/       # Sister repo 2
+└── other-projects/       # Other sister repos
+```
+
+### Integration Methods
+
+#### Method 1: Direct Relative Path Access
+```bash
+# From your project directory
+cd /path/to/parent-directory/your-project
+
+# Run Sparky on your issues
+uv run python ../12-factor-agents/bin/agent.py run IntelligentIssueAgent "Process issue #123"
+
+# Process issues with repo path
+from pathlib import Path
+import sys
+sys.path.insert(0, str(Path(__file__).parent.parent / "12-factor-agents"))
+
+from core.github_integration import ExternalIssueProcessor
+processor = ExternalIssueProcessor()
+result = processor.process_external_issue(
+    repo="your-org/your-project",
+    issue_number=123,
+    repo_path="../your-project"  # Relative to 12-factor-agents
+)
+```
+
+#### Method 2: Symlink Setup (Optional)
 ```bash
 cd /path/to/your-project
 
-# Create symlinks
+# Create symlink to sister repo
 ln -s ../12-factor-agents .agents
 echo ".agents/" >> .gitignore
 
-# Initialize project with dependencies
-uv init
-uv add pydantic jinja2 psutil pyyaml semver pytest-asyncio
-
 # Test it works
 uv run python .agents/bin/agent.py list
+```
+
+## Using Sparky for Issue Resolution
+
+### Process Issues Across Sister Repositories
+```bash
+# From 12-factor-agents directory - process own issues
+uv run python bin/agent.py run IntelligentIssueAgent "Process issue #123"
+
+# From sister repo - process that repo's issues
+cd ../your-project
+uv run python ../12-factor-agents/bin/agent.py run SmartIssueAgent "123"
+
+# Process sister repository issues programmatically
+from core.github_integration import ExternalIssueProcessor, CrossRepoContextManager
+
+# Process issue in sister repo
+processor = ExternalIssueProcessor()
+result = processor.process_external_issue(
+    repo="your-org/sister-repo",
+    issue_number=123,
+    repo_path="../sister-repo"  # Relative path from parent directory
+)
+
+# Context switching between sister repos
+context_manager = CrossRepoContextManager()
+if context_manager.switch_to_repo("../another-sister-repo"):
+    # Now operating in context of another sister repo
+    # Sparky can make changes, run tests, etc.
+    pass
+context_manager.restore_context()
+```
+
+### Issue File Format
+Sparky expects issues in the `issues/` directory:
+```markdown
+# Issue #123: Fix authentication bug
+
+## Description
+The login system fails when...
+
+## Current Code
+```python
+def authenticate(user):
+    return False  # Bug here
+```
+
+## Should Be
+```python
+def authenticate(user):
+    return user.is_valid()
+```
+
+## Metadata
+- **Repository**: your-repo
+- **Labels**: bug, high-priority
+
+## Agent Assignment
+IntelligentIssueAgent
 ```
 
 ## Creating Your First Agent
@@ -112,14 +214,21 @@ for i, item in enumerate(items):
 self.set_progress(1.0, "completed")
 ```
 
-## CLI Commands
+## CLI Commands for Sister Repos
 
 ```bash
-# Agent operations
-uv run python .agents/bin/agent.py list               # List all agents
-uv run python .agents/bin/agent.py list --verbose     # Detailed info
-uv run python .agents/bin/agent.py info AgentName     # Agent details
-uv run python .agents/bin/agent.py run AgentName "task" # Execute agent
+# From sister repo - use Sparky to process your issues
+cd /path/to/parent-directory/your-project
+uv run python ../12-factor-agents/bin/agent.py run IntelligentIssueAgent "Process issue #123"
+uv run python ../12-factor-agents/bin/agent.py run SmartIssueAgent "123"  # Auto-decomposition
+uv run python ../12-factor-agents/bin/agent.py orchestrate issue-pipeline  # Full pipeline
+
+# From 12-factor-agents directory itself
+cd /path/to/parent-directory/12-factor-agents
+uv run python bin/agent.py list               # List all agents
+uv run python bin/agent.py list --verbose     # Detailed info
+uv run python bin/agent.py info AgentName     # Agent details
+uv run python bin/agent.py run AgentName "task" # Execute agent
 
 # Testing (from 12-factor-agents directory)
 cd .agents && make test                     # Run full test suite
@@ -183,22 +292,34 @@ tasks = [{"task": "analyze file1"}, {"task": "analyze file2"}]
 results = executor.execute_parallel(tasks)
 ```
 
-### Orchestration
+### Orchestration (Sparky's Core Pattern)
 ```python
 from core.orchestrator import ProgressAwareOrchestrator
 
-class WorkflowOrchestrator(ProgressAwareOrchestrator):
+class IssueOrchestrator(ProgressAwareOrchestrator):
+    """Sparky's issue processing orchestrator"""
     def __init__(self):
-        super().__init__("workflow")
-        self.register_phase_processor("analysis", self._analyze)
-        self.register_phase_processor("processing", self._process)
+        super().__init__("issue_resolution")
+        # Sparky's workflow phases
+        self.register_phase_processor(WorkflowPhase.INITIALIZATION, self._load_issue)
+        self.register_phase_processor(WorkflowPhase.ANALYSIS, self._analyze_complexity)
+        self.register_phase_processor(WorkflowPhase.PROCESSING, self._implement_changes)
+        self.register_phase_processor(WorkflowPhase.FINALIZATION, self._validate_changes)
     
-    async def _analyze(self, data):
-        # Analysis logic
+    async def _load_issue(self, data):
+        # Load and parse GitHub issue
         pass
     
-    async def _process(self, data):
-        # Processing logic
+    async def _analyze_complexity(self, data):
+        # Determine if decomposition needed
+        pass
+    
+    async def _implement_changes(self, data):
+        # Make actual code changes
+        pass
+    
+    async def _validate_changes(self, data):
+        # Run tests and validation
         pass
 ```
 
