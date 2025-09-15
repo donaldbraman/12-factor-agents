@@ -4,6 +4,7 @@ A small, focused agent (Factor 10) that can be triggered from anywhere (Factor 1
 """
 
 import json
+import logging
 import subprocess
 from pathlib import Path
 from typing import Dict, Any, Optional
@@ -11,6 +12,10 @@ from dataclasses import dataclass, asdict
 
 from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
+
+# Set up logging
+logger = logging.getLogger(__name__)
+logger.setLevel(logging.INFO)
 
 
 # Factor 4: Tools are Structured Outputs
@@ -139,7 +144,7 @@ class HumanReviewTool(Tool):
         request_file = Path(f"/tmp/pr_{pr_number}_human_review.txt")
         request_file.write_text(f"PR #{pr_number} needs human review\nReason: {reason}")
 
-        print(f"🤝 Human review requested for PR #{pr_number}: {reason}")
+        logger.info(f"Human review requested for PR #{pr_number}: {reason}")
 
         return ToolResponse(
             success=True, data={"requested": True, "file": str(request_file)}
@@ -315,7 +320,7 @@ class TwelveFactorPRReviewAgent(BaseAgent):
 
         try:
             # Step 1: Fetch PR
-            print(f"📥 Fetching PR #{pr_number}...")
+            logger.info(f"Fetching PR #{pr_number}...")
             fetch_result = self.fetch_tool.execute(pr_number, repo)
 
             if not fetch_result.success:
@@ -326,7 +331,7 @@ class TwelveFactorPRReviewAgent(BaseAgent):
             workflow_state["step"] = "analyze"
 
             # Step 2: Analyze
-            print("🔍 Analyzing PR...")
+            logger.info("Analyzing PR...")
             analysis = self.analyze_tool.execute(pr_data)
 
             if not analysis.success:
