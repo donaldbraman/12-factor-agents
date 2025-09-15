@@ -1,5 +1,5 @@
 # Local CI/CD Quality Gates - Issue #35
-.PHONY: test quick-test perf-test format lint install-hooks help
+.PHONY: test quick-test perf-test format lint install-hooks help test-cov coverage coverage-html coverage-report
 
 help:  ## Show this help message
 	@echo "Local CI/CD Commands:"
@@ -29,6 +29,26 @@ check:  ## Run all quality checks
 	uv run ruff check .
 	uv run scripts/quick_performance_check.py
 
+test-cov:  ## Run tests with coverage
+	uv run pytest --cov=agents --cov=core --cov=bin --cov=orchestration \
+		--cov-report=term-missing --cov-report=xml --cov-report=html \
+		tests/
+
+coverage:  ## Run coverage analysis
+	uv run pytest --cov=agents --cov=core --cov=bin --cov=orchestration \
+		--cov-report=term-missing tests/
+
+coverage-html:  ## Generate HTML coverage report
+	uv run pytest --cov=agents --cov=core --cov=bin --cov=orchestration \
+		--cov-report=html tests/
+	@echo "HTML coverage report generated in htmlcov/"
+
+coverage-report:  ## Show detailed coverage report
+	uv run coverage report --show-missing
+
 clean:  ## Clean up test artifacts
 	find . -type d -name __pycache__ -delete
 	find . -type f -name "*.pyc" -delete
+	rm -rf htmlcov/
+	rm -f coverage.xml
+	rm -f .coverage

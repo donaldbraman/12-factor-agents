@@ -26,6 +26,7 @@ event = "bin.event:main"
 [project.optional-dependencies]
 dev = [
     "pytest>=7.0",
+    "pytest-cov>=4.0.0",
     "black>=23.0",
     "ruff>=0.1",
 ]
@@ -38,4 +39,55 @@ package = true
 dev-dependencies = [
     "pre-commit>=4.3.0",
     "pytest>=7.0",
+    "pytest-cov>=4.0.0",
 ]
+
+[tool.pytest.ini_options]
+minversion = "7.0"
+addopts = [
+    "--strict-markers",
+    "--strict-config",
+    "--disable-warnings",
+]
+testpaths = ["tests"]
+markers = [
+    "integration: marks tests as integration tests",
+    "performance: marks tests as performance tests",
+    "slow: marks tests as slow running",
+]
+
+[tool.coverage.run]
+source = ["agents", "core", "bin", "orchestration"]
+omit = [
+    "tests/*",
+    "*/test_*.py",
+    "*/__pycache__/*",
+    "*/migrations/*",
+    "setup.py",
+    "*/venv/*",
+    "*/.venv/*",
+]
+
+[tool.coverage.report]
+exclude_lines = [
+    "pragma: no cover",
+    "def __repr__",
+    "if self.debug:",
+    "if settings.DEBUG",
+    "raise AssertionError",
+    "raise NotImplementedError",
+    "if 0:",
+    "if __name__ == .__main__.:",
+    "class .*\\bProtocol\\):",
+    "@(abc\\.)?abstractmethod",
+]
+ignore_errors = true
+show_missing = true
+precision = 2
+fail_under = 10
+
+[tool.coverage.html]
+directory = "htmlcov"
+
+[tool.coverage.xml]
+output = "coverage.xml"

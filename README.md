@@ -1,5 +1,8 @@
 # 12-Factor Agents Framework
 
+[![Test Coverage](https://github.com/dbraman/12-factor-agents/workflows/Test%20Coverage/badge.svg)](https://github.com/dbraman/12-factor-agents/actions/workflows/test-coverage.yml)
+[![Coverage](https://codecov.io/gh/dbraman/12-factor-agents/branch/main/graph/badge.svg)](https://codecov.io/gh/dbraman/12-factor-agents)
+
 A local-first, multi-repository AI agent system following the 12-factor methodology for intelligent issue resolution and automated development workflows.
 
 ## Features
@@ -160,6 +163,9 @@ uv run python bin/agent.py orchestrate issue-pipeline # Full pipeline
 
 # Testing and validation
 make test          # Full test suite
+make test-cov      # Run tests with coverage
+make coverage      # Run coverage analysis
+make coverage-html # Generate HTML coverage report
 make quick-test    # Quick validation
 make format        # Code formatting
 make lint          # Code linting
@@ -215,12 +221,64 @@ This ensures reliable, predictable, production-ready agent behavior.
 - **uv package manager** (recommended, 10-100x faster than pip)
 - **Git** (for version control and sister repository integration)
 
+## Testing & Coverage
+
+The project maintains high test coverage standards with comprehensive reporting.
+
+### Running Tests with Coverage
+
+#### Quick Coverage Check
+```bash
+make test-cov          # Run tests with coverage report
+make coverage          # Coverage analysis only
+```
+
+#### Detailed Coverage Reports
+```bash
+make coverage-html     # Generate HTML coverage report
+python scripts/run_coverage.py --html --verbose --open
+```
+
+#### Coverage Thresholds
+- **Current Minimum**: 10% (baseline enforced in CI/CD)
+- **Target Coverage**: 80%+ (long-term goal)
+- **Coverage Exclusions**: Test files, migrations, debug code
+
+*Note: The project is actively building up test coverage. The threshold will be gradually increased as coverage improves.*
+
+#### Coverage Configuration
+Coverage settings are configured in `pyproject.toml`:
+- Source directories: `agents`, `core`, `bin`, `orchestration`
+- Excluded patterns: `tests/*`, `*/__pycache__/*`, `*/test_*.py`
+- Report formats: Terminal, HTML, XML, JSON
+
+#### Local Development Workflow
+```bash
+# 1. Run tests with coverage
+make test-cov
+
+# 2. Generate detailed HTML report
+python scripts/run_coverage.py --html --verbose
+
+# 3. Open report in browser
+python scripts/run_coverage.py --html --open
+
+# 4. Check specific threshold
+python scripts/run_coverage.py --fail-under 85
+```
+
+### CI/CD Integration
+- GitHub Actions automatically runs coverage on all PRs
+- Coverage reports uploaded to Codecov
+- PR comments show coverage changes
+- Coverage badges updated on each push
+
 ## Contributing
 
 1. Read the [Developer Guide](docs/developer/DEVELOPER_GUIDE.md)
 2. Use appropriate [templates](docs/templates/)
 3. Follow 12-factor principles
-4. Ensure comprehensive testing
+4. Ensure comprehensive testing (maintain/improve coverage)
 5. Update documentation
 
 ## License
