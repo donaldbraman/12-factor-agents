@@ -13,6 +13,7 @@ from core.tools import Tool, ToolResponse
 from core.telemetry import EnhancedTelemetryCollector
 from core.loop_protection import LOOP_PROTECTION
 from core.execution_context import ExecutionContext, create_default_context
+from core.validation import TransactionalFileModifier, ValidationResult
 
 
 class IntelligentIssueAgent(BaseAgent):
@@ -474,42 +475,115 @@ class IntelligentIssueAgent(BaseAgent):
                 else:
                     print(f"⚠️ File not found: {path}")
 
-            # Step 5: Generate and apply fixes
+            # Step 5: Generate and apply fixes using validation system
             files_modified = []
             total_lines_changed = 0
+            validation_errors = []
 
-            for file_path, content in file_contents.items():
-                changes = self._generate_fixes_for_file(
-                    file_path, content, problems_identified, issue_content
-                )
+            # Create transactional file modifier for safe operations
+            file_modifier = TransactionalFileModifier(self.context)
+            transaction_id = file_modifier.begin_transaction()
+            print(f"🔒 Started transaction {transaction_id} for safe file modifications")
 
-                if changes:
-                    try:
-                        # Apply the changes
+            try:
+                # Stage all modifications with validation
+                for file_path, content in file_contents.items():
+                    changes = self._generate_fixes_for_file(
+                        file_path, content, problems_identified, issue_content
+                    )
+
+                    if changes:
+                        # Apply the changes to create new content
                         modified_content = self._apply_changes_to_content(
                             content, changes
                         )
 
-                        # Write the modified content back to the file
-                        # Use the already resolved path from above
-                        if Path(file_path).is_absolute():
-                            path = Path(file_path)
-                        else:
-                            path = self.context.resolve_path(file_path)
-                        path.write_text(modified_content)
-
-                        files_modified.append(file_path)
-                        lines_changed = len(modified_content.split("\n")) - len(
-                            content.split("\n")
+                        # Stage the modification with intelligent retry
+                        (
+                            validation_result,
+                            retry_result,
+                        ) = file_modifier.stage_modification_with_retry(
+                            file_path, modified_content, validate=True
                         )
-                        total_lines_changed += abs(lines_changed)
 
-                        print(f"✅ Modified {file_path} ({lines_changed} lines changed)")
+                        if validation_result.result == ValidationResult.SUCCESS:
+                            files_modified.append(file_path)
 
-                    except Exception as e:
-                        print(f"❌ Failed to modify {file_path}: {e}")
+                            # Use the final content from retry if available
+                            final_content = (
+                                retry_result.final_content
+                                if retry_result
+                                else modified_content
+                            )
+                            lines_changed = len(final_content.split("\n")) - len(
+                                content.split("\n")
+                            )
+                            total_lines_changed += abs(lines_changed)
 
-            # Step 6: Return accurate results
+                            if retry_result and retry_result.total_attempts > 0:
+                                print(
+                                    f"✅ Staged modification for {file_path} after {retry_result.total_attempts} "
+                                    f"auto-fixes using {retry_result.resolution_strategy} ({lines_changed} lines changed)"
+                                )
+                            else:
+                                print(
+                                    f"✅ Staged modification for {file_path} ({lines_changed} lines changed)"
+                                )
+                        else:
+                            validation_errors.append(
+                                {
+                                    "file": file_path,
+                                    "error": validation_result,
+                                    "retry_result": retry_result,
+                                }
+                            )
+                            retry_info = ""
+                            if retry_result:
+                                retry_info = (
+                                    f" (tried {retry_result.total_attempts} auto-fixes)"
+                                )
+                            print(
+                                f"❌ Validation failed for {file_path}{retry_info}: {validation_result.message}"
+                            )
+                            if validation_result.line_number:
+                                print(
+                                    f"   Line {validation_result.line_number}: {validation_result.suggested_fix}"
+                                )
+
+                # Commit all changes if no validation errors
+                if not validation_errors and files_modified:
+                    success, commit_errors = file_modifier.commit_transaction()
+                    if success:
+                        print(
+                            f"🎉 Successfully committed all modifications (transaction {transaction_id})"
+                        )
+                    else:
+                        print(f"❌ Failed to commit transaction: {commit_errors}")
+                        files_modified = []
+                        total_lines_changed = 0
+                elif validation_errors:
+                    # Rollback due to validation errors
+                    file_modifier.rollback_transaction()
+                    print("🔄 Rolled back transaction due to validation errors")
+                    files_modified = []
+                    total_lines_changed = 0
+                else:
+                    print("ℹ️ No modifications to commit")
+
+            except Exception as e:
+                # Rollback on any unexpected error
+                file_modifier.rollback_transaction()
+                print(f"❌ Unexpected error, rolled back transaction: {e}")
+                files_modified = []
+                total_lines_changed = 0
+                validation_errors.append(
+                    {"file": "transaction", "error": f"Unexpected error: {e}"}
+                )
+            finally:
+                # Clean up resources
+                file_modifier.cleanup()
+
+            # Step 6: Return accurate results including validation information
             result = {
                 "strategy": "generic_implementation",
                 "issue_number": issue_number,
@@ -523,12 +597,22 @@ class IntelligentIssueAgent(BaseAgent):
                 > 0,  # Only True if files were actually modified
                 "analysis_completed": True,
                 "implementation_applied": len(files_modified) > 0,
+                "validation_errors": validation_errors,
+                "transaction_id": transaction_id,
+                "validation_enabled": True,
             }
 
             if files_modified:
                 print(f"🎉 Successfully implemented fixes for issue #{issue_number}")
                 print(f"   Files modified: {len(files_modified)}")
                 print(f"   Lines changed: {total_lines_changed}")
+                print(f"   Transaction: {transaction_id}")
+            elif validation_errors:
+                print(
+                    f"🚫 No modifications applied for issue #{issue_number} due to validation errors:"
+                )
+                for error_info in validation_errors:
+                    print(f"   - {error_info['file']}: {error_info['error'].message}")
             else:
                 print(f"🤔 No modifications made for issue #{issue_number}")
                 print(
