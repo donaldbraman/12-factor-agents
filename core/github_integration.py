@@ -13,6 +13,7 @@ from dataclasses import dataclass
 
 from core.telemetry import EnhancedTelemetryCollector, EventType
 from core.execution_context import ExecutionContext, create_external_context
+from core.retry_wrappers import subprocess_run
 
 
 @dataclass
@@ -54,7 +55,7 @@ class GitHubIssueLoader:
         ]
 
         try:
-            result = subprocess.run(cmd, capture_output=True, text=True, timeout=10)
+            result = subprocess_run(cmd, capture_output=True, text=True, timeout=10)
             if result.returncode == 0:
                 data = json.loads(result.stdout)
                 data["repository"] = self.repo

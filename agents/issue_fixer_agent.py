@@ -14,6 +14,7 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from core.agent import BaseAgent  # noqa: E402
 from core.tools import Tool, ToolResponse  # noqa: E402
 from core.execution_context import ExecutionContext  # noqa: E402
+from core.retry_wrappers import read_text, write_text, mkdir  # noqa: E402
 
 
 class FileEditorTool(Tool):
@@ -27,9 +28,9 @@ class FileEditorTool(Tool):
         try:
             path = Path(file_path)
 
-            # Read current content
+            # Read current content with retry logic
             if path.exists():
-                content = path.read_text()
+                content = read_text(path)
             else:
                 content = ""
 
@@ -44,9 +45,9 @@ class FileEditorTool(Tool):
                 elif "content" in change:
                     content = change["content"]
 
-            # Write back
-            path.parent.mkdir(parents=True, exist_ok=True)
-            path.write_text(content)
+            # Write back with retry logic
+            mkdir(path.parent, parents=True, exist_ok=True)
+            write_text(path, content)
 
             return ToolResponse(
                 success=True, data={"file": str(path), "modified": True}
@@ -95,7 +96,7 @@ class IssueParserTool(Tool):
                     success=False, error=f"Issue file not found: {issue_path}"
                 )
 
-            content = path.read_text()
+            content = read_text(path)
 
             # Extract issue number from filename
             issue_num = path.stem.split("-")[0]
