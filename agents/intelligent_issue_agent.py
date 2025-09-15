@@ -193,6 +193,151 @@ class IntelligentIssueAgent(BaseAgent):
 
         return None
 
+    def _is_new_feature_request(self, issue_data: Dict) -> bool:
+        """
+        Detect if an issue is requesting a new feature rather than fixing existing code.
+
+        Args:
+            issue_data: Parsed issue data containing title and content
+
+        Returns:
+            True if this appears to be a new feature request, False otherwise
+        """
+        title = issue_data.get("title", "").lower()
+        content = issue_data.get("content", "").lower()
+
+        # Strong indicators of new feature requests
+        feature_indicators = [
+            "add",
+            "implement",
+            "create",
+            "build",
+            "develop",
+            "new feature",
+            "feature request",
+            "enhancement",
+            "introduce",
+            "support for",
+            "ability to",
+            "should be able to",
+            "would like to",
+            "need to add",
+            "missing feature",
+            "lacking",
+            "doesn't support",
+            "no way to",
+            "would be great if",
+            "would be useful",
+            "could we have",
+        ]
+
+        # Strong indicators of bug fixes (opposite of feature requests)
+        bug_indicators = [
+            "fix",
+            "bug",
+            "error",
+            "broken",
+            "not working",
+            "failing",
+            "crash",
+            "exception",
+            "incorrect",
+            "wrong",
+            "issue with",
+            "problem with",
+            "doesn't work",
+            "stops working",
+            "fails to",
+            "unable to",
+        ]
+
+        # Specific patterns that suggest new functionality
+        new_functionality_patterns = [
+            "chunking feature",
+            "boundary detection",
+            "sentence-boundary",
+            "new module",
+            "new agent",
+            "new tool",
+            "new capability",
+            "integration with",
+            "support for",
+            "handler for",
+            "processor for",
+        ]
+
+        # Check for feature indicators in title and content
+        feature_score = 0
+        bug_score = 0
+
+        combined_text = f"{title} {content}"
+
+        # Score based on feature indicators
+        for indicator in feature_indicators:
+            if indicator in combined_text:
+                feature_score += 2 if indicator in title else 1
+
+        # Score based on bug indicators
+        for indicator in bug_indicators:
+            if indicator in combined_text:
+                bug_score += 2 if indicator in title else 1
+
+        # Bonus points for specific new functionality patterns
+        for pattern in new_functionality_patterns:
+            if pattern in combined_text:
+                feature_score += 3
+
+        # Additional heuristics
+
+        # If issue mentions files that don't exist, likely a feature request
+        mentioned_files = self._extract_files_from_issue(content)
+        if mentioned_files:
+            non_existent_files = 0
+            for file_path in mentioned_files:
+                resolved_path = self.context.resolve_path(file_path)
+                if not resolved_path.exists():
+                    non_existent_files += 1
+
+            if non_existent_files == len(mentioned_files):
+                feature_score += 2  # All mentioned files don't exist
+
+        # Check for specific language patterns
+        if any(
+            phrase in combined_text
+            for phrase in [
+                "would be nice",
+                "could use",
+                "missing",
+                "lacks",
+                "doesn't have",
+                "no support for",
+                "not implemented",
+                "not available",
+            ]
+        ):
+            feature_score += 1
+
+        # Check for implementation language (suggests new work)
+        if any(
+            phrase in combined_text
+            for phrase in [
+                "should implement",
+                "need to create",
+                "would require",
+                "needs to be built",
+                "should add",
+                "could add",
+            ]
+        ):
+            feature_score += 2
+
+        # Decision logic: feature request if feature score significantly higher than bug score
+        print(
+            f"🔍 Feature detection: feature_score={feature_score}, bug_score={bug_score}"
+        )
+
+        return feature_score > bug_score and feature_score >= 3
+
     def _read_issue(self, issue_path: str) -> Optional[Dict]:
         """Read and parse issue file"""
         try:
@@ -307,8 +452,11 @@ class IntelligentIssueAgent(BaseAgent):
             selected_strategy, "generic_implementation"
         )
 
+        # Feature detection: Check if this is a new feature request vs bug fix
+        if self._is_new_feature_request(issue_data):
+            implementation_strategy = "create_new_feature"
         # Legacy fallback for telemetry issues (excluded from learning)
-        if "telemetry" in title.lower() or "telemetry" in content:
+        elif "telemetry" in title.lower() or "telemetry" in content:
             implementation_strategy = "enhance_telemetry"
         elif "placeholder" in title.lower() or "placeholder" in content:
             implementation_strategy = "fix_placeholders"
@@ -346,6 +494,8 @@ class IntelligentIssueAgent(BaseAgent):
             return self._create_agents(issue_data)
         elif strategy == "fix_placeholders":
             return self._fix_placeholders(issue_data)
+        elif strategy == "create_new_feature":
+            return self._create_new_feature(issue_data)
         else:
             return self._generic_implementation(issue_data)
 
@@ -424,6 +574,793 @@ class IntelligentIssueAgent(BaseAgent):
             "placeholder_detection": "implemented",
             "concrete_work": True,
         }
+
+    def _create_new_feature(self, issue_data: Dict) -> Dict:
+        """
+        Create new feature implementation based on issue requirements.
+
+        This method:
+        1. Analyzes the feature requirements from the issue
+        2. Determines appropriate file structure and locations
+        3. Creates initial implementation files
+        4. Follows project patterns and conventions
+        """
+        try:
+            issue_content = issue_data.get("content", "")
+            issue_title = issue_data.get("title", "")
+            issue_number = issue_data.get("number", "unknown")
+
+            print(f"🏗️ Creating new feature for issue #{issue_number}: {issue_title}")
+
+            # Step 1: Analyze feature requirements
+            feature_analysis = self._analyze_feature_requirements(
+                issue_content, issue_title
+            )
+            print(f"📋 Feature analysis: {feature_analysis}")
+
+            # Step 2: Determine file structure
+            file_structure = self._determine_feature_file_structure(feature_analysis)
+            print(f"📁 Planned file structure: {file_structure}")
+
+            # Step 3: Create files using validation system
+            files_created = []
+            total_lines_added = 0
+            validation_errors = []
+
+            # Create transactional file modifier for safe operations
+            file_modifier = TransactionalFileModifier(self.context)
+            transaction_id = file_modifier.begin_transaction()
+            print(f"🔒 Started feature creation transaction {transaction_id}")
+
+            try:
+                # Create each file in the planned structure
+                for file_info in file_structure:
+                    file_path = file_info["path"]
+                    file_content = self._generate_feature_file_content(
+                        file_info, feature_analysis
+                    )
+
+                    # Stage file creation with validation
+                    (
+                        validation_result,
+                        retry_result,
+                    ) = file_modifier.stage_modification_with_retry(
+                        file_path, file_content, validate=True
+                    )
+
+                    if validation_result.result == ValidationResult.SUCCESS:
+                        files_created.append(file_path)
+                        lines_added = len(file_content.split("\n"))
+                        total_lines_added += lines_added
+
+                        if retry_result and retry_result.total_attempts > 0:
+                            print(
+                                f"✅ Created {file_path} after {retry_result.total_attempts} auto-fixes ({lines_added} lines)"
+                            )
+                        else:
+                            print(f"✅ Created {file_path} ({lines_added} lines)")
+                    else:
+                        validation_errors.append(
+                            {
+                                "file": file_path,
+                                "error": validation_result,
+                                "retry_result": retry_result,
+                            }
+                        )
+                        retry_info = (
+                            f" (tried {retry_result.total_attempts} auto-fixes)"
+                            if retry_result
+                            else ""
+                        )
+                        print(
+                            f"❌ Failed to create {file_path}{retry_info}: {validation_result.message}"
+                        )
+
+                # Commit all changes if no validation errors
+                if not validation_errors and files_created:
+                    success, commit_errors = file_modifier.commit_transaction()
+                    if success:
+                        print(
+                            f"🎉 Successfully created new feature (transaction {transaction_id})"
+                        )
+                    else:
+                        print(f"❌ Failed to commit feature creation: {commit_errors}")
+                        files_created = []
+                        total_lines_added = 0
+                elif validation_errors:
+                    file_modifier.rollback_transaction()
+                    print("🔄 Rolled back feature creation due to validation errors")
+                    files_created = []
+                    total_lines_added = 0
+                else:
+                    print("ℹ️ No files to create")
+
+            except Exception as e:
+                file_modifier.rollback_transaction()
+                print(f"❌ Unexpected error during feature creation: {e}")
+                files_created = []
+                total_lines_added = 0
+                validation_errors.append(
+                    {"file": "transaction", "error": f"Unexpected error: {e}"}
+                )
+            finally:
+                file_modifier.cleanup()
+
+            # Return detailed results
+            result = {
+                "strategy": "create_new_feature",
+                "issue_number": issue_number,
+                "issue_title": issue_title,
+                "feature_analysis": feature_analysis,
+                "files_created": files_created,
+                "lines_added": total_lines_added,
+                "file_structure": file_structure,
+                "validation_errors": validation_errors,
+                "transaction_id": transaction_id,
+                "concrete_work": len(files_created) > 0,
+                "feature_implementation_status": "created"
+                if files_created
+                else "failed",
+            }
+
+            if files_created:
+                print(f"🎉 Successfully created new feature for issue #{issue_number}")
+                print(f"   Files created: {len(files_created)}")
+                print(f"   Lines added: {total_lines_added}")
+                print(
+                    f"   Feature type: {feature_analysis.get('feature_type', 'unknown')}"
+                )
+            else:
+                print(f"🚫 Failed to create feature for issue #{issue_number}")
+                if validation_errors:
+                    for error_info in validation_errors:
+                        print(
+                            f"   - {error_info['file']}: {error_info.get('error', {}).get('message', 'Unknown error')}"
+                        )
+
+            return result
+
+        except Exception as e:
+            print(f"❌ Error in _create_new_feature: {e}")
+            return {
+                "strategy": "create_new_feature",
+                "success": False,
+                "error": str(e),
+                "files_created": [],
+                "lines_added": 0,
+                "concrete_work": False,
+            }
+
+    def _analyze_feature_requirements(
+        self, issue_content: str, issue_title: str
+    ) -> Dict:
+        """
+        Analyze the issue content to extract feature requirements.
+
+        Returns:
+            Dict containing feature analysis with keys:
+            - feature_type: Type of feature (agent, tool, module, etc.)
+            - feature_name: Suggested name for the feature
+            - requirements: List of requirements
+            - dependencies: Any mentioned dependencies
+            - integration_points: Existing code that needs integration
+        """
+        content_lower = (issue_content + " " + issue_title).lower()
+
+        # Determine feature type
+        feature_type = "module"  # default
+        if any(word in content_lower for word in ["agent", "smart", "intelligent"]):
+            feature_type = "agent"
+        elif any(word in content_lower for word in ["tool", "utility", "helper"]):
+            feature_type = "tool"
+        elif any(
+            word in content_lower for word in ["chunking", "processing", "parsing"]
+        ):
+            feature_type = "processor"
+        elif any(
+            word in content_lower for word in ["integration", "connector", "bridge"]
+        ):
+            feature_type = "integration"
+
+        # Extract feature name from title and content
+        feature_name = self._extract_feature_name(
+            issue_title, content_lower, feature_type
+        )
+
+        # Extract requirements
+        requirements = self._extract_requirements(issue_content)
+
+        # Find dependencies and integration points
+        dependencies = self._extract_dependencies(issue_content)
+        integration_points = self._extract_integration_points(issue_content)
+
+        return {
+            "feature_type": feature_type,
+            "feature_name": feature_name,
+            "requirements": requirements,
+            "dependencies": dependencies,
+            "integration_points": integration_points,
+            "complexity": "medium",  # Could be enhanced with ML
+        }
+
+    def _extract_feature_name(self, title: str, content: str, feature_type: str) -> str:
+        """Extract a suitable feature name from the issue content"""
+        # Handle specific patterns
+        if "sentence-boundary" in content or "boundary detection" in content:
+            return "sentence_boundary_chunker"
+        elif "chunking" in content and "feature" in content:
+            return "document_chunker"
+        elif feature_type == "agent":
+            # Extract agent name
+            words = title.replace("#", "").split()
+            agent_words = [
+                w
+                for w in words
+                if w.lower()
+                not in ["add", "implement", "create", "new", "feature", "agent"]
+            ]
+            if agent_words:
+                name = "_".join(agent_words[:2]).lower()
+                return f"{name}_agent"
+            return "new_feature_agent"
+        else:
+            # Generic feature name extraction
+            words = title.replace("#", "").split()
+            feature_words = [
+                w
+                for w in words
+                if w.lower() not in ["add", "implement", "create", "new", "feature"]
+            ]
+            if feature_words:
+                return "_".join(feature_words[:2]).lower().replace("-", "_")
+            return "new_feature"
+
+    def _extract_requirements(self, content: str) -> List[str]:
+        """Extract specific requirements from issue content"""
+        requirements = []
+
+        # Look for bullet points and numbered lists
+        lines = content.split("\n")
+        for line in lines:
+            line = line.strip()
+            # Check for requirement patterns
+            if line.startswith(("- ", "* ", "1. ", "2. ", "3. ")):
+                if any(
+                    keyword in line.lower()
+                    for keyword in ["should", "must", "need", "require"]
+                ):
+                    # Clean up the requirement
+                    req = line.lstrip("- *123456789. ").strip()
+                    if req and len(req) > 10:  # Filter out very short items
+                        requirements.append(req)
+
+        # If no bullet points found, extract from paragraphs
+        if not requirements:
+            content_sentences = content.replace("\n", " ").split(".")
+            for sentence in content_sentences:
+                if any(
+                    keyword in sentence.lower()
+                    for keyword in ["should", "need to", "must", "require"]
+                ):
+                    req = sentence.strip()
+                    if req and len(req) > 20:
+                        requirements.append(req)
+
+        return requirements[:5]  # Limit to top 5 requirements
+
+    def _extract_dependencies(self, content: str) -> List[str]:
+        """Extract dependencies mentioned in the issue"""
+        dependencies = []
+        content_lower = content.lower()
+
+        # Look for common dependency patterns
+        dependency_patterns = [
+            "depends on",
+            "requires",
+            "uses",
+            "integrates with",
+            "built on",
+            "based on",
+            "extends",
+            "inherits from",
+        ]
+
+        for pattern in dependency_patterns:
+            if pattern in content_lower:
+                # Extract the dependency name after the pattern
+                parts = content_lower.split(pattern)
+                if len(parts) > 1:
+                    after_pattern = parts[1].split()[0:3]  # Get next few words
+                    dependency = " ".join(after_pattern).strip("., ")
+                    if dependency:
+                        dependencies.append(dependency)
+
+        return dependencies
+
+    def _extract_integration_points(self, content: str) -> List[str]:
+        """Extract existing systems/code that need integration"""
+        integration_points = []
+
+        # Look for file mentions
+        files = self._extract_files_from_issue(content)
+        integration_points.extend(files)
+
+        # Look for class/module mentions
+        import re
+
+        class_mentions = re.findall(
+            r"`([A-Z][a-zA-Z]+(?:Agent|Tool|Manager|Service))`", content
+        )
+        integration_points.extend(class_mentions)
+
+        return integration_points
+
+    def _determine_feature_file_structure(self, feature_analysis: Dict) -> List[Dict]:
+        """
+        Determine the appropriate file structure for the new feature.
+
+        Returns:
+            List of file info dicts with keys: path, type, priority
+        """
+        feature_type = feature_analysis["feature_type"]
+        feature_name = feature_analysis["feature_name"]
+
+        files = []
+
+        if feature_type == "agent":
+            # Create agent file
+            files.append(
+                {
+                    "path": f"agents/{feature_name}.py",
+                    "type": "agent_implementation",
+                    "priority": 1,
+                    "description": f"Main implementation for {feature_name}",
+                }
+            )
+
+            # Create test file
+            files.append(
+                {
+                    "path": f"tests/test_{feature_name}.py",
+                    "type": "test",
+                    "priority": 2,
+                    "description": f"Tests for {feature_name}",
+                }
+            )
+
+        elif feature_type == "processor":
+            # Create processor module
+            files.append(
+                {
+                    "path": f"core/{feature_name}.py",
+                    "type": "processor_implementation",
+                    "priority": 1,
+                    "description": f"Main implementation for {feature_name}",
+                }
+            )
+
+            # Create test file
+            files.append(
+                {
+                    "path": f"tests/test_{feature_name}.py",
+                    "type": "test",
+                    "priority": 2,
+                    "description": f"Tests for {feature_name}",
+                }
+            )
+
+        elif feature_type == "tool":
+            # Create tool file
+            files.append(
+                {
+                    "path": f"core/tools/{feature_name}.py",
+                    "type": "tool_implementation",
+                    "priority": 1,
+                    "description": f"Tool implementation for {feature_name}",
+                }
+            )
+
+        else:
+            # Generic module
+            files.append(
+                {
+                    "path": f"core/{feature_name}.py",
+                    "type": "module_implementation",
+                    "priority": 1,
+                    "description": f"Main implementation for {feature_name}",
+                }
+            )
+
+            files.append(
+                {
+                    "path": f"tests/test_{feature_name}.py",
+                    "type": "test",
+                    "priority": 2,
+                    "description": f"Tests for {feature_name}",
+                }
+            )
+
+        return files
+
+    def _generate_feature_file_content(
+        self, file_info: Dict, feature_analysis: Dict
+    ) -> str:
+        """
+        Generate the content for a feature file based on its type and analysis.
+        """
+        file_type = file_info["type"]
+        feature_name = feature_analysis["feature_name"]
+
+        if file_type == "agent_implementation":
+            return self._generate_agent_content(feature_name, feature_analysis)
+        elif file_type == "processor_implementation":
+            return self._generate_processor_content(feature_name, feature_analysis)
+        elif file_type == "tool_implementation":
+            return self._generate_tool_content(feature_name, feature_analysis)
+        elif file_type == "test":
+            return self._generate_test_content(feature_name, feature_analysis)
+        else:
+            return self._generate_module_content(feature_name, feature_analysis)
+
+    def _generate_agent_content(self, feature_name: str, analysis: Dict) -> str:
+        """Generate content for a new agent"""
+        class_name = "".join(word.capitalize() for word in feature_name.split("_"))
+
+        requirements_comments = "\n".join(
+            f"    # - {req}" for req in analysis.get("requirements", [])[:3]
+        )
+
+        return f'''#!/usr/bin/env uv run python
+"""
+{class_name} - {analysis.get("feature_type", "").title()} for handling specific functionality.
+
+This agent was auto-generated based on feature requirements:
+{requirements_comments}
+"""
+
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+
+from core.agent import BaseAgent
+from core.tools import Tool, ToolResponse
+from core.execution_context import ExecutionContext, create_default_context
+
+
+class {class_name}(BaseAgent):
+    """
+    {analysis.get("feature_type", "").title()} that handles {feature_name.replace("_", " ")} functionality.
+    
+    This agent implements the requirements specified in the feature request.
+    """
+
+    def __init__(self):
+        super().__init__()
+
+    def register_tools(self) -> List[Tool]:
+        """Register tools for {feature_name.replace("_", " ")} functionality"""
+        return []
+
+    def execute_task(self, task: str, context: ExecutionContext = None) -> ToolResponse:
+        """
+        Execute {feature_name.replace("_", " ")} task.
+
+        Args:
+            task: The task to execute
+            context: Optional execution context
+
+        Returns:
+            ToolResponse with execution results
+        """
+        try:
+            # Store execution context
+            self.context = context or create_default_context()
+            
+            # TODO: Implement specific functionality based on requirements:
+{requirements_comments}
+            
+            # Placeholder implementation
+            return ToolResponse(
+                success=True,
+                data={{
+                    "task": task,
+                    "agent": "{class_name}",
+                    "status": "implemented",
+                    "message": "Feature implementation placeholder - needs specific logic"
+                }}
+            )
+
+        except Exception as e:
+            return ToolResponse(
+                success=False, 
+                error=f"{class_name} failed: {{str(e)}}"
+            )
+
+    def _process_requirements(self, task: str) -> Dict[str, Any]:
+        """
+        Process specific requirements for this feature.
+        
+        Args:
+            task: The task to process
+            
+        Returns:
+            Dict containing processing results
+        """
+        # TODO: Implement requirement processing logic
+        return {{"processed": True, "task": task}}
+
+
+if __name__ == "__main__":
+    # Test the agent
+    agent = {class_name}()
+    result = agent.execute_task("Test {feature_name.replace('_', ' ')} functionality")
+    print(f"Result: {{result}}")
+'''
+
+    def _generate_processor_content(self, feature_name: str, analysis: Dict) -> str:
+        """Generate content for a processor module"""
+        class_name = "".join(word.capitalize() for word in feature_name.split("_"))
+
+        return f'''#!/usr/bin/env uv run python
+"""
+{class_name} - Processor for {feature_name.replace("_", " ")} functionality.
+
+This processor was auto-generated based on feature requirements.
+"""
+
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+
+
+class {class_name}:
+    """
+    Processor that handles {feature_name.replace("_", " ")} functionality.
+    """
+
+    def __init__(self):
+        self.name = "{feature_name}"
+
+    def process(self, data: Any) -> Dict[str, Any]:
+        """
+        Process data using {feature_name.replace("_", " ")} logic.
+
+        Args:
+            data: Input data to process
+
+        Returns:
+            Dict containing processing results
+        """
+        try:
+            # TODO: Implement processing logic based on requirements
+            result = {{
+                "processed": True,
+                "input_type": type(data).__name__,
+                "processor": self.name,
+                "status": "success"
+            }}
+            
+            return result
+
+        except Exception as e:
+            return {{
+                "processed": False,
+                "error": str(e),
+                "processor": self.name,
+                "status": "error"
+            }}
+
+    def validate_input(self, data: Any) -> bool:
+        """
+        Validate input data for processing.
+
+        Args:
+            data: Data to validate
+
+        Returns:
+            True if valid, False otherwise
+        """
+        # TODO: Implement validation logic
+        return data is not None
+
+
+# Factory function for creating processor instances
+def create_{feature_name}() -> {class_name}:
+    """Create a new {class_name} instance."""
+    return {class_name}()
+'''
+
+    def _generate_tool_content(self, feature_name: str, analysis: Dict) -> str:
+        """Generate content for a tool implementation"""
+        class_name = "".join(word.capitalize() for word in feature_name.split("_"))
+
+        return f'''#!/usr/bin/env uv run python
+"""
+{class_name} - Tool for {feature_name.replace("_", " ")} functionality.
+
+This tool was auto-generated based on feature requirements.
+"""
+
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+
+from core.tools import Tool, ToolResponse
+
+
+class {class_name}(Tool):
+    """
+    Tool that provides {feature_name.replace("_", " ")} functionality.
+    """
+
+    def __init__(self):
+        super().__init__()
+        self.name = "{feature_name}"
+        self.description = "Tool for {feature_name.replace('_', ' ')} operations"
+
+    def execute(self, *args, **kwargs) -> ToolResponse:
+        """
+        Execute the tool functionality.
+
+        Returns:
+            ToolResponse with execution results
+        """
+        try:
+            # TODO: Implement tool logic based on requirements
+            result = {{
+                "tool": self.name,
+                "executed": True,
+                "status": "success",
+                "message": "Tool execution placeholder - needs specific implementation"
+            }}
+            
+            return ToolResponse(success=True, data=result)
+
+        except Exception as e:
+            return ToolResponse(
+                success=False,
+                error=f"{{self.name}} tool failed: {{str(e)}}"
+            )
+
+    def validate_input(self, *args, **kwargs) -> bool:
+        """
+        Validate input parameters for the tool.
+
+        Returns:
+            True if valid, False otherwise
+        """
+        # TODO: Implement validation logic
+        return True
+
+
+# Factory function for creating tool instances  
+def create_{feature_name}_tool() -> {class_name}:
+    """Create a new {class_name} tool instance."""
+    return {class_name}()
+'''
+
+    def _generate_test_content(self, feature_name: str, analysis: Dict) -> str:
+        """Generate test content for the feature"""
+        class_name = "".join(word.capitalize() for word in feature_name.split("_"))
+
+        return f'''#!/usr/bin/env uv run python
+"""
+Tests for {class_name} - {feature_name.replace("_", " ")} functionality.
+
+This test file was auto-generated based on feature requirements.
+"""
+
+import pytest
+from unittest.mock import Mock, patch
+
+# Import the feature being tested
+try:
+    from agents.{feature_name} import {class_name}
+except ImportError:
+    try:
+        from core.{feature_name} import {class_name}
+    except ImportError:
+        pytest.skip(f"Could not import {{class_name}}", allow_module_level=True)
+
+
+class Test{class_name}:
+    """Test suite for {class_name}"""
+
+    def setup_method(self):
+        """Set up test fixtures before each test method."""
+        self.instance = {class_name}()
+
+    def test_initialization(self):
+        """Test that {class_name} initializes correctly."""
+        assert self.instance is not None
+        assert hasattr(self.instance, 'execute_task' if '{analysis.get("feature_type")}' == 'agent' else 'process')
+
+    def test_basic_functionality(self):
+        """Test basic functionality of {class_name}."""
+        # TODO: Implement specific test cases based on requirements
+        
+        if hasattr(self.instance, 'execute_task'):
+            # Test agent functionality
+            result = self.instance.execute_task("test task")
+            assert result is not None
+            assert hasattr(result, 'success')
+        else:
+            # Test processor functionality
+            result = self.instance.process("test data")
+            assert result is not None
+            assert isinstance(result, dict)
+
+    def test_error_handling(self):
+        """Test error handling in {class_name}."""
+        # TODO: Implement error handling tests
+        pass
+
+    def test_edge_cases(self):
+        """Test edge cases for {class_name}."""
+        # TODO: Implement edge case tests
+        pass
+
+
+# Integration tests
+class Test{class_name}Integration:
+    """Integration tests for {class_name}"""
+
+    def test_integration_with_system(self):
+        """Test integration with the broader system."""
+        # TODO: Implement integration tests
+        pass
+
+
+if __name__ == "__main__":
+    pytest.main([__file__])
+'''
+
+    def _generate_module_content(self, feature_name: str, analysis: Dict) -> str:
+        """Generate content for a generic module"""
+        class_name = "".join(word.capitalize() for word in feature_name.split("_"))
+
+        return f'''#!/usr/bin/env uv run python
+"""
+{feature_name.replace("_", " ").title()} - Module for {feature_name.replace("_", " ")} functionality.
+
+This module was auto-generated based on feature requirements.
+"""
+
+from pathlib import Path
+from typing import Dict, List, Any, Optional
+
+
+class {class_name}:
+    """
+    Main class for {feature_name.replace("_", " ")} functionality.
+    """
+
+    def __init__(self):
+        self.name = "{feature_name}"
+
+    def execute(self, *args, **kwargs) -> Dict[str, Any]:
+        """
+        Execute the main functionality.
+
+        Returns:
+            Dict containing execution results
+        """
+        # TODO: Implement main functionality
+        return {{
+            "module": self.name,
+            "executed": True,
+            "status": "success"
+        }}
+
+
+# Utility functions
+def create_{feature_name}() -> {class_name}:
+    """Create a new {class_name} instance."""
+    return {class_name}()
+
+
+def validate_{feature_name}_input(data: Any) -> bool:
+    """Validate input for {feature_name} operations."""
+    # TODO: Implement validation logic
+    return data is not None
+'''
 
     def _generic_implementation(self, issue_data: Dict) -> Dict:
         """
