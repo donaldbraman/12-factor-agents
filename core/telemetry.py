@@ -30,6 +30,9 @@ class EventType(Enum):
     PERFORMANCE = "performance"
     ORCHESTRATION = "orchestration"
     IMPLEMENTATION_GAP = "implementation_gap"
+    EXTERNAL_ISSUE_RECEIVED = "external_issue_received"
+    EXTERNAL_ISSUE_COMPLETED = "external_issue_completed"
+    CROSS_REPO_CONTEXT_SWITCH = "cross_repo_context_switch"
 
 
 @dataclass
