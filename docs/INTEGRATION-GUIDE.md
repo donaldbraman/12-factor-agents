@@ -123,7 +123,7 @@ IntelligentIssueAgent
 
 ### Basic Agent Structure
 ```python
-# your_project/my_agent.py
+# your_project/custom_agent.py
 import sys
 from pathlib import Path
 sys.path.insert(0, str(Path(__file__).parent / ".agents"))
