@@ -1,37 +1,38 @@
-# 12-Factor Agents
+# 12-Factor Agents Framework
 
-Local-first AI agent framework. Zero cloud dependencies.
+A local-first, multi-repository AI agent system following the 12-factor methodology.
+
+## Features
+- ✅ 100% local operation
+- ✅ Cross-repository agent sharing
+- ✅ No external dependencies
+- ✅ Git-friendly configuration
+- ✅ Full 12-factor compliance
 
 ## Quick Start
-```bash
-curl -LsSf https://astral.sh/uv/install.sh | sh
-./setup.sh
-uv run bin/agent.py list
-uv run bin/agent.py run IssueFixerAgent "fix bug in file.py"
+
+1. Run setup: `./setup.sh`
+2. Link in your project: `ln -s ../12-factor-agents/core .claude/agents`
+3. Run agents: `bin/agent <name> "<task>"`
+
+## Structure
+
 ```
-
-## Core Agents
-- **IssueOrchestratorAgent**: GitHub issue processing
-- **IntelligentIssueAgent**: Smart issue analysis & fixes  
-- **TestingAgent**: Test execution & validation
-- **CodeReviewAgent**: Code quality analysis
-
-## Performance
-- **22 GitHub issues processed** in single session
-- **95% context efficiency** achieved
-- **Fork-Join orchestration** for parallel task execution
-- **uv-powered** for maximum speed
+12-factor-agents/
+├── core/           # Base classes and interfaces
+├── agents/         # Reusable agent implementations
+├── bin/           # CLI tools
+├── shared-state/  # Cross-repo state management
+├── orchestration/ # Multi-agent pipelines
+├── prompts/       # Externalized prompts
+├── docs/          # Documentation
+└── tests/         # Test suite
+```
 
 ## Documentation
-- `docs/AGENT-ISSUE-TEMPLATE.md` - Issue agent patterns
-- `docs/HIERARCHICAL-ORCHESTRATION.md` - Performance data
-- `docs/INTEGRATION-GUIDE.md` - Setup & usage
 
-## Architecture
-```
-bin/agent.py → core/agent_executor.py → agents/*.py
-              ↓
-core/orchestration → Fork-Join Pattern → Results
-```
+See [docs/](docs/) for detailed documentation.
 
-Built with 12-factor principles. Battle-tested on real GitHub issues.
+## License
+
+MIT

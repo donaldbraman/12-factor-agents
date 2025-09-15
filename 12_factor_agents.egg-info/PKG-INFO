@@ -1,0 +1,20 @@
+Metadata-Version: 2.4
+Name: 12-factor-agents
+Version: 1.0.0
+Summary: 12-Factor compliant AI agent framework
+Requires-Python: >=3.9
+License-File: LICENSE
+Requires-Dist: jinja2>=3.1.6
+Requires-Dist: psutil>=7.0.0
+Requires-Dist: pydantic>=2.0
+Requires-Dist: pytest-asyncio>=1.1.0
+Requires-Dist: pyyaml>=6.0.2
+Requires-Dist: semver>=3.0.0
+Requires-Dist: PyGithub>=2.1.1
+Requires-Dist: anthropic>=0.8.0
+Requires-Dist: flask>=3.0.0
+Provides-Extra: dev
+Requires-Dist: pytest>=7.0; extra == "dev"
+Requires-Dist: black>=23.0; extra == "dev"
+Requires-Dist: ruff>=0.1; extra == "dev"
+Dynamic: license-file

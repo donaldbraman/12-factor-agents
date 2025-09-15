@@ -1,42 +1,26 @@
 #!/bin/bash
-# 12-Factor Agents Framework Setup
+# Setup script for 12-factor-agents framework
 
-echo "🚀 Setting up 12-Factor Agents Framework"
-echo "=" * 50
+echo "🚀 Setting up 12-factor-agents framework..."
 
-# Check for uv
-if ! command -v uv &> /dev/null; then
-    echo "📦 Installing uv (our Python package manager)..."
-    curl -LsSf https://astral.sh/uv/install.sh | sh
-    export PATH="$HOME/.cargo/bin:$PATH"
-    echo "✅ uv installed successfully"
-else
-    echo "✅ uv is already installed"
+# Create shared state directory
+mkdir -p ~/.claude-shared-state/{global,by-repo,locks,history,events,pids}
+
+# Make CLI executable
+chmod +x bin/agent 2>/dev/null || true
+
+# Create initial registry
+echo '{"agents": {}}' > ~/.claude-shared-state/agent-registry.json
+
+# Install Python dependencies (if any)
+if [ -f requirements.txt ]; then
+    echo "📦 Installing Python dependencies..."
+    uv pip install -r requirements.txt
 fi
 
-echo ""
-echo "🔧 Installing Python dependencies with uv..."
-uv sync
-
-echo ""
-echo "🪝 Installing pre-commit hooks..."
-uv run pre-commit install
-
-echo ""
-echo "🔗 Making CLI tools executable..."
-chmod +x bin/agent.py 2>/dev/null || true
-chmod +x bin/event.py 2>/dev/null || true
-
-echo ""
 echo "✅ Setup complete!"
 echo ""
-echo "🎯 Quick commands to get started:"
-echo "  List agents:     uv run agent list"
-echo "  Agent info:      uv run agent info <name>"
-echo "  Run agent:       uv run agent run <name> '<task>'"
-echo "  Run tests:       make test"
-echo "  Format code:     make format"
-echo "  Lint code:       make lint"
+echo "Next steps:"
+echo "1. In your project: ln -s $(pwd)/core .claude/agents"
+echo "2. Run an agent: ./bin/agent list"
 echo ""
-echo "📖 See README.md for full documentation."
-echo "💡 Try 'uv run agent list' to see all available agents!"

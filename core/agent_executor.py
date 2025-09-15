@@ -88,6 +88,10 @@ class AgentExecutor:
 
     def get_agent_info(self, agent_name: str) -> Optional[Dict[str, Any]]:
         """Get detailed information about a specific agent"""
+        # Add alias support for Sparky
+        if agent_name.lower() in ["sparky", "sparkyrocketsuit"]:
+            agent_name = "IssueOrchestratorAgent"
+
         agents = self.discover_agents()
 
         if agent_name not in agents:
@@ -135,6 +139,10 @@ class AgentExecutor:
 
     def run_agent(self, agent_name: str, task: str, context: str = "{}") -> bool:
         """Run a specific agent with the given task"""
+        # Add alias support for Sparky
+        if agent_name.lower() in ["sparky", "sparkyrocketsuit"]:
+            agent_name = "IssueOrchestratorAgent"
+
         agents = self.discover_agents()
 
         if agent_name not in agents:

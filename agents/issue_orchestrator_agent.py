@@ -15,11 +15,11 @@ import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.agent import BaseAgent
-from core.tools import Tool, ToolResponse
-from core.telemetry import EnhancedTelemetryCollector
-from core.loop_protection import LOOP_PROTECTION
-import time
+from core.agent import BaseAgent  # noqa: E402
+from core.tools import Tool, ToolResponse  # noqa: E402
+from core.telemetry import EnhancedTelemetryCollector  # noqa: E402
+from core.loop_protection import LOOP_PROTECTION  # noqa: E402
+import time  # noqa: E402
 
 
 class IssueReaderTool(Tool):
@@ -598,16 +598,30 @@ class IssueOrchestratorAgent(BaseAgent):
                     print(f"Failure: {failure_details}")
 
                     failed_issues.append(issue["number"])
-                    results.append(
-                        {
-                            "issue": issue["number"],
-                            "status": "failed",
-                            "agent": issue["agent"],
-                            "error": dispatch_result.error,
-                            "failure_category": failure_details.category.value,
-                            "suggestions": failure_details.suggested_fixes,
-                        }
-                    )
+                    error_info = {
+                        "issue": issue["number"],
+                        "status": "failed",
+                        "agent": issue["agent"],
+                        "error": dispatch_result.error,
+                    }
+                    # Add category and suggestions if available
+                    if hasattr(failure_details, "category"):
+                        error_info["failure_category"] = failure_details.category.value
+                    elif (
+                        isinstance(failure_details, dict)
+                        and "category" in failure_details
+                    ):
+                        error_info["failure_category"] = failure_details["category"]
+
+                    if hasattr(failure_details, "suggested_fixes"):
+                        error_info["suggestions"] = failure_details.suggested_fixes
+                    elif (
+                        isinstance(failure_details, dict)
+                        and "suggested_fixes" in failure_details
+                    ):
+                        error_info["suggestions"] = failure_details["suggested_fixes"]
+
+                    results.append(error_info)
             else:
                 print(f"⚠️ No agent assigned for issue {issue['number']}")
                 failed_issues.append(issue["number"])
