@@ -8,10 +8,10 @@ import sys
 import unittest
 from pathlib import Path
 
-from core.intelligent_triggers import create_trigger_engine
-
 # Add project root to path for imports
 sys.path.insert(0, str(Path(__file__).parent.parent))
+
+from core.intelligent_triggers import create_trigger_engine  # noqa: E402
 
 
 class TestQualityTriggerSystem(unittest.TestCase):
