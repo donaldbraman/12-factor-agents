@@ -6,6 +6,13 @@
 A local-first, multi-repository AI agent system following the 12-factor methodology for intelligent issue resolution and automated development workflows.
 
 ## Features
+
+### File Type Support
+- **Python** (.py) - Full AST-aware code generation
+- **Markdown** (.md) - Documentation enhancement
+- **YAML** (.yaml, .yml) - Configuration updates
+- **JSON** (.json) - Structured data modifications
+- **JavaScript/TypeScript** (.js, .ts) - Web code generation
 - ✅ **100% local operation** - No external dependencies
 - ✅ **Cross-repository agent sharing** - Sister repository integration  
 - ✅ **Intelligent issue resolution** - Automatic complexity analysis and decomposition
