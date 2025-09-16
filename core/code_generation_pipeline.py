@@ -179,11 +179,39 @@ class CodeGenerationPipeline:
             self.state_manager.advance_pipeline_stage(pipeline_id)
             print("✅ PR created → Handoff to Monitoring")
 
-            # Stage 7: Monitoring (simplified for now)
-            print("\n📊 Stage 7: Monitoring")
-            print("🤖 HANDOFF → CIMonitoringEngine (pending full implementation)")
-            print(f"   PR created successfully: {pr_result['pr_url']}")
-            print("   Status: Draft PR (ready for review)")
+            # Stage 7: Monitoring
+            print("\n📊 Stage 7: CI/CD Monitoring")
+            print("🤖 HANDOFF → CIMonitoringAgent")
+
+            # Use the new CI monitoring agent
+            from agents.ci_monitoring_agent import CIMonitoringAgent
+
+            ci_agent = CIMonitoringAgent()
+
+            ci_result = ci_agent.execute_task(
+                {
+                    "pr_number": pr_result["pr_number"],
+                    "repo": repo,
+                    "timeout": 300,  # 5 minutes
+                    "auto_fix": True,
+                }
+            )
+
+            if ci_result.success:
+                ci_data = ci_result.data
+                if ci_data.get("all_passed"):
+                    print("   ✅ All CI checks passed!")
+                else:
+                    print("   ⚠️ Some CI checks failed")
+                    if ci_data.get("recovery_attempted"):
+                        if ci_data.get("recovery_succeeded"):
+                            print("   ✅ Auto-recovery succeeded")
+                        else:
+                            print("   ❌ Auto-recovery failed")
+            else:
+                print("   ⚠️ CI monitoring skipped (agent not available)")
+                print(f"   PR created successfully: {pr_result['pr_url']}")
+                print("   Status: Draft PR (ready for review)")
 
             self.state_manager.advance_pipeline_stage(pipeline_id)
             print("✅ Monitoring complete → Pipeline finished!")
