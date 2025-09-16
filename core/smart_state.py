@@ -517,8 +517,12 @@ class SmartStateManager:
     def _persist_state(self, state: StateSnapshot):
         """Persist state to storage"""
         state_file = self.base_dir / f"{state.state_id}.json"
+        # Convert to dict with proper enum serialization
+        state_dict = asdict(state)
+        state_dict["state_type"] = state.state_type.value
+        state_dict["status"] = state.status.value
         with open(state_file, "w") as f:
-            json.dump(asdict(state), f, indent=2)
+            json.dump(state_dict, f, indent=2)
 
     def _remove_persistent_state(self, state_id: str):
         """Remove persistent state file"""
@@ -535,6 +539,14 @@ class SmartStateManager:
             try:
                 with open(state_file) as f:
                     state_data = json.load(f)
+
+                # Convert string enum values back to enums
+                if "state_type" in state_data and isinstance(
+                    state_data["state_type"], str
+                ):
+                    state_data["state_type"] = StateType(state_data["state_type"])
+                if "status" in state_data and isinstance(state_data["status"], str):
+                    state_data["status"] = StateStatus(state_data["status"])
 
                 # Reconstruct StateSnapshot
                 state = StateSnapshot(**state_data)
