@@ -1,0 +1,3 @@
+[console_scripts]
+agent = bin.agent:main
+event = bin.event:main

@@ -1,0 +1,59 @@
+{
+  "IntelligentIssueAgent": {
+    "keywords": [
+      "implement", "create", "build", "develop", "design", "add",
+      "feature", "enhancement", "functionality", "new"
+    ],
+    "weight": 0.3,
+    "context_requirements": ["files_mentioned", "technical_implementation"]
+  },
+  "IssueProcessorAgent": {
+    "keywords": [
+      "fix", "bug", "error", "resolve", "repair", "correct",
+      "issue", "problem", "broken"
+    ],
+    "weight": 0.2,
+    "context_requirements": []
+  },
+  "HierarchicalOrchestrator": {
+    "keywords": [
+      "orchestrate", "coordinate", "multiple", "complex", "integrate",
+      "workflow", "pipeline", "end-to-end", "architecture", "system"
+    ],
+    "weight": 0.4,
+    "context_requirements": ["multiple_components", "cross_system"]
+  },
+  "TestingAgent": {
+    "keywords": [
+      "test", "validate", "verify", "check", "qa", "quality",
+      "coverage", "suite", "spec"
+    ],
+    "weight": 0.2,
+    "context_requirements": []
+  },
+  "DocumentationAgent": {
+    "keywords": [
+      "document", "readme", "docs", "guide", "manual",
+      "explain", "describe", "specification"
+    ],
+    "weight": 0.15,
+    "context_requirements": []
+  },
+  "quality_thresholds": {
+    "max_analysis_time_ms": 5000,
+    "min_confidence_threshold": 0.85,
+    "high_quality_threshold": 0.95,
+    "require_consensus_threshold": 0.75,
+    "fallback_handler": "IntelligentIssueAgent"
+  },
+  "quality_settings": {
+    "enable_deep_analysis": true,
+    "enable_caching": false,
+    "parallel_analysis": true,
+    "max_content_length": 50000,
+    "enable_cross_validation": true,
+    "semantic_analysis_depth": "deep",
+    "require_multiple_signals": true,
+    "conservative_routing": true
+  }
+}
