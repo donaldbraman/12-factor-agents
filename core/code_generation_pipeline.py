@@ -114,14 +114,14 @@ class CodeGenerationPipeline:
             if not analysis_result["success"]:
                 raise Exception(f"Analysis failed: {analysis_result.get('error')}")
 
-            self.state_manager.advance_pipeline(pipeline_id)
+            self.state_manager.advance_pipeline_stage(pipeline_id)
             print("✅ Analysis complete → Handoff to Solution Design")
 
             # Stage 2: Solution Design
             print("\n💡 Stage 2: Solution Design")
             print("🤖 HANDOFF → SolutionDesignEngine (internal)")
             solution = self._design_solution(analysis_result["analysis"])
-            self.state_manager.advance_pipeline(pipeline_id)
+            self.state_manager.advance_pipeline_stage(pipeline_id)
             print("✅ Solution designed → Handoff to Code Generation")
 
             # Stage 3: Code Generation
@@ -134,7 +134,7 @@ class CodeGenerationPipeline:
             if not code_result["success"]:
                 raise Exception(f"Code generation failed: {code_result.get('error')}")
 
-            self.state_manager.advance_pipeline(pipeline_id)
+            self.state_manager.advance_pipeline_stage(pipeline_id)
             print("✅ Code generated → Handoff to Validation")
 
             # Stage 4: Validation
@@ -145,7 +145,7 @@ class CodeGenerationPipeline:
             if not validation_result["passed"]:
                 raise Exception(f"Validation failed: {validation_result.get('errors')}")
 
-            self.state_manager.advance_pipeline(pipeline_id)
+            self.state_manager.advance_pipeline_stage(pipeline_id)
             print("✅ Validation passed → Handoff to Testing")
 
             # Stage 5: Testing
@@ -159,7 +159,7 @@ class CodeGenerationPipeline:
                 print("⚠️ Tests failed, but continuing with PR creation")
                 # We'll mark the PR as needing attention
 
-            self.state_manager.advance_pipeline(pipeline_id)
+            self.state_manager.advance_pipeline_stage(pipeline_id)
             print("✅ Testing complete → Handoff to PR Creation")
 
             # Stage 6: PR Creation
@@ -176,7 +176,7 @@ class CodeGenerationPipeline:
             if not pr_result["success"]:
                 raise Exception(f"PR creation failed: {pr_result.get('error')}")
 
-            self.state_manager.advance_pipeline(pipeline_id)
+            self.state_manager.advance_pipeline_stage(pipeline_id)
             print("✅ PR created → Handoff to Monitoring")
 
             # Stage 7: Monitoring (simplified for now)
@@ -185,14 +185,17 @@ class CodeGenerationPipeline:
             print(f"   PR created successfully: {pr_result['pr_url']}")
             print("   Status: Draft PR (ready for review)")
 
-            self.state_manager.advance_pipeline(pipeline_id)
+            self.state_manager.advance_pipeline_stage(pipeline_id)
             print("✅ Monitoring complete → Pipeline finished!")
 
             # Calculate duration
             duration = (datetime.now() - start_time).total_seconds()
 
             # Complete pipeline
-            self.state_manager.complete_pipeline(pipeline_id)
+            # Note: SmartStateManager uses different method name
+            self.state_manager.update_state(
+                pipeline_id, {"phase": "completed", "status": "success"}
+            )
 
             print("\n" + "=" * 60)
             print("✨ Pipeline completed successfully!")
@@ -216,7 +219,7 @@ class CodeGenerationPipeline:
 
             return PipelineResult(
                 success=False,
-                stage_failed=self.state_manager.get_current_stage(pipeline_id),
+                stage_failed="unknown",  # Would need to track this separately
                 error=str(e),
                 duration_seconds=duration,
             )
