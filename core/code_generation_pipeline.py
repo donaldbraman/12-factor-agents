@@ -437,16 +437,29 @@ class CodeGenerationPipeline:
     def _extract_affected_files(self, content: str) -> List[str]:
         """Extract affected files from issue content"""
         files = []
+        import re
 
-        # Look for file paths
+        # Look for file paths with various extensions
         lines = content.splitlines()
         for line in lines:
-            if ".py" in line:
-                # Extract file paths
-                import re
+            # Match common file patterns
+            # Matches: path/to/file.ext or file.ext
+            patterns = [
+                r"[\w/]+\.py",  # Python files
+                r"[\w/]+\.md",  # Markdown files
+                r"[\w/]+\.yaml",  # YAML files
+                r"[\w/]+\.yml",  # YAML files (alt extension)
+                r"[\w/]+\.json",  # JSON files
+                r"[\w/]+\.js",  # JavaScript files
+                r"[\w/]+\.ts",  # TypeScript files
+                r"[\w/]+\.txt",  # Text files
+                r"README\.md",  # Special case for README
+                r"README",  # README without extension
+            ]
 
-                paths = re.findall(r"[\w/]+\.py", line)
-                files.extend(paths)
+            for pattern in patterns:
+                matches = re.findall(pattern, line)
+                files.extend(matches)
 
         # Remove duplicates
         return list(set(files))
