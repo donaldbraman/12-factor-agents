@@ -234,14 +234,24 @@ class PRCreationAgent(BaseAgent):
     ) -> str:
         """Generate descriptive commit message"""
 
-        root_cause = analysis.get("root_cause", "Issue")
+        # Get a clean title - prefer the actual title over root cause
+        title = analysis.get("title", "")
+        if title and not title.startswith("##"):
+            commit_title = title[:70]  # Limit length for commit title
+        else:
+            root_cause = analysis.get("root_cause", "Issue fix")
+            # Clean up root cause if it's malformed
+            if root_cause.startswith("##"):
+                root_cause = root_cause.lstrip("#").strip()
+            commit_title = root_cause[:70]
+
         test_status = (
             "✅ All tests passing" if test_results.get("passed") else "🧪 Tests pending"
         )
 
-        message = f"""Fix #{issue_number}: {root_cause}
+        message = f"""Fix #{issue_number}: {commit_title}
 
-Problem: {root_cause}
+Problem: {analysis.get('root_cause', 'Issue needs fixing')}
 Solution: {analysis.get('solution_approach', 'Applied targeted fix')}
 
 Changes:
