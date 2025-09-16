@@ -9,6 +9,7 @@ pyproject.toml
 12_factor_agents.egg-info/top_level.txt
 agents/__init__.py
 agents/base.py
+agents/code_generation_agent.py
 agents/code_review_agent.py
 agents/component_migration_agent.py
 agents/enhanced_workflow_agent.py
@@ -19,6 +20,7 @@ agents/issue_decomposer_agent.py
 agents/issue_fixer_agent.py
 agents/issue_orchestrator_agent.py
 agents/issue_processor_agent.py
+agents/pr_creation_agent.py
 agents/pr_review_12factor.py
 agents/pr_review_agent.py
 agents/pr_review_agent_simple.py
@@ -33,6 +35,7 @@ bin/__init__.py
 bin/agent.py
 bin/event.py
 bin/pr-webhook-listener.py
+bin/process_issue.py
 core/__init__.py
 core/agent.py
 core/agent_executor.py
@@ -42,6 +45,7 @@ core/background_executor.py
 core/base.py
 core/capabilities.py
 core/cli_primer.py
+core/code_generation_pipeline.py
 core/compliance.py
 core/context.py
 core/context_bundles.py
@@ -87,6 +91,7 @@ tests/test_hierarchical_orchestrator.py
 tests/test_integration_guide.py
 tests/test_intelligent_issue_agent.py
 tests/test_intelligent_validation_retry.py
+tests/test_issue_97_fix.py
 tests/test_marketplace.py
 tests/test_orchestration_patterns.py
 tests/test_path_resolution_comprehensive.py
