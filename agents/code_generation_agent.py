@@ -463,6 +463,8 @@ if __name__ == "__main__":
             "file_path": change.file_path,
             "change_type": change.change_type,
             "description": change.description,
+            "original_content": change.original_content,
+            "modified_content": change.modified_content,
             "diff": change.get_diff(),
             "lines_changed": self._count_changed_lines(change),
         }
