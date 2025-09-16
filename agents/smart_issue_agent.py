@@ -10,17 +10,19 @@ This provides the ideal UX: one agent handles everything, no matter the complexi
 """
 
 import json
+import subprocess
+import sys
+from datetime import datetime
 from pathlib import Path
 from typing import Dict, Any, List, Optional
-import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))
 
-from core.agent import BaseAgent
-from core.tools import Tool, ToolResponse
-from core.execution_context import ExecutionContext
-from agents.issue_decomposer_agent import IssueDecomposerAgent
-from agents.issue_fixer_agent import IssueFixerAgent
+from core.agent import BaseAgent  # noqa: E402
+from core.tools import Tool, ToolResponse  # noqa: E402
+from core.execution_context import ExecutionContext  # noqa: E402
+from agents.issue_decomposer_agent import IssueDecomposerAgent  # noqa: E402
+from agents.issue_fixer_agent import IssueFixerAgent  # noqa: E402
 
 
 class SmartIssueProcessor(Tool):
@@ -38,6 +40,29 @@ class SmartIssueProcessor(Tool):
         """Process issue with automatic complexity detection and handling"""
         try:
             print(f"\n🧠 Smart processing issue: {issue_identifier}")
+
+            # CRITICAL SAFETY: Create feature branch immediately
+            # Check current branch
+            current_branch_result = subprocess.run(
+                ["git", "branch", "--show-current"],
+                capture_output=True,
+                text=True,
+                check=False,
+            )
+            current_branch = current_branch_result.stdout.strip()
+
+            # If on main/master, create a feature branch
+            if current_branch in ["main", "master", ""]:
+                timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+                branch_name = f"agent/issue-{issue_identifier}-{timestamp}"
+                print(f"🔐 SAFETY: Creating feature branch: {branch_name}")
+
+                # Create and checkout feature branch
+                subprocess.run(["git", "checkout", "-b", branch_name], check=False)
+                print(f"   ✅ Now working in branch: {branch_name}")
+                print("   ℹ️  All changes will be isolated from main")
+            else:
+                print(f"   ✓ Already on feature branch: {current_branch}")
 
             # Circuit Breaker: Check if this issue should be blocked from retry
             if self._should_block_retry(issue_identifier):
@@ -110,7 +135,6 @@ class SmartIssueProcessor(Tool):
                         print("      🔬 Triggering failure analysis...")
 
                         # Get sub-issue content for analysis
-                        sub_issue_path = Path("issues") / f"{issue_num}*.md"
                         sub_issue_files = list(Path("issues").glob(f"{issue_num}*.md"))
                         sub_issue_content = ""
                         if sub_issue_files:

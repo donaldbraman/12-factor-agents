@@ -212,6 +212,26 @@ class IssueFixerAgent(BaseAgent):
         Task format: issue number or path to issue file
         """
 
+        # SAFETY CHECK: Ensure we're not on main/master branch
+        import subprocess
+
+        current_branch_result = subprocess.run(
+            ["git", "branch", "--show-current"],
+            capture_output=True,
+            text=True,
+            check=False,
+        )
+        current_branch = current_branch_result.stdout.strip()
+
+        if current_branch in ["main", "master"]:
+            return ToolResponse(
+                success=False,
+                error=f"🔐 SAFETY ERROR: Cannot modify files on {current_branch} branch. "
+                f"Please create a feature branch first:\n"
+                f"   git checkout -b fix/issue-{task}\n"
+                f"This protects your main branch from accidental damage.",
+            )
+
         # Find issue file
         if task.isdigit():
             issue_num = task.zfill(3)
