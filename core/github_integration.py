@@ -100,15 +100,43 @@ class GitHubIssueLoader:
         elif "documentation" in labels:
             return "DocumentationAgent"
 
-        # Check title/body content
-        if "test" in title or "test" in body:
+        # Intelligent routing based on intent, not keywords
+        #
+        # ROUTING DIRECTIVE: Analyze the PRIMARY intent of the issue, not just keywords.
+        #
+        # NEGATIVE EXAMPLE (what went wrong):
+        # Issue: "Implement Document-Level Summary Embeddings" mentioned "8 test suites"
+        # → Routed to TestingAgent ❌ (wrong - this is a feature implementation)
+        #
+        # POSITIVE EXAMPLE (correct routing):
+        # Issue: "Tests failing after upgrade to pytest 8.0"
+        # → Route to TestingAgent ✓ (correct - primary intent is fixing tests)
+        #
+        # For now, use IntelligentIssueAgent as default - it can handle most tasks
+        # and has feature detection, bug fixing, and smart routing capabilities.
+        # Only use specialized agents when the ENTIRE issue is about that specialty.
+
+        content_lower = (title + " " + body).lower()
+
+        # TestingAgent: ONLY if the main problem is about test infrastructure/failures
+        if (
+            any(
+                phrase in content_lower
+                for phrase in [
+                    "tests are failing",
+                    "test suite broken",
+                    "pytest error",
+                    "unittest problem",
+                    "test framework",
+                ]
+            )
+            and "implement" not in title.lower()
+        ):
             return "TestingAgent"
-        elif "performance" in title:
-            return "PerformanceAgent"
-        elif "security" in title:
-            return "SecurityAgent"
-        else:
-            return "IntelligentIssueAgent"  # Default
+
+        # Everything else goes to IntelligentIssueAgent
+        # It has feature detection and can create new features or fix bugs
+        return "IntelligentIssueAgent"
 
     def save_as_issue_file(self, issue_data: Dict) -> Path:
         """Save GitHub issue as local file for processing"""
