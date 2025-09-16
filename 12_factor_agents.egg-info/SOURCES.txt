@@ -49,10 +49,12 @@ core/context_manager.py
 core/context_optimizer.py
 core/dynamic_primer.py
 core/execution_context.py
+core/external_issue_processor.py
 core/feedback_templates.py
 core/github_integration.py
 core/handoff.py
 core/hierarchical_orchestrator.py
+core/intelligent_triggers.py
 core/loop_protection.py
 core/orchestrator.py
 core/pipeline.py
@@ -60,6 +62,7 @@ core/prompt_manager.py
 core/retry.py
 core/retry_wrappers.py
 core/simple_primers.py
+core/smart_state.py
 core/state.py
 core/telemetry.py
 core/tools.py
@@ -87,6 +90,7 @@ tests/test_intelligent_validation_retry.py
 tests/test_marketplace.py
 tests/test_orchestration_patterns.py
 tests/test_path_resolution_comprehensive.py
+tests/test_quality_triggers.py
 tests/test_quick_validation.py
 tests/test_retry_logic.py
 tests/test_retry_system.py
