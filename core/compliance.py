@@ -666,6 +666,208 @@ class Factor3Validator(FactorValidator):
         return compliance, details
 
 
+class Factor5Validator(FactorValidator):
+    """Factor 5: Unify Execution and Business State"""
+
+    def __init__(self):
+        super().__init__(5, "Unify Execution and Business State")
+
+    def validate(
+        self, agent: BaseAgent, context: Dict[str, Any] = None
+    ) -> Tuple[ComplianceLevel, Dict[str, Any]]:
+        """
+        Validate that agent unifies execution and business state.
+        """
+        details = {
+            "factor": self.factor_name,
+            "checks": {},
+            "score": 0.0,
+            "issues": [],
+            "recommendations": [],
+        }
+
+        # Check 1: Unified state presence (0.25 points)
+        has_unified_state = False
+        state_issues = []
+
+        if hasattr(agent, "state") and agent.state:
+            # Check if it's a UnifiedState instance or equivalent
+            required_methods = ["get", "set", "update", "to_dict", "from_dict"]
+            if all(hasattr(agent.state, method) for method in required_methods):
+                has_unified_state = True
+
+                # Check for both execution and business state
+                if hasattr(agent.state, "execution_state") and hasattr(
+                    agent.state, "business_state"
+                ):
+                    # Good - proper unified state structure
+                    pass
+                else:
+                    state_issues.append(
+                        "State missing execution_state or business_state attributes"
+                    )
+            else:
+                missing_methods = [
+                    m for m in required_methods if not hasattr(agent.state, m)
+                ]
+                state_issues.append(
+                    f"State missing required methods: {missing_methods}"
+                )
+        else:
+            state_issues.append("Missing unified state attribute")
+
+        details["checks"]["has_unified_state"] = has_unified_state
+        if has_unified_state:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(state_issues)
+
+        # Check 2: State management capabilities (0.25 points)
+        state_management = False
+        management_issues = []
+
+        if has_unified_state and agent.state:
+            # Check for state transition tracking
+            if hasattr(agent.state, "history"):
+                state_management = True
+            else:
+                management_issues.append("State missing history tracking")
+
+            # Check for state update mechanism via tool responses
+            if hasattr(agent.state, "update"):
+                # Check if update method can handle ToolResponse
+                try:
+                    sig = inspect.signature(agent.state.update)
+                    params = list(sig.parameters.keys())
+                    if len(params) >= 1:  # Should accept tool_response parameter
+                        pass  # Good
+                    else:
+                        management_issues.append(
+                            "State update method has incorrect signature"
+                        )
+                except Exception:
+                    management_issues.append("Could not analyze state update method")
+            else:
+                management_issues.append("State missing update method")
+        else:
+            management_issues.append(
+                "Cannot check state management without unified state"
+            )
+
+        details["checks"]["state_management"] = state_management
+        if state_management:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(management_issues)
+
+        # Check 3: State persistence (0.25 points)
+        state_persistence = False
+        persistence_issues = []
+
+        if has_unified_state and agent.state:
+            # Check for serialization capabilities
+            serialization_methods = ["to_dict", "from_dict"]
+            has_serialization = all(
+                hasattr(agent.state, method) for method in serialization_methods
+            )
+
+            if has_serialization:
+                # Check if agent has checkpoint/persistence functionality
+                if hasattr(agent, "save_checkpoint") and hasattr(
+                    agent, "load_checkpoint"
+                ):
+                    state_persistence = True
+                else:
+                    persistence_issues.append(
+                        "Agent missing save_checkpoint/load_checkpoint methods"
+                    )
+            else:
+                missing_methods = [
+                    m for m in serialization_methods if not hasattr(agent.state, m)
+                ]
+                persistence_issues.append(
+                    f"State missing serialization methods: {missing_methods}"
+                )
+        else:
+            persistence_issues.append("Cannot check persistence without unified state")
+
+        details["checks"]["state_persistence"] = state_persistence
+        if state_persistence:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(persistence_issues)
+
+        # Check 4: State observability (0.25 points)
+        state_observability = False
+        observability_issues = []
+
+        if has_unified_state and agent.state:
+            # Check for state inspection capabilities
+            if hasattr(agent.state, "get_summary"):
+                state_observability = True
+            else:
+                observability_issues.append("State missing get_summary method")
+
+            # Check for history access
+            if hasattr(agent.state, "get_recent_history") or hasattr(
+                agent.state, "history"
+            ):
+                # Good - has history access
+                pass
+            else:
+                observability_issues.append("State missing history access methods")
+
+            # Check if agent status includes state information
+            if hasattr(agent, "get_status"):
+                # Assume get_status includes state information
+                pass
+            else:
+                observability_issues.append(
+                    "Agent missing get_status method for state observability"
+                )
+        else:
+            observability_issues.append(
+                "Cannot check observability without unified state"
+            )
+
+        details["checks"]["state_observability"] = state_observability
+        if state_observability:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(observability_issues)
+
+        # Provide recommendations based on failures
+        if details["score"] < 1.0:
+            if not has_unified_state:
+                details["recommendations"].append(
+                    "Implement UnifiedState class with execution_state and business_state"
+                )
+            if not state_management:
+                details["recommendations"].append(
+                    "Add history tracking and update() method to handle ToolResponse objects"
+                )
+            if not state_persistence:
+                details["recommendations"].append(
+                    "Implement save_checkpoint/load_checkpoint methods and state serialization"
+                )
+            if not state_observability:
+                details["recommendations"].append(
+                    "Add get_summary() and get_recent_history() methods for state inspection"
+                )
+
+        # Determine compliance level
+        if details["score"] >= 0.9:
+            compliance = ComplianceLevel.FULLY_COMPLIANT
+        elif details["score"] >= 0.75:
+            compliance = ComplianceLevel.MOSTLY_COMPLIANT
+        elif details["score"] >= 0.5:
+            compliance = ComplianceLevel.PARTIALLY_COMPLIANT
+        else:
+            compliance = ComplianceLevel.NON_COMPLIANT
+
+        return compliance, details
+
+
 class Factor8Validator(FactorValidator):
     """Factor 8: Own Your Control Flow"""
 
@@ -1062,6 +1264,7 @@ class ComplianceAuditor:
             2: Factor2Validator(),
             3: Factor3Validator(),  # Added Factor 3
             4: Factor4Validator(),  # Added Factor 4
+            5: Factor5Validator(),  # Added Factor 5
             6: Factor6Validator(),
             8: Factor8Validator(),  # Added Factor 8
             10: Factor10Validator(),
@@ -1069,7 +1272,6 @@ class ComplianceAuditor:
         }
 
         # Validators for remaining factors are implemented as needed
-        # 5: Factor 5 (Unify Execution & Business State)
         # 7: Factor 7 (Contact Humans with Tool Calls)
         # 9: Factor 9 (Compact Errors)
         # 11: Factor 11 (Trigger from Anywhere)
