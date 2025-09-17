@@ -12,4 +12,4 @@
 IntelligentIssueAgent
 
 ## Status
-RESOLVED
+OPEN
