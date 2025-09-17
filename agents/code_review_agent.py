@@ -12,11 +12,11 @@ import re
 
 import sys
 
-sys.path.insert(0, str(Path(__file__).parent.parent))
+sys.path.insert(0, str(Path(__file__).parent.parent))  # noqa: E402
 
-from core.agent import BaseAgent
-from core.tools import Tool, ToolResponse
-from core.execution_context import ExecutionContext
+from core.agent import BaseAgent  # noqa: E402
+from core.tools import Tool, ToolResponse  # noqa: E402
+from core.execution_context import ExecutionContext  # noqa: E402
 
 
 class CodeAnalyzerTool(Tool):
