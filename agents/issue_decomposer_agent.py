@@ -17,6 +17,9 @@ sys.path.insert(0, str(Path(__file__).parent.parent))
 from core.agent import BaseAgent  # noqa: E402
 from core.tools import Tool, ToolResponse  # noqa: E402
 from core.execution_context import ExecutionContext  # noqa: E402
+from agents.intelligent_complexity_analyzer import (
+    IntelligentComplexityAnalyzer,
+)  # noqa: E402
 
 
 class IssueComplexity(Enum):
@@ -47,16 +50,26 @@ class SubIssue:
 
 
 class ComplexityAnalyzerTool(Tool):
-    """Analyze issue complexity for decomposition decisions"""
+    """Analyze issue complexity using intelligent understanding"""
 
     def __init__(self):
         super().__init__(
             name="analyze_complexity",
-            description="Analyze issue complexity and decomposition needs",
+            description="Intelligently analyze issue complexity using semantic understanding",
         )
+        # Use the intelligent analyzer instead of keywords
+        self.intelligent_analyzer = IntelligentComplexityAnalyzer()
 
     def execute(self, issue_content: str) -> ToolResponse:
-        """Analyze complexity of an issue"""
+        """Analyze complexity using intelligent understanding"""
+
+        # Use intelligent analysis instead of keyword matching
+        result = self.intelligent_analyzer.execute(issue_content)
+
+        if result.success:
+            return result
+
+        # Fallback to basic analysis if intelligent analysis fails
         try:
             content_lower = issue_content.lower()
 
@@ -820,8 +833,33 @@ class IssueDecomposerAgent(BaseAgent):
             f"📊 Complexity: {complexity_data['complexity']} (confidence: {complexity_data['confidence']:.1%})"
         )
 
-        # Step 2: Check if decomposition is needed
-        if complexity_data["complexity"] in ["atomic", "simple"]:
+        # Step 2: Check if decomposition is needed based on intelligent analysis
+        # Respect the analyzer's recommendation about whether to decompose
+        decomposition_needed = complexity_data.get("decomposition_needed", None)
+
+        # If intelligent analyzer provided a recommendation, use it
+        if decomposition_needed is not None:
+            if not decomposition_needed:
+                print(
+                    f"✅ {complexity_data.get('reasoning', 'Issue is simple enough, no decomposition needed')}"
+                )
+                self.state.set(f"issue_{num}_decomposed", False)
+                return ToolResponse(
+                    success=True,
+                    data={
+                        "decomposed": False,
+                        "reason": complexity_data.get(
+                            "reasoning",
+                            f"Issue complexity is {complexity_data['complexity']}, no decomposition needed",
+                        ),
+                        "complexity": complexity_data,
+                        "recommended_approach": complexity_data.get(
+                            "recommended_approach", "direct_implementation"
+                        ),
+                    },
+                )
+        # Fallback to simple heuristic if no explicit recommendation
+        elif complexity_data["complexity"] in ["atomic", "simple"]:
             print("✅ Issue is simple enough, no decomposition needed")
             self.state.set(f"issue_{num}_decomposed", False)
             return ToolResponse(

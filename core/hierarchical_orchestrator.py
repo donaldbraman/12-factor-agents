@@ -155,8 +155,48 @@ class TaskDecomposer:
         return orchestration_task
 
     def _analyze_complexity(self, task: str) -> TaskComplexity:
-        """Analyze task complexity using heuristics"""
+        """Analyze task complexity using intelligent semantic understanding"""
 
+        # Import the intelligent analyzer
+        try:
+            from agents.intelligent_complexity_analyzer import (
+                IntelligentComplexityAnalyzer,
+            )
+
+            # Handle both string and dict inputs
+            if isinstance(task, dict):
+                # Extract description from dict format
+                task_text = task.get("description", "")
+            else:
+                # Use string directly
+                task_text = task
+
+            # Try intelligent analysis first
+            analyzer = IntelligentComplexityAnalyzer()
+            analysis_result = analyzer.execute(task_text)
+
+            if analysis_result.success:
+                complexity_str = analysis_result.data.get("complexity", "atomic")
+                # Map from string to enum
+                complexity_map = {
+                    "atomic": TaskComplexity.ATOMIC,
+                    "simple": TaskComplexity.SIMPLE,
+                    "moderate": TaskComplexity.MODERATE,
+                    "complex": TaskComplexity.COMPLEX,
+                    "enterprise": TaskComplexity.ENTERPRISE,
+                }
+                return complexity_map.get(complexity_str, TaskComplexity.MODERATE)
+
+        except ImportError:
+            # Intelligent analyzer not available, fall back to keywords
+            pass
+        except Exception as e:
+            # Log error and fall back
+            logger.warning(
+                f"Intelligent analysis failed: {e}, falling back to keywords"
+            )
+
+        # Fallback to keyword-based analysis
         # Handle both string and dict inputs
         if isinstance(task, dict):
             # Extract description from dict format
@@ -165,7 +205,7 @@ class TaskDecomposer:
             # Use string directly
             task_text = task
 
-        # Simple keyword-based analysis (can be enhanced with ML)
+        # Simple keyword-based analysis (fallback)
         task_lower = task_text.lower()
 
         # Enterprise indicators
@@ -481,7 +521,7 @@ class HierarchicalOrchestrator(BaseAgent):
 
             # Phase 3: Execute orchestration
             logger.info(f"🚀 Executing hierarchical orchestration: {orchestration_id}")
-            result = await self._execute_orchestration(root_task, orchestration_id)
+            await self._execute_orchestration(root_task, orchestration_id)
 
             # Phase 4: Aggregate and validate results
             logger.info(f"📊 Aggregating results for orchestration: {orchestration_id}")
