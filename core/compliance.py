@@ -1252,6 +1252,230 @@ class Factor12Validator(FactorValidator):
         return compliance, details
 
 
+class Factor7Validator(FactorValidator):
+    """Factor 7: Contact Humans with Tool Calls"""
+
+    def __init__(self):
+        super().__init__(7, "Contact Humans with Tool Calls")
+
+    def validate(
+        self, agent: BaseAgent, context: Dict[str, Any] = None
+    ) -> Tuple[ComplianceLevel, Dict[str, Any]]:
+        """
+        Validate that agents use tool calls for human interaction.
+
+        Checks:
+        1. Human interaction tools exist and are properly structured
+        2. Communication protocols are implemented (timeout handling, escalation)
+        3. User experience elements are present (clear prompts, context)
+        4. Tool calls follow standard patterns for human contact
+        """
+        details = {
+            "factor": 7,
+            "name": "Contact Humans with Tool Calls",
+            "score": 0.0,
+            "checks": {
+                "has_human_tools": False,
+                "communication_protocols": False,
+                "user_experience": False,
+                "tool_call_patterns": False,
+            },
+            "issues": [],
+            "recommendations": [],
+        }
+
+        # Check 1: Human interaction tools exist and are properly structured (0.25)
+        tools = agent.get_tools() if hasattr(agent, "get_tools") else []
+        human_tools = []
+
+        for tool in tools:
+            tool_name = getattr(tool, "name", "").lower()
+            tool_desc = getattr(tool, "description", "").lower()
+
+            if any(
+                keyword in tool_name or keyword in tool_desc
+                for keyword in [
+                    "human",
+                    "interaction",
+                    "approval",
+                    "contact",
+                    "escalate",
+                ]
+            ):
+                human_tools.append(tool)
+
+        details["checks"]["has_human_tools"] = len(human_tools) > 0
+        if len(human_tools) > 0:
+            details["score"] += 0.25
+
+            # Verify tools are properly structured
+            properly_structured = True
+            for tool in human_tools:
+                if not hasattr(tool, "execute") or not hasattr(
+                    tool, "get_parameters_schema"
+                ):
+                    properly_structured = False
+                    break
+
+            if not properly_structured:
+                details["issues"].append(
+                    "Human interaction tools lack proper Tool structure"
+                )
+                details["score"] -= 0.125  # Partial deduction
+        else:
+            details["issues"].append("No human interaction tools found")
+
+        # Check 2: Communication protocols implemented (0.25)
+        has_protocols = False
+        if human_tools:
+            for tool in human_tools:
+                try:
+                    source = (
+                        inspect.getsource(tool.execute)
+                        if hasattr(tool, "execute")
+                        else ""
+                    )
+
+                    # Check for timeout handling
+                    has_timeout = "timeout" in source.lower()
+
+                    # Check for structured request/response
+                    has_structure = any(
+                        keyword in source
+                        for keyword in ["request", "response", "message", "context"]
+                    )
+
+                    # Check for error handling
+                    has_error_handling = "except" in source or "error" in source.lower()
+
+                    if has_timeout and has_structure and has_error_handling:
+                        has_protocols = True
+                        break
+                except Exception:
+                    continue
+
+        details["checks"]["communication_protocols"] = has_protocols
+        if has_protocols:
+            details["score"] += 0.25
+        else:
+            details["issues"].append(
+                "Missing communication protocols (timeout, error handling, structured format)"
+            )
+
+        # Check 3: User experience elements (0.25)
+        has_ux_elements = False
+        if human_tools:
+            for tool in human_tools:
+                try:
+                    schema = (
+                        tool.get_parameters_schema()
+                        if hasattr(tool, "get_parameters_schema")
+                        else {}
+                    )
+
+                    # Check for clear prompts/messages
+                    has_message_param = False
+                    has_context_param = False
+
+                    if "properties" in schema:
+                        props = schema["properties"]
+                        for prop_name, prop_info in props.items():
+                            if (
+                                "message" in prop_name.lower()
+                                or "prompt" in prop_name.lower()
+                            ):
+                                has_message_param = True
+                            if "context" in prop_name.lower():
+                                has_context_param = True
+
+                    # Check for descriptions in parameters
+                    has_descriptions = False
+                    if "properties" in schema:
+                        for prop_info in schema["properties"].values():
+                            if "description" in prop_info:
+                                has_descriptions = True
+                                break
+
+                    if has_message_param and has_context_param and has_descriptions:
+                        has_ux_elements = True
+                        break
+                except Exception:
+                    continue
+
+        details["checks"]["user_experience"] = has_ux_elements
+        if has_ux_elements:
+            details["score"] += 0.25
+        else:
+            details["issues"].append(
+                "Missing UX elements (clear prompts, context parameters, descriptions)"
+            )
+
+        # Check 4: Tool calls follow standard patterns (0.25)
+        follows_patterns = False
+        if human_tools:
+            for tool in human_tools:
+                try:
+                    source = (
+                        inspect.getsource(tool.execute)
+                        if hasattr(tool, "execute")
+                        else ""
+                    )
+
+                    # Check for ToolResponse usage
+                    returns_toolresponse = "ToolResponse" in source
+
+                    # Check for proper parameter validation
+                    has_validation = (
+                        "validate" in source.lower() or "required" in source.lower()
+                    )
+
+                    # Check for ToolResponse and validation
+                    if returns_toolresponse and has_validation:
+                        follows_patterns = True
+                        break
+                except Exception:
+                    continue
+
+        details["checks"]["tool_call_patterns"] = follows_patterns
+        if follows_patterns:
+            details["score"] += 0.25
+        else:
+            details["issues"].append(
+                "Human tools don't follow standard tool call patterns"
+            )
+
+        # Provide recommendations based on findings
+        if details["score"] < 1.0:
+            if not details["checks"]["has_human_tools"]:
+                details["recommendations"].append(
+                    "Implement HumanInteractionTool or similar for human contact"
+                )
+            if not details["checks"]["communication_protocols"]:
+                details["recommendations"].append(
+                    "Add timeout handling, error handling, and structured request/response format"
+                )
+            if not details["checks"]["user_experience"]:
+                details["recommendations"].append(
+                    "Include clear message prompts, context parameters, and parameter descriptions"
+                )
+            if not details["checks"]["tool_call_patterns"]:
+                details["recommendations"].append(
+                    "Ensure human tools return ToolResponse and include parameter validation"
+                )
+
+        # Determine compliance level
+        if details["score"] >= 0.9:
+            compliance = ComplianceLevel.FULLY_COMPLIANT
+        elif details["score"] >= 0.75:
+            compliance = ComplianceLevel.MOSTLY_COMPLIANT
+        elif details["score"] >= 0.5:
+            compliance = ComplianceLevel.PARTIALLY_COMPLIANT
+        else:
+            compliance = ComplianceLevel.NON_COMPLIANT
+
+        return compliance, details
+
+
 class ComplianceAuditor:
     """
     Comprehensive 12-factor compliance auditor.
@@ -1266,6 +1490,7 @@ class ComplianceAuditor:
             4: Factor4Validator(),  # Added Factor 4
             5: Factor5Validator(),  # Added Factor 5
             6: Factor6Validator(),
+            7: Factor7Validator(),  # Added Factor 7
             8: Factor8Validator(),  # Added Factor 8
             10: Factor10Validator(),
             12: Factor12Validator(),  # Added Factor 12
