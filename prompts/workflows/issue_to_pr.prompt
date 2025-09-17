@@ -1,0 +1,12 @@
+Execute the complete issue-to-PR workflow:
+
+Issue Number: $issue_number
+Issue Analysis: $issue_analysis
+
+Steps to complete:
+1. Analyze the issue context
+2. Generate appropriate code changes
+3. Validate the changes
+4. Create a pull request
+
+Use simple, composable functions for each step.

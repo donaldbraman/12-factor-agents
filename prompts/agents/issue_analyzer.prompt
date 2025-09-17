@@ -1,0 +1,13 @@
+Analyze the following issue using natural language understanding:
+
+Issue Title: $issue_title
+Issue Body: $issue_body
+
+Please identify:
+1. The core problem being described
+2. The desired outcome
+3. Whether this is a bug fix, feature request, documentation, or refactoring
+4. Key requirements (not examples)
+5. Files or components mentioned
+
+Focus on understanding the intent rather than literal text parsing.

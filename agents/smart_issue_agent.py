@@ -1,3 +1,4 @@
+# Hello from Sparky! This comment was added by self-healing.
 """
 SmartIssueAgent - Universal issue handler with automatic complexity detection.
 Users can submit ANY issue to this agent and it will automatically:
@@ -23,6 +24,7 @@ from core.tools import Tool, ToolResponse  # noqa: E402
 from core.execution_context import ExecutionContext  # noqa: E402
 from agents.issue_decomposer_agent import IssueDecomposerAgent  # noqa: E402
 from agents.issue_fixer_agent import IssueFixerAgent  # noqa: E402
+from agents.simple_issue_fixer import fix_simple_issue  # noqa: E402
 
 
 class SmartIssueProcessor(Tool):
@@ -87,8 +89,15 @@ class SmartIssueProcessor(Tool):
                 )
                 print(f"✅ Issue is {complexity} - handling directly")
 
-                # Use IssueFixerAgent to handle it
-                fix_result = self.fixer.execute_task(issue_identifier)
+                # Try simple fixer first, fall back to complex if needed
+                fix_result = fix_simple_issue(issue_identifier)
+                if (
+                    not fix_result.success
+                    and "not found" not in fix_result.error.lower()
+                ):
+                    # If simple fixer failed for non-trivial reason, try complex fixer
+                    print("   Falling back to complex fixer...")
+                    fix_result = self.fixer.execute_task(issue_identifier)
 
                 return ToolResponse(
                     success=fix_result.success,
@@ -405,4 +414,6 @@ if __name__ == "__main__":
         print("\nDetailed results:")
         print(json.dumps(result.data, indent=2))
     else:
-        print(f"\n❌ SmartIssueAgent failed: {result.error}")
+        print(
+            f"\n❌ SmartIssueAgent failed: {result.error or 'Unknown error - no details provided'}"
+        )

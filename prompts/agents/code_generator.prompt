@@ -1,0 +1,15 @@
+Generate code to solve the following issue:
+
+Problem: $problem_statement  
+Desired Outcome: $desired_outcome
+Files to Modify: $files_to_modify
+
+Requirements:
+$requirements
+
+Guidelines:
+- Use simple, stateless functions
+- Leverage existing tools and libraries
+- Follow the existing code style
+- Make minimal, focused changes
+- Ensure code is testable and maintainable

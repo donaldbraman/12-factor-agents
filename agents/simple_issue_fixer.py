@@ -1,93 +1,237 @@
+#!/usr/bin/env python3
 """
-Simple Issue Fixer Agent - Maximizes Claude Code capabilities
+Simple Issue Fixer - A lightweight agent that fixes issues using simple patterns.
 
-This agent demonstrates the "maximize Claude, minimize code" philosophy by:
-1. Using Claude's built-in Read/Edit/Write tools directly
-2. Leveraging Claude's natural language understanding instead of regex
-3. Keeping the code simple and focused on business logic
+Following our architecture: stateless functions, existing tools, minimal complexity.
 """
 
-import subprocess
+import re
+import sys
 from pathlib import Path
 
+sys.path.insert(0, str(Path(__file__).parent.parent))
 
-def fix_issue(issue_identifier: str) -> bool:
+from core.tools import ToolResponse  # noqa: E402
+
+
+def fix_simple_issue(issue_number: str) -> ToolResponse:
     """
-    Fix an issue using Claude's natural language understanding and built-in tools.
+    Fix an issue using simple, direct patterns.
 
-    Args:
-        issue_identifier: Issue number (e.g., "108") or file path
-
-    Returns:
-        True if successful, False otherwise
+    This is a stateless function that:
+    1. Reads the issue file
+    2. Extracts file and change information
+    3. Applies changes directly
+    4. Returns clear success/error status
     """
 
-    # SAFETY: Don't work on main branch
-    current_branch = subprocess.run(
-        ["git", "branch", "--show-current"], capture_output=True, text=True, check=False
-    ).stdout.strip()
+    # Find issue file
+    issue_path = None
+    for file in Path("issues").glob(f"{issue_number}*.md"):
+        issue_path = file
+        break
 
-    if current_branch in ["main", "master"]:
-        print(
-            f"🔐 SAFETY: Cannot work on {current_branch} branch. Create a feature branch first:"
+    if not issue_path:
+        return ToolResponse(
+            success=False, error=f"Issue file not found for issue {issue_number}"
         )
-        print(f"   git checkout -b fix/issue-{issue_identifier}")
-        return False
-
-    # Find the issue file
-    if issue_identifier.isdigit():
-        issue_num = issue_identifier.zfill(3)
-        issue_files = list(Path("issues").glob(f"{issue_num}*.md"))
-        if not issue_files:
-            print(f"❌ No issue file found for #{issue_num}")
-            return False
-        issue_path = issue_files[0]
-    else:
-        issue_path = Path(issue_identifier)
-        if not issue_path.exists():
-            issue_path = Path("issues") / issue_identifier
-            if not issue_path.exists():
-                print(f"❌ Issue file not found: {issue_identifier}")
-                return False
-
-    print(f"📋 Processing issue: {issue_path.name}")
-
-    # Let Claude read and understand the issue using its built-in capabilities
-    # No custom parsing needed - Claude understands markdown structure naturally
 
     try:
-        # Claude will:
-        # 1. Read the issue file
-        # 2. Understand what needs to be fixed
-        # 3. Use Edit/Write tools to make the changes
-        # 4. Handle all the complexity we were doing manually
+        content = issue_path.read_text()
 
-        print("🧠 Using Claude's natural language understanding to process the issue...")
-        print("🛠️  Claude will use built-in Read/Edit/Write tools as needed")
+        # Extract basic info
+        title_match = re.search(r"^# Issue #\d+:\s+(.+)$", content, re.MULTILINE)
+        title = title_match.group(1) if title_match else "Unknown"
 
-        # The actual fix implementation will be handled by Claude's tools
-        # This is just the coordination logic
+        print(f"📝 Processing: {title}")
 
-        print(f"✅ Issue {issue_identifier} processed successfully!")
-        return True
+        # Extract file to update (multiple patterns for flexibility)
+        file_to_update = None
+
+        # Pattern 1: "Files to Update" section
+        files_match = re.search(
+            r"## Files to Update\s*\n[-*]\s+([^\s\n]+)", content, re.MULTILINE
+        )
+        if files_match:
+            file_to_update = files_match.group(1).strip()
+            # Clean up the file path
+            file_to_update = re.sub(
+                r"\s*\(.*?\)\s*$", "", file_to_update
+            )  # Remove (line X) annotations
+
+        # Pattern 2: Look in Solution section
+        if not file_to_update:
+            solution_match = re.search(
+                r"(?:file|path)[:\s]+([/\w.-]+\.\w+)", content, re.IGNORECASE
+            )
+            if solution_match:
+                file_to_update = solution_match.group(1)
+
+        if not file_to_update:
+            return ToolResponse(
+                success=False, error="Could not determine which file to update"
+            )
+
+        print(f"📄 File to update: {file_to_update}")
+
+        # Extract what to do (look for code blocks in Solution section)
+        solution_code = None
+        solution_match = re.search(
+            r"## Solution.*?```(?:python|javascript|typescript|bash)?\n(.*?)```",
+            content,
+            re.DOTALL | re.IGNORECASE,
+        )
+
+        if solution_match:
+            solution_code = solution_match.group(1).strip()
+
+        if not solution_code:
+            # Try simpler pattern
+            code_match = re.search(r"```(?:python)?\n(.*?)```", content, re.DOTALL)
+            if code_match:
+                solution_code = code_match.group(1).strip()
+
+        if not solution_code:
+            return ToolResponse(
+                success=False, error="Could not find code to add/modify in the issue"
+            )
+
+        # Determine operation type
+        operation = "unknown"
+
+        # Check if it's an addition (has line number or "add" keyword)
+        if re.search(
+            r"line \d+|add.*comment|add.*import|prepend|append", content, re.IGNORECASE
+        ):
+            operation = "add"
+        # Check if it's a replacement
+        elif re.search(
+            r"change|replace|fix|should be|instead of", content, re.IGNORECASE
+        ):
+            operation = "replace"
+        else:
+            # Default to add if we have simple code
+            if len(solution_code.splitlines()) <= 5:
+                operation = "add"
+
+        print(f"🔧 Operation: {operation}")
+
+        # Apply the fix
+        file_path = Path(file_to_update)
+
+        if not file_path.exists():
+            return ToolResponse(
+                success=False, error=f"File not found: {file_to_update}"
+            )
+
+        current_content = file_path.read_text()
+
+        if operation == "add":
+            # Simple addition - add after imports or at top
+            if "import" in solution_code or solution_code.startswith("#"):
+                # Add near the top
+                lines = current_content.splitlines()
+                # Find where to insert (after initial comments/imports)
+                insert_index = 0
+                for i, line in enumerate(lines):
+                    if (
+                        line
+                        and not line.startswith("#")
+                        and not line.startswith("import")
+                        and not line.startswith("from")
+                    ):
+                        insert_index = i
+                        break
+
+                # Insert the code
+                lines.insert(insert_index, solution_code)
+                new_content = "\n".join(lines)
+            else:
+                # Just append for now
+                new_content = current_content + "\n" + solution_code
+
+            file_path.write_text(new_content)
+            print(f"✅ Added code to {file_to_update}")
+
+            return ToolResponse(
+                success=True,
+                data={
+                    "action": "added",
+                    "file": file_to_update,
+                    "code": solution_code[:100] + "..."
+                    if len(solution_code) > 100
+                    else solution_code,
+                },
+            )
+
+        elif operation == "replace":
+            # For replace, we need old and new patterns
+            # Try to find them in the issue
+            old_new_match = re.search(
+                r"(?:current|old|problem).*?```.*?\n(.*?)```.*?(?:should be|new|solution).*?```.*?\n(.*?)```",
+                content,
+                re.DOTALL | re.IGNORECASE,
+            )
+
+            if old_new_match:
+                old_text = old_new_match.group(1).strip()
+                new_text = old_new_match.group(2).strip()
+
+                if old_text in current_content:
+                    new_content = current_content.replace(old_text, new_text)
+                    file_path.write_text(new_content)
+                    print(f"✅ Replaced text in {file_to_update}")
+
+                    return ToolResponse(
+                        success=True,
+                        data={
+                            "action": "replaced",
+                            "file": file_to_update,
+                            "old": old_text[:50] + "..."
+                            if len(old_text) > 50
+                            else old_text,
+                            "new": new_text[:50] + "..."
+                            if len(new_text) > 50
+                            else new_text,
+                        },
+                    )
+                else:
+                    return ToolResponse(
+                        success=False,
+                        error=f"Could not find text to replace in {file_to_update}",
+                    )
+            else:
+                # Fallback: just add the code if we can't find old/new
+                new_content = current_content + "\n" + solution_code
+                file_path.write_text(new_content)
+                print(f"✅ Added code to {file_to_update} (fallback)")
+
+                return ToolResponse(
+                    success=True,
+                    data={
+                        "action": "added (fallback)",
+                        "file": file_to_update,
+                        "code": solution_code[:100] + "..."
+                        if len(solution_code) > 100
+                        else solution_code,
+                    },
+                )
+
+        return ToolResponse(success=False, error=f"Unknown operation type: {operation}")
 
     except Exception as e:
-        print(f"❌ Error processing issue: {e}")
-        return False
+        return ToolResponse(success=False, error=f"Error processing issue: {str(e)}")
 
 
+# Test if run directly
 if __name__ == "__main__":
-    import sys
-
     if len(sys.argv) > 1:
-        issue = sys.argv[1]
-    else:
-        issue = "108"  # Default test issue
+        issue_num = sys.argv[1]
+        result = fix_simple_issue(issue_num)
 
-    print(f"🔧 Simple Issue Fixer - Processing issue #{issue}")
-    success = fix_issue(issue)
-
-    if success:
-        print(f"\n✅ Issue #{issue} fixed!")
+        if result.success:
+            print(f"✅ Success: {result.data}")
+        else:
+            print(f"❌ Failed: {result.error}")
     else:
-        print(f"\n❌ Failed to fix issue #{issue}")
+        print("Usage: python simple_issue_fixer.py <issue_number>")
