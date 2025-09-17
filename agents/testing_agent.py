@@ -32,7 +32,6 @@ class UnitTestTool(Tool):
 
             # Test core imports
             try:
-                from core.agent import BaseAgent
                 from core.tools import ToolResponse
 
                 test_results.append(
@@ -83,23 +82,25 @@ class UnitTestTool(Tool):
                         }
                     )
 
-            # Test BaseAgent instantiation
+            # Test concrete agent instantiation (BaseAgent is abstract)
             try:
-                agent = BaseAgent()
+                from agents.repository_setup_agent import RepositorySetupAgent
+
+                agent = RepositorySetupAgent()
                 assert hasattr(agent, "execute_task")
                 assert hasattr(agent, "register_tools")
-                assert hasattr(agent, "state")
+                assert hasattr(agent, "_apply_action")
                 test_results.append(
                     {
-                        "test": "base_agent_instantiation",
+                        "test": "concrete_agent_instantiation",
                         "status": "passed",
-                        "message": "BaseAgent instantiates correctly",
+                        "message": "Concrete agent instantiates correctly",
                     }
                 )
             except Exception as e:
                 test_results.append(
                     {
-                        "test": "base_agent_instantiation",
+                        "test": "concrete_agent_instantiation",
                         "status": "failed",
                         "error": str(e),
                     }
