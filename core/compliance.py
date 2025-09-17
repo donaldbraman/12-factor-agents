@@ -296,6 +296,174 @@ class Factor10Validator(FactorValidator):
         return compliance, details
 
 
+class Factor12Validator(FactorValidator):
+    """Factor 12: Stateless Reducer"""
+
+    def __init__(self):
+        super().__init__(12, "Stateless Reducer")
+
+    def validate(
+        self, agent: BaseAgent, context: Dict[str, Any] = None
+    ) -> Tuple[ComplianceLevel, Dict[str, Any]]:
+        """
+        Validate that agent functions as a stateless reducer.
+        Checks for pure functions, no side effects, and predictable behavior.
+        """
+        details = {
+            "factor": self.factor_name,
+            "checks": {},
+            "score": 0.0,
+            "issues": [],
+            "recommendations": [],
+        }
+
+        # Check 1: No instance variable modifications in execute_task
+        has_state_mutation = False
+        if hasattr(agent, "execute_task"):
+            try:
+                source = inspect.getsource(agent.execute_task)
+
+                # Use AST to precisely detect self assignments
+                import ast
+                import textwrap
+
+                try:
+                    # Need to dedent the source for AST parsing
+                    dedented_source = textwrap.dedent(source)
+                    tree = ast.parse(dedented_source)
+
+                    for node in ast.walk(tree):
+                        if isinstance(node, ast.Assign):
+                            for target in node.targets:
+                                if (
+                                    isinstance(target, ast.Attribute)
+                                    and isinstance(target.value, ast.Name)
+                                    and target.value.id == "self"
+                                ):
+                                    has_state_mutation = True
+                                    details["issues"].append(
+                                        f"State mutation found: self.{target.attr}"
+                                    )
+                        # Also check for augmented assignments (+=, -=, etc.)
+                        elif isinstance(node, ast.AugAssign):
+                            if (
+                                isinstance(node.target, ast.Attribute)
+                                and isinstance(node.target.value, ast.Name)
+                                and node.target.value.id == "self"
+                            ):
+                                has_state_mutation = True
+                                details["issues"].append(
+                                    f"State mutation found: self.{node.target.attr} (augmented assignment)"
+                                )
+                except Exception:
+                    # If AST parsing fails, fall back to simple heuristic
+                    simple_patterns = [
+                        "self." + word + " ="
+                        for word in ["counter", "state", "last_", "current_", "data"]
+                    ]
+                    has_state_mutation = any(
+                        pattern in source for pattern in simple_patterns
+                    )
+
+                details["checks"]["no_state_mutation"] = not has_state_mutation
+                if not has_state_mutation:
+                    details["score"] += 0.25
+            except Exception:
+                details["checks"]["no_state_mutation"] = False
+                details["issues"].append("Could not analyze execute_task method")
+
+        # Check 2: All inputs are explicit in method signature
+        if hasattr(agent, "execute_task"):
+            sig = inspect.signature(agent.execute_task)
+            params = list(sig.parameters.keys())
+            # Should have task and optional context, nothing hidden
+            has_explicit_inputs = len(params) >= 2  # self, task, [context]
+            details["checks"]["explicit_inputs"] = has_explicit_inputs
+            if has_explicit_inputs:
+                details["score"] += 0.25
+            else:
+                details["issues"].append(
+                    "execute_task should have explicit task and context parameters"
+                )
+
+        # Check 3: No global state access
+        if hasattr(agent, "execute_task"):
+            try:
+                source = inspect.getsource(agent.execute_task)
+                global_patterns = ["global ", "globals()", "__builtins__"]
+                has_global_access = any(
+                    pattern in source for pattern in global_patterns
+                )
+                details["checks"]["no_global_access"] = not has_global_access
+                if not has_global_access:
+                    details["score"] += 0.25
+                else:
+                    details["issues"].append("Global state access detected")
+            except Exception:
+                details["checks"]["no_global_access"] = False
+
+        # Check 4: Returns ToolResponse (predictable output)
+        if hasattr(agent, "execute_task"):
+            try:
+                source = inspect.getsource(agent.execute_task)
+                # Check for ToolResponse in return statements or type annotations
+                returns_toolresponse = (
+                    "ToolResponse" in source and "return" in source
+                ) or ("-> ToolResponse" in source)
+                details["checks"]["returns_toolresponse"] = returns_toolresponse
+                if returns_toolresponse:
+                    details["score"] += 0.25
+                else:
+                    details["issues"].append(
+                        "Should return ToolResponse for predictable output"
+                    )
+            except Exception:
+                details["checks"]["returns_toolresponse"] = False
+
+        # Provide recommendations based on findings
+        if details["score"] < 1.0:
+            if (
+                "no_state_mutation" in details["checks"]
+                and not details["checks"]["no_state_mutation"]
+            ):
+                details["recommendations"].append(
+                    "Remove instance variable assignments from execute_task"
+                )
+            if (
+                "explicit_inputs" in details["checks"]
+                and not details["checks"]["explicit_inputs"]
+            ):
+                details["recommendations"].append(
+                    "Make all inputs explicit: execute_task(self, task: str, context: ExecutionContext = None)"
+                )
+            if (
+                "no_global_access" in details["checks"]
+                and not details["checks"]["no_global_access"]
+            ):
+                details["recommendations"].append(
+                    "Remove global state access, pass all data through parameters"
+                )
+            if (
+                "returns_toolresponse" in details["checks"]
+                and not details["checks"]["returns_toolresponse"]
+            ):
+                details["recommendations"].append(
+                    "Return ToolResponse objects for consistent output"
+                )
+
+        # Determine compliance level
+        if details["score"] >= 0.9:
+            compliance = ComplianceLevel.FULLY_COMPLIANT
+        elif details["score"] >= 0.75:
+            compliance = ComplianceLevel.MOSTLY_COMPLIANT
+        elif details["score"] >= 0.5:
+            compliance = ComplianceLevel.PARTIALLY_COMPLIANT
+        else:
+            compliance = ComplianceLevel.NON_COMPLIANT
+
+        return compliance, details
+
+
 class ComplianceAuditor:
     """
     Comprehensive 12-factor compliance auditor.
@@ -308,6 +476,7 @@ class ComplianceAuditor:
             2: Factor2Validator(),
             6: Factor6Validator(),
             10: Factor10Validator(),
+            12: Factor12Validator(),  # Added Factor 12
         }
 
         # Validators for remaining factors are implemented as needed
@@ -318,7 +487,6 @@ class ComplianceAuditor:
         # 8: Factor 8 (Own Your Control Flow)
         # 9: Factor 9 (Compact Errors)
         # 11: Factor 11 (Trigger from Anywhere)
-        # 12: Factor 12 (Stateless Reducer)
 
     def audit_agent(self, agent: BaseAgent) -> Dict[str, Any]:
         """
