@@ -1,0 +1,25 @@
+{
+  "agent_id": "CompliantUnifiedStateAgent_3f4e3cb9",
+  "agent_type": "CompliantUnifiedStateAgent",
+  "status": "idle",
+  "progress": 0.0,
+  "current_stage": null,
+  "total_stages": 1,
+  "state": {
+    "execution_state": {},
+    "business_state": {
+      "checkpoint_test": "before_save"
+    },
+    "history": [],
+    "metadata": {
+      "created_at": "2025-09-17T10:50:16.621918",
+      "version": "1.0.0"
+    }
+  },
+  "workflow_data": {},
+  "files_modified": [],
+  "branch": null,
+  "issue_number": null,
+  "created_at": "2025-09-17T10:50:16.622397",
+  "last_checkpoint": "2025-09-17T10:50:16.622447"
+}

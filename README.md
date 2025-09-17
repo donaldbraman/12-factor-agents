@@ -90,6 +90,45 @@ This architecture has systematically resolved 9+ critical issues including:
 - [Issue Resolution](ISSUES_RESOLVED_BATCH_3.md)
 - [Implementation Examples](docs/)
 
+## Known Validator Limitations
+
+The 12-factor compliance validators are comprehensive but have some known limitations that may cause false negatives:
+
+### Factor 2: Own Your Prompts (70% typical)
+**False Negative**: Detects environment variable fallback strings as "hardcoded"
+- Example: `os.getenv("PROMPT_START", "Starting: {task}")` 
+- The fallback string is flagged even though it's a best practice
+- **Reality**: Agents using PromptManager with fallbacks ARE compliant
+
+### Factor 7: Contact Humans with Tool Calls (75% possible)
+**Validation Issue**: May not recognize all valid tool patterns
+- Tools that return ToolResponse and have proper error handling may still score <100%
+- Validator has overly specific expectations about implementation details
+- **Reality**: If human interaction tools exist and work, the agent IS compliant
+
+### Factor 10: Small, Focused Agents (improved)
+**Inheritance Counting**: Previously counted ALL methods including inherited from BaseAgent
+- An agent with only 15 own methods would show ~30-50 total methods
+- BaseAgent provides ~20 necessary framework methods
+- **Reality**: Agents with <20 own methods ARE properly focused
+- **Status**: Fixed to only count agent's own methods
+
+### Factor 11: Trigger from Anywhere (naming sensitivity)
+**Method Naming**: Validator looks for specific method names
+- Fixed to recognize both `get_triggers()` and `get_trigger_info()`
+- May not recognize other valid documentation method names
+- **Reality**: If trigger documentation exists, the agent IS compliant
+
+## Practical Compliance
+
+Due to these limitations, consider:
+- **90%+ compliance**: Excellent, essentially fully compliant
+- **85-90% compliance**: Very good, likely has only validator false negatives
+- **80-85% compliance**: Good, may have minor real issues or multiple false negatives
+- **<80% compliance**: Needs improvement in actual compliance
+
+The validators are guides to help ensure best practices, not absolute arbiters of code quality.
+
 ## Contributing
 
 All changes follow the proven pattern:
