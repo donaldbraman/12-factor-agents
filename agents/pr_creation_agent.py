@@ -109,6 +109,26 @@ class PRCreationAgent(BaseAgent):
             )
 
             self._run_git(repo_path, ["add", "-A"])
+
+            # VALIDATION: Simple validation before commit (leverages existing tools)
+            print("🔍 Running validation before commit...")
+            from core.simple_validation import (
+                validate_before_commit,
+                print_validation_results,
+            )
+
+            validation_results = validate_before_commit(repo_path)
+            print_validation_results(validation_results)
+
+            if not validation_results["valid"]:
+                print("❌ Validation failed - aborting commit")
+                return ToolResponse(
+                    success=False,
+                    error="Validation failed before commit",
+                    data={"validation_results": validation_results},
+                )
+
+            # Proceed with commit only if validation passes
             self._run_git(repo_path, ["commit", "-m", commit_message])
             commit_sha = self._get_commit_sha(repo_path)
             print(f"💾 Committed changes: {commit_sha[:8]}")
