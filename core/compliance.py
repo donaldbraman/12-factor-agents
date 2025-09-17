@@ -475,6 +475,197 @@ class Factor4Validator(FactorValidator):
         return compliance, details
 
 
+class Factor3Validator(FactorValidator):
+    """Factor 3: Own Your Context Window"""
+
+    def __init__(self):
+        super().__init__(3, "Own Your Context Window")
+
+    def validate(
+        self, agent: BaseAgent, context: Dict[str, Any] = None
+    ) -> Tuple[ComplianceLevel, Dict[str, Any]]:
+        """
+        Validate that agent properly manages its context window.
+        """
+        details = {
+            "factor": self.factor_name,
+            "checks": {},
+            "score": 0.0,
+            "issues": [],
+            "recommendations": [],
+        }
+
+        # Check 1: Context Manager presence (0.25 points)
+        has_context_manager = False
+        context_issues = []
+
+        if hasattr(agent, "context_manager") and agent.context_manager:
+            has_context_manager = True
+            # Check if it's a proper ContextManager instance
+            if hasattr(agent.context_manager, "add_context") and hasattr(
+                agent.context_manager, "build_prompt"
+            ):
+                pass  # Good
+            else:
+                has_context_manager = False
+                context_issues.append(
+                    "context_manager is not a proper ContextManager instance"
+                )
+        else:
+            context_issues.append("Missing context_manager attribute")
+
+        details["checks"]["has_context_manager"] = has_context_manager
+        if has_context_manager:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(context_issues)
+
+        # Check 2: Context size management (0.25 points)
+        context_size_management = False
+        size_issues = []
+
+        if has_context_manager and agent.context_manager:
+            # Check for token limits
+            if hasattr(agent.context_manager, "max_tokens"):
+                max_tokens = getattr(agent.context_manager, "max_tokens", 0)
+                if max_tokens > 0 and max_tokens <= 200000:  # Reasonable limit
+                    context_size_management = True
+                else:
+                    size_issues.append(f"Unreasonable max_tokens limit: {max_tokens}")
+            else:
+                size_issues.append("Context manager missing max_tokens limit")
+
+            # Check for token usage tracking
+            if hasattr(agent.context_manager, "get_token_usage"):
+                try:
+                    usage = agent.context_manager.get_token_usage()
+                    if isinstance(usage, dict) and "total" in usage:
+                        # Good token tracking
+                        pass
+                    else:
+                        size_issues.append("get_token_usage() returns invalid format")
+                except Exception:
+                    size_issues.append("get_token_usage() method error")
+            else:
+                size_issues.append("Missing get_token_usage() method")
+        else:
+            size_issues.append("Cannot check size management without context manager")
+
+        details["checks"]["context_size_management"] = context_size_management
+        if context_size_management:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(size_issues)
+
+        # Check 3: Context structure and organization (0.25 points)
+        context_structure = False
+        structure_issues = []
+
+        if has_context_manager and agent.context_manager:
+            # Check for priority-based context management
+            if hasattr(agent.context_manager, "add_context"):
+                # Check method signature for priority parameter
+                try:
+                    import inspect
+
+                    sig = inspect.signature(agent.context_manager.add_context)
+                    if "priority" in sig.parameters:
+                        context_structure = True
+                    else:
+                        structure_issues.append(
+                            "add_context method missing priority parameter"
+                        )
+                except Exception:
+                    structure_issues.append(
+                        "Could not analyze add_context method signature"
+                    )
+
+            # Check for ExecutionContext support
+            if hasattr(agent, "context"):
+                # Check if it can handle ExecutionContext
+                context_structure = True
+            else:
+                structure_issues.append("Missing ExecutionContext support")
+        else:
+            structure_issues.append("Cannot check structure without context manager")
+
+        details["checks"]["context_structure"] = context_structure
+        if context_structure:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(structure_issues)
+
+        # Check 4: Context optimization (0.25 points)
+        context_optimization = False
+        optimization_issues = []
+
+        if has_context_manager and agent.context_manager:
+            # Check for context pruning/cleanup methods
+            optimization_methods = ["clear", "remove_old_context", "compact_errors"]
+            found_methods = []
+
+            for method in optimization_methods:
+                if hasattr(agent.context_manager, method):
+                    found_methods.append(method)
+
+            if len(found_methods) >= 2:  # At least 2 optimization methods
+                context_optimization = True
+            else:
+                optimization_issues.append(
+                    f"Missing context optimization methods. Found: {found_methods}"
+                )
+
+            # Check for intelligent truncation
+            if hasattr(agent.context_manager, "_truncate_content") or hasattr(
+                agent.context_manager, "build_prompt"
+            ):
+                # Assume build_prompt handles truncation intelligently
+                pass
+            else:
+                optimization_issues.append("Missing intelligent content truncation")
+        else:
+            optimization_issues.append(
+                "Cannot check optimization without context manager"
+            )
+
+        details["checks"]["context_optimization"] = context_optimization
+        if context_optimization:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(optimization_issues)
+
+        # Provide recommendations based on failures
+        if details["score"] < 1.0:
+            if not has_context_manager:
+                details["recommendations"].append(
+                    "Implement ContextManager class and assign to agent.context_manager"
+                )
+            if not context_size_management:
+                details["recommendations"].append(
+                    "Add max_tokens limit and get_token_usage() method to context manager"
+                )
+            if not context_structure:
+                details["recommendations"].append(
+                    "Add priority parameter to add_context() and ExecutionContext support"
+                )
+            if not context_optimization:
+                details["recommendations"].append(
+                    "Implement context cleanup methods: clear(), remove_old_context(), compact_errors()"
+                )
+
+        # Determine compliance level
+        if details["score"] >= 0.9:
+            compliance = ComplianceLevel.FULLY_COMPLIANT
+        elif details["score"] >= 0.75:
+            compliance = ComplianceLevel.MOSTLY_COMPLIANT
+        elif details["score"] >= 0.5:
+            compliance = ComplianceLevel.PARTIALLY_COMPLIANT
+        else:
+            compliance = ComplianceLevel.NON_COMPLIANT
+
+        return compliance, details
+
+
 class Factor8Validator(FactorValidator):
     """Factor 8: Own Your Control Flow"""
 
@@ -869,6 +1060,7 @@ class ComplianceAuditor:
         self.validators = {
             1: Factor1Validator(),
             2: Factor2Validator(),
+            3: Factor3Validator(),  # Added Factor 3
             4: Factor4Validator(),  # Added Factor 4
             6: Factor6Validator(),
             8: Factor8Validator(),  # Added Factor 8
@@ -877,7 +1069,6 @@ class ComplianceAuditor:
         }
 
         # Validators for remaining factors are implemented as needed
-        # 3: Factor 3 (Own Your Context Window)
         # 5: Factor 5 (Unify Execution & Business State)
         # 7: Factor 7 (Contact Humans with Tool Calls)
         # 9: Factor 9 (Compact Errors)
