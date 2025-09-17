@@ -1957,6 +1957,7 @@ class Factor11Validator(FactorValidator):
         """Check if triggers are documented."""
         documentation_indicators = [
             "get_triggers",
+            "get_trigger_info",  # Added to recognize more descriptive method names
             "list_triggers",
             "trigger_help",
             "trigger_docs",
