@@ -1476,6 +1476,502 @@ class Factor7Validator(FactorValidator):
         return compliance, details
 
 
+class Factor9Validator(FactorValidator):
+    """Factor 9: Compact Errors into Context Window"""
+
+    def __init__(self):
+        super().__init__(9, "Compact Errors into Context Window")
+
+    def validate(
+        self, agent: BaseAgent, context: Dict[str, Any] = None
+    ) -> Tuple[ComplianceLevel, Dict[str, Any]]:
+        """
+        Validate that agents compact errors efficiently for context windows.
+
+        Checks:
+        1. Error messages are concise and summarized (not verbose)
+        2. Error patterns are recognized and have codes
+        3. Error context is relevant and efficient
+        4. Historical errors are summarized and trends identified
+        """
+        details = {
+            "factor": 9,
+            "name": "Compact Errors into Context Window",
+            "score": 0.0,
+            "checks": {
+                "error_compaction": False,
+                "error_patterns": False,
+                "context_efficiency": False,
+                "error_summarization": False,
+            },
+            "issues": [],
+            "recommendations": [],
+        }
+
+        # Check 1: Error compaction - messages are concise (0.25)
+        has_error_compaction = self._check_error_compaction(agent)
+        details["checks"]["error_compaction"] = has_error_compaction
+        if has_error_compaction:
+            details["score"] += 0.25
+        else:
+            details["issues"].append("Error messages are not properly compacted")
+
+        # Check 2: Error patterns - codes and recognition (0.25)
+        has_error_patterns = self._check_error_patterns(agent)
+        details["checks"]["error_patterns"] = has_error_patterns
+        if has_error_patterns:
+            details["score"] += 0.25
+        else:
+            details["issues"].append("Error patterns and codes not implemented")
+
+        # Check 3: Context efficiency - relevant error context (0.25)
+        has_context_efficiency = self._check_context_efficiency(agent)
+        details["checks"]["context_efficiency"] = has_context_efficiency
+        if has_context_efficiency:
+            details["score"] += 0.25
+        else:
+            details["issues"].append("Error context is not efficiently managed")
+
+        # Check 4: Error summarization - historical errors (0.25)
+        has_error_summarization = self._check_error_summarization(agent)
+        details["checks"]["error_summarization"] = has_error_summarization
+        if has_error_summarization:
+            details["score"] += 0.25
+        else:
+            details["issues"].append("Historical error summarization not implemented")
+
+        # Provide recommendations based on findings
+        if details["score"] < 1.0:
+            if not details["checks"]["error_compaction"]:
+                details["recommendations"].append(
+                    "Implement error compaction to summarize verbose errors"
+                )
+            if not details["checks"]["error_patterns"]:
+                details["recommendations"].append(
+                    "Add error codes and pattern recognition for common errors"
+                )
+            if not details["checks"]["context_efficiency"]:
+                details["recommendations"].append(
+                    "Improve error context relevance and efficiency"
+                )
+            if not details["checks"]["error_summarization"]:
+                details["recommendations"].append(
+                    "Implement historical error summarization and trend identification"
+                )
+
+        # Determine compliance level
+        if details["score"] >= 0.9:
+            compliance = ComplianceLevel.FULLY_COMPLIANT
+        elif details["score"] >= 0.75:
+            compliance = ComplianceLevel.MOSTLY_COMPLIANT
+        elif details["score"] >= 0.5:
+            compliance = ComplianceLevel.PARTIALLY_COMPLIANT
+        else:
+            compliance = ComplianceLevel.NON_COMPLIANT
+
+        return compliance, details
+
+    def _check_error_compaction(self, agent: BaseAgent) -> bool:
+        """Check if agent compacts error messages."""
+        # Look for error handling methods
+        methods_to_check = [
+            "handle_error",
+            "_handle_error",
+            "process_error",
+            "compact_error",
+        ]
+
+        for method_name in methods_to_check:
+            if hasattr(agent, method_name):
+                try:
+                    method = getattr(agent, method_name)
+                    source = inspect.getsource(method)
+
+                    # Check for compaction patterns
+                    compaction_indicators = [
+                        "summary",
+                        "compact",
+                        "truncate",
+                        "shorten",
+                        "[:50]",
+                        "[:100]",
+                        "max_length",
+                        "limit",
+                    ]
+
+                    if any(
+                        indicator in source.lower()
+                        for indicator in compaction_indicators
+                    ):
+                        return True
+                except Exception:
+                    continue
+
+        # Check if agent has state management with error compaction
+        if hasattr(agent, "state") and agent.state:
+            try:
+                # Look for error handling in state updates
+                if hasattr(agent.state, "update"):
+                    source = inspect.getsource(agent.state.update)
+                    if "error" in source.lower() and any(
+                        word in source.lower()
+                        for word in ["compact", "summary", "truncate"]
+                    ):
+                        return True
+            except Exception:
+                pass
+
+        return False
+
+    def _check_error_patterns(self, agent: BaseAgent) -> bool:
+        """Check if agent uses error patterns and codes."""
+        # Look for error code constants or patterns
+        try:
+            # Check class attributes for error codes (more specific)
+            error_code_count = 0
+            for attr_name in dir(agent.__class__):
+                if (
+                    attr_name.upper().startswith(("ERR_", "ERROR_"))
+                    and not attr_name.startswith("_")
+                    and isinstance(getattr(agent.__class__, attr_name, None), str)
+                ):
+                    error_code_count += 1
+
+            # Need at least 2 error codes to show pattern recognition
+            if error_code_count >= 2:
+                return True
+
+            # Check for error handling methods with pattern recognition
+            methods_to_check = ["classify_error", "categorize_error", "get_error_code"]
+
+            for method_name in methods_to_check:
+                if hasattr(agent, method_name):
+                    try:
+                        method = getattr(agent, method_name)
+                        source = inspect.getsource(method)
+
+                        # Check for error pattern indicators
+                        pattern_indicators = [
+                            "ERR_",
+                            "ERROR_",
+                            "error_code",
+                            "error_type",
+                            "classify",
+                            "pattern",
+                            "category",
+                        ]
+
+                        if any(indicator in source for indicator in pattern_indicators):
+                            return True
+                    except Exception:
+                        continue
+        except Exception:
+            pass
+
+        return False
+
+    def _check_context_efficiency(self, agent: BaseAgent) -> bool:
+        """Check if agent manages error context efficiently."""
+        # Look for specific error context methods (most strict)
+        error_context_methods = [
+            "get_error_context",
+            "get_relevant_errors",
+            "compact_error_context",
+        ]
+
+        for method_name in error_context_methods:
+            if hasattr(agent, method_name):
+                return True
+
+        return False
+
+    def _check_error_summarization(self, agent: BaseAgent) -> bool:
+        """Check if agent summarizes historical errors."""
+        # Look for error summarization methods (most strict)
+        summarization_methods = [
+            "summarize_errors",
+            "get_error_summary",
+            "compact_error_history",
+        ]
+
+        for method_name in summarization_methods:
+            if hasattr(agent, method_name):
+                return True
+
+        return False
+
+
+class Factor11Validator(FactorValidator):
+    """Factor 11: Trigger from Anywhere"""
+
+    def __init__(self):
+        super().__init__(11, "Trigger from Anywhere")
+
+    def validate(
+        self, agent: BaseAgent, context: Dict[str, Any] = None
+    ) -> Tuple[ComplianceLevel, Dict[str, Any]]:
+        """
+        Validate that agents can be triggered from multiple entry points.
+
+        Checks:
+        1. Multiple entry points exist (CLI, API, events, schedule)
+        2. Trigger registration system implemented
+        3. Trigger flexibility (async/sync, remote/local)
+        4. Trigger documentation and permissions
+        """
+        details = {
+            "factor": 11,
+            "name": "Trigger from Anywhere",
+            "score": 0.0,
+            "checks": {
+                "multiple_entry_points": False,
+                "trigger_registration": False,
+                "trigger_flexibility": False,
+                "trigger_documentation": False,
+            },
+            "issues": [],
+            "recommendations": [],
+        }
+
+        # Check 1: Multiple entry points (0.25)
+        has_multiple_entry_points = self._check_multiple_entry_points(agent)
+        details["checks"]["multiple_entry_points"] = has_multiple_entry_points
+        if has_multiple_entry_points:
+            details["score"] += 0.25
+        else:
+            details["issues"].append("Multiple entry points not implemented")
+
+        # Check 2: Trigger registration (0.25)
+        has_trigger_registration = self._check_trigger_registration(agent)
+        details["checks"]["trigger_registration"] = has_trigger_registration
+        if has_trigger_registration:
+            details["score"] += 0.25
+        else:
+            details["issues"].append("Trigger registration system not implemented")
+
+        # Check 3: Trigger flexibility (0.25)
+        has_trigger_flexibility = self._check_trigger_flexibility(agent)
+        details["checks"]["trigger_flexibility"] = has_trigger_flexibility
+        if has_trigger_flexibility:
+            details["score"] += 0.25
+        else:
+            details["issues"].append("Trigger flexibility not implemented")
+
+        # Check 4: Trigger documentation (0.25)
+        has_trigger_documentation = self._check_trigger_documentation(agent)
+        details["checks"]["trigger_documentation"] = has_trigger_documentation
+        if has_trigger_documentation:
+            details["score"] += 0.25
+        else:
+            details["issues"].append("Trigger documentation not implemented")
+
+        # Provide recommendations based on findings
+        if details["score"] < 1.0:
+            if not details["checks"]["multiple_entry_points"]:
+                details["recommendations"].append(
+                    "Implement multiple entry points (CLI, API, events, scheduling)"
+                )
+            if not details["checks"]["trigger_registration"]:
+                details["recommendations"].append(
+                    "Add trigger registration system to manage different trigger types"
+                )
+            if not details["checks"]["trigger_flexibility"]:
+                details["recommendations"].append(
+                    "Support both async/sync and remote/local trigger mechanisms"
+                )
+            if not details["checks"]["trigger_documentation"]:
+                details["recommendations"].append(
+                    "Document trigger mechanisms and define trigger permissions"
+                )
+
+        # Determine compliance level
+        if details["score"] >= 0.9:
+            compliance = ComplianceLevel.FULLY_COMPLIANT
+        elif details["score"] >= 0.75:
+            compliance = ComplianceLevel.MOSTLY_COMPLIANT
+        elif details["score"] >= 0.5:
+            compliance = ComplianceLevel.PARTIALLY_COMPLIANT
+        else:
+            compliance = ComplianceLevel.NON_COMPLIANT
+
+        return compliance, details
+
+    def _check_multiple_entry_points(self, agent: BaseAgent) -> bool:
+        """Check if agent supports multiple entry points."""
+        entry_points = 0
+
+        # Check for CLI entry point indicators
+        cli_indicators = [
+            "main",
+            "__main__",
+            "cli",
+            "run_cli",
+            "command_line",
+            "execute_from_cli",
+            "parse_args",
+        ]
+
+        for indicator in cli_indicators:
+            if hasattr(agent, indicator) or hasattr(agent.__class__, indicator):
+                entry_points += 1
+                break
+
+        # Check for API entry point indicators
+        api_indicators = [
+            "api",
+            "rest",
+            "http",
+            "server",
+            "endpoint",
+            "route",
+            "handle_request",
+            "process_request",
+        ]
+
+        for indicator in api_indicators:
+            if hasattr(agent, indicator) or any(
+                indicator in attr.lower() for attr in dir(agent)
+            ):
+                entry_points += 1
+                break
+
+        # Check for event-driven indicators
+        event_indicators = [
+            "on_event",
+            "event_handler",
+            "trigger",
+            "listener",
+            "callback",
+            "subscribe",
+            "handle_event",
+        ]
+
+        for indicator in event_indicators:
+            if hasattr(agent, indicator) or any(
+                indicator in attr.lower() for attr in dir(agent)
+            ):
+                entry_points += 1
+                break
+
+        # Check for schedule indicators
+        schedule_indicators = [
+            "schedule",
+            "cron",
+            "timer",
+            "periodic",
+            "interval",
+            "run_scheduled",
+            "scheduled_task",
+        ]
+
+        for indicator in schedule_indicators:
+            if hasattr(agent, indicator) or any(
+                indicator in attr.lower() for attr in dir(agent)
+            ):
+                entry_points += 1
+                break
+
+        # Need at least 2 different entry points
+        return entry_points >= 2
+
+    def _check_trigger_registration(self, agent: BaseAgent) -> bool:
+        """Check if agent has trigger registration system."""
+        registration_indicators = [
+            "register_trigger",
+            "add_trigger",
+            "trigger_registry",
+            "triggers",
+            "register_handler",
+            "trigger_map",
+        ]
+
+        for indicator in registration_indicators:
+            if hasattr(agent, indicator):
+                return True
+
+        # Check for trigger registration in class attributes or methods
+        for attr_name in dir(agent):
+            if any(
+                indicator in attr_name.lower() for indicator in registration_indicators
+            ):
+                return True
+
+        # Check if agent has a triggers collection or registry
+        if hasattr(agent, "__dict__") and any(
+            "trigger" in key.lower() for key in agent.__dict__.keys()
+        ):
+            return True
+
+        return False
+
+    def _check_trigger_flexibility(self, agent: BaseAgent) -> bool:
+        """Check if agent supports flexible trigger mechanisms."""
+        flexibility_indicators = [
+            "async",
+            "sync",
+            "remote",
+            "local",
+            "webhook",
+            "queue",
+            "message",
+            "pubsub",
+            "stream",
+        ]
+
+        flexibility_count = 0
+
+        # Check methods for flexibility indicators
+        for attr_name in dir(agent):
+            attr_lower = attr_name.lower()
+            for indicator in flexibility_indicators:
+                if indicator in attr_lower:
+                    flexibility_count += 1
+                    break
+
+        # Check if agent supports async execution
+        if hasattr(agent, "execute_task"):
+            try:
+                import inspect
+
+                if inspect.iscoroutinefunction(agent.execute_task):
+                    flexibility_count += 1
+            except Exception:
+                pass
+
+        # Check for async/await patterns in methods
+        for attr_name in dir(agent):
+            if callable(getattr(agent, attr_name, None)):
+                try:
+                    method = getattr(agent, attr_name)
+                    source = inspect.getsource(method)
+                    if "async " in source or "await " in source:
+                        flexibility_count += 1
+                        break
+                except Exception:
+                    continue
+
+        # Need at least 2 flexibility features
+        return flexibility_count >= 2
+
+    def _check_trigger_documentation(self, agent: BaseAgent) -> bool:
+        """Check if triggers are documented."""
+        documentation_indicators = [
+            "get_triggers",
+            "list_triggers",
+            "trigger_help",
+            "trigger_docs",
+            "available_triggers",
+            "supported_triggers",
+        ]
+
+        # Require explicit trigger documentation methods
+        for indicator in documentation_indicators:
+            if hasattr(agent, indicator):
+                return True
+
+        return False
+
+
 class ComplianceAuditor:
     """
     Comprehensive 12-factor compliance auditor.
@@ -1492,7 +1988,9 @@ class ComplianceAuditor:
             6: Factor6Validator(),
             7: Factor7Validator(),  # Added Factor 7
             8: Factor8Validator(),  # Added Factor 8
+            9: Factor9Validator(),  # Added Factor 9
             10: Factor10Validator(),
+            11: Factor11Validator(),  # Added Factor 11
             12: Factor12Validator(),  # Added Factor 12
         }
 
