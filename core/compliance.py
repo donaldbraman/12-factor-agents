@@ -296,6 +296,401 @@ class Factor10Validator(FactorValidator):
         return compliance, details
 
 
+class Factor4Validator(FactorValidator):
+    """Factor 4: Tools are Structured Outputs"""
+
+    def __init__(self):
+        super().__init__(4, "Tools are Structured Outputs")
+
+    def validate(
+        self, agent: BaseAgent, context: Dict[str, Any] = None
+    ) -> Tuple[ComplianceLevel, Dict[str, Any]]:
+        """
+        Validate that all tools have structured, predictable outputs.
+        """
+        details = {
+            "factor": self.factor_name,
+            "checks": {},
+            "score": 0.0,
+            "issues": [],
+            "recommendations": [],
+        }
+
+        # Check 1: All tools return ToolResponse (0.25 points)
+        tools_return_toolresponse = True
+        toolresponse_issues = []
+
+        if agent.tools:
+            for tool in agent.tools:
+                # Check if tool inherits from Tool base class
+                if not isinstance(tool, Tool):
+                    tools_return_toolresponse = False
+                    toolresponse_issues.append(
+                        f"Tool '{tool.__class__.__name__}' does not inherit from Tool base class"
+                    )
+                    continue
+
+                # Check if execute method exists and returns ToolResponse
+                if hasattr(tool, "execute"):
+                    try:
+                        source = inspect.getsource(tool.execute)
+                        if "ToolResponse" not in source:
+                            tools_return_toolresponse = False
+                            toolresponse_issues.append(
+                                f"Tool '{tool.name}' execute method may not return ToolResponse"
+                            )
+                    except Exception:
+                        # Can't analyze source, assume it's okay if it inherits from Tool
+                        pass
+        else:
+            # No tools is not necessarily bad, but we can't validate ToolResponse usage
+            pass
+
+        details["checks"]["tools_return_toolresponse"] = tools_return_toolresponse
+        if tools_return_toolresponse:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(toolresponse_issues)
+
+        # Check 2: Schema compliance (0.25 points)
+        schema_compliance = True
+        schema_issues = []
+
+        if agent.tools:
+            for tool in agent.tools:
+                # Check if tool has get_parameters_schema method
+                if not hasattr(tool, "get_parameters_schema"):
+                    schema_compliance = False
+                    schema_issues.append(
+                        f"Tool '{tool.__class__.__name__}' missing get_parameters_schema method"
+                    )
+                    continue
+
+                # Check if schema is properly defined
+                try:
+                    schema = tool.get_parameters_schema()
+                    if not isinstance(schema, dict) or not schema:
+                        schema_compliance = False
+                        schema_issues.append(
+                            f"Tool '{tool.__class__.__name__}' has invalid schema"
+                        )
+                except Exception as e:
+                    schema_compliance = False
+                    schema_issues.append(
+                        f"Tool '{tool.__class__.__name__}' schema error: {str(e)}"
+                    )
+
+        details["checks"]["schema_compliance"] = schema_compliance
+        if schema_compliance:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(schema_issues)
+
+        # Check 3: Error handling patterns (0.25 points)
+        error_handling = True
+        error_issues = []
+
+        if agent.tools:
+            for tool in agent.tools:
+                if hasattr(tool, "execute"):
+                    try:
+                        source = inspect.getsource(tool.execute)
+                        # Check for try/except blocks and ToolResponse error handling
+                        if "try:" not in source or "except" not in source:
+                            error_handling = False
+                            error_issues.append(
+                                f"Tool '{tool.__class__.__name__}' missing error handling"
+                            )
+                        elif "ToolResponse" in source and "success=False" not in source:
+                            error_handling = False
+                            error_issues.append(
+                                f"Tool '{tool.__class__.__name__}' doesn't use ToolResponse error pattern"
+                            )
+                    except Exception:
+                        # Can't analyze source
+                        pass
+
+        details["checks"]["error_handling"] = error_handling
+        if error_handling:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(error_issues)
+
+        # Check 4: Output documentation (0.25 points)
+        output_documentation = True
+        doc_issues = []
+
+        if agent.tools:
+            for tool in agent.tools:
+                # Check if tool has description
+                if not hasattr(tool, "description") or not tool.description:
+                    output_documentation = False
+                    doc_issues.append(
+                        f"Tool '{tool.__class__.__name__}' missing description"
+                    )
+
+                # Check if execute method has docstring
+                if hasattr(tool, "execute"):
+                    if not tool.execute.__doc__:
+                        output_documentation = False
+                        doc_issues.append(
+                            f"Tool '{tool.__class__.__name__}' execute method missing docstring"
+                        )
+
+        details["checks"]["output_documentation"] = output_documentation
+        if output_documentation:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(doc_issues)
+
+        # Provide recommendations based on failures
+        if details["score"] < 1.0:
+            if not tools_return_toolresponse:
+                details["recommendations"].append(
+                    "Ensure all tools inherit from Tool base class and return ToolResponse objects"
+                )
+            if not schema_compliance:
+                details["recommendations"].append(
+                    "Implement get_parameters_schema() method for all tools with proper JSON schema"
+                )
+            if not error_handling:
+                details["recommendations"].append(
+                    "Add try/catch blocks and return ToolResponse(success=False, error=...) for errors"
+                )
+            if not output_documentation:
+                details["recommendations"].append(
+                    "Add descriptions and docstrings documenting tool output formats"
+                )
+
+        # Determine compliance level
+        if details["score"] >= 0.9:
+            compliance = ComplianceLevel.FULLY_COMPLIANT
+        elif details["score"] >= 0.75:
+            compliance = ComplianceLevel.MOSTLY_COMPLIANT
+        elif details["score"] >= 0.5:
+            compliance = ComplianceLevel.PARTIALLY_COMPLIANT
+        else:
+            compliance = ComplianceLevel.NON_COMPLIANT
+
+        return compliance, details
+
+
+class Factor8Validator(FactorValidator):
+    """Factor 8: Own Your Control Flow"""
+
+    def __init__(self):
+        super().__init__(8, "Own Your Control Flow")
+
+    def validate(
+        self, agent: BaseAgent, context: Dict[str, Any] = None
+    ) -> Tuple[ComplianceLevel, Dict[str, Any]]:
+        """
+        Validate that agent maintains explicit control over execution flow.
+        """
+        details = {
+            "factor": self.factor_name,
+            "checks": {},
+            "score": 0.0,
+            "issues": [],
+            "recommendations": [],
+        }
+
+        # Check 1: Explicit execution stages (0.25 points)
+        has_explicit_stages = False
+        stage_issues = []
+
+        if hasattr(agent, "execute_task"):
+            try:
+                source = inspect.getsource(agent.execute_task)
+                # Look for stage-based execution patterns
+                stage_indicators = [
+                    "stages",
+                    "workflow_stages",
+                    "set_workflow_stages",
+                    "current_stage",
+                    "advance_stage",
+                    "stage_index",
+                ]
+
+                has_explicit_stages = any(
+                    indicator in source for indicator in stage_indicators
+                )
+
+                # Also check for explicit sequential execution patterns
+                if not has_explicit_stages:
+                    sequential_patterns = [
+                        "for stage",
+                        "for step",
+                        "stages =",
+                        "workflow =",
+                        "pipeline",
+                        "sequence",
+                    ]
+                    has_explicit_stages = any(
+                        pattern in source for pattern in sequential_patterns
+                    )
+
+            except Exception:
+                stage_issues.append(
+                    "Could not analyze execute_task method for stage patterns"
+                )
+
+        if not has_explicit_stages:
+            stage_issues.append("No explicit execution stages detected in execute_task")
+
+        details["checks"]["explicit_stages"] = has_explicit_stages
+        if has_explicit_stages:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(stage_issues)
+
+        # Check 2: Flow observability (0.25 points)
+        flow_observability = True
+        observability_issues = []
+
+        # Check for progress tracking
+        progress_attrs = ["progress", "current_stage", "total_stages"]
+        missing_attrs = [attr for attr in progress_attrs if not hasattr(agent, attr)]
+
+        if missing_attrs:
+            flow_observability = False
+            observability_issues.append(
+                f"Missing flow tracking attributes: {missing_attrs}"
+            )
+
+        # Check for get_status method
+        if not hasattr(agent, "get_status") or not callable(agent.get_status):
+            flow_observability = False
+            observability_issues.append(
+                "Missing get_status method for flow observability"
+            )
+
+        details["checks"]["flow_observability"] = flow_observability
+        if flow_observability:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(observability_issues)
+
+        # Check 3: Deterministic decision points (0.25 points)
+        deterministic_flow = True
+        determinism_issues = []
+
+        if hasattr(agent, "execute_task"):
+            try:
+                source = inspect.getsource(agent.execute_task)
+                # Check for non-deterministic patterns that should be avoided
+                nondeterministic_patterns = [
+                    "random",
+                    "shuffle",
+                    "choice",
+                    "randint",
+                    "time.time()",
+                    "uuid",
+                    "os.urandom",
+                ]
+
+                for pattern in nondeterministic_patterns:
+                    if pattern in source:
+                        deterministic_flow = False
+                        determinism_issues.append(
+                            f"Non-deterministic pattern detected: {pattern}"
+                        )
+
+                # Check for explicit decision criteria
+                decision_patterns = [
+                    "if.*success",
+                    "if.*error",
+                    "if.*result",
+                    "elif",
+                    "match",
+                    "switch",
+                ]
+                has_decision_logic = any(
+                    any(word in line for word in decision_patterns)
+                    for line in source.split("\n")
+                )
+
+                if not has_decision_logic:
+                    determinism_issues.append(
+                        "No explicit decision logic found in execute_task"
+                    )
+
+            except Exception:
+                determinism_issues.append(
+                    "Could not analyze execute_task for decision patterns"
+                )
+
+        details["checks"]["deterministic_flow"] = deterministic_flow
+        if deterministic_flow:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(determinism_issues)
+
+        # Check 4: Flow control methods (0.25 points)
+        flow_control = True
+        control_issues = []
+
+        # Check for essential flow control methods
+        required_methods = ["set_progress", "advance_stage"]
+        missing_methods = []
+
+        for method in required_methods:
+            if not hasattr(agent, method) or not callable(getattr(agent, method)):
+                missing_methods.append(method)
+
+        if missing_methods:
+            flow_control = False
+            control_issues.append(f"Missing flow control methods: {missing_methods}")
+
+        # Check for workflow stage management
+        if hasattr(agent, "set_workflow_stages") and callable(
+            agent.set_workflow_stages
+        ):
+            # Good - has workflow stage management
+            pass
+        else:
+            control_issues.append(
+                "Missing set_workflow_stages method for workflow management"
+            )
+
+        details["checks"]["flow_control_methods"] = flow_control
+        if flow_control:
+            details["score"] += 0.25
+        else:
+            details["issues"].extend(control_issues)
+
+        # Provide recommendations based on failures
+        if details["score"] < 1.0:
+            if not has_explicit_stages:
+                details["recommendations"].append(
+                    "Implement explicit execution stages using set_workflow_stages() and stage-based execution"
+                )
+            if not flow_observability:
+                details["recommendations"].append(
+                    "Add progress tracking attributes (progress, current_stage, total_stages) and get_status() method"
+                )
+            if not deterministic_flow:
+                details["recommendations"].append(
+                    "Remove non-deterministic elements and add explicit decision criteria with clear if/elif logic"
+                )
+            if not flow_control:
+                details["recommendations"].append(
+                    "Implement flow control methods: set_progress(), advance_stage(), set_workflow_stages()"
+                )
+
+        # Determine compliance level
+        if details["score"] >= 0.9:
+            compliance = ComplianceLevel.FULLY_COMPLIANT
+        elif details["score"] >= 0.75:
+            compliance = ComplianceLevel.MOSTLY_COMPLIANT
+        elif details["score"] >= 0.5:
+            compliance = ComplianceLevel.PARTIALLY_COMPLIANT
+        else:
+            compliance = ComplianceLevel.NON_COMPLIANT
+
+        return compliance, details
+
+
 class Factor12Validator(FactorValidator):
     """Factor 12: Stateless Reducer"""
 
@@ -474,17 +869,17 @@ class ComplianceAuditor:
         self.validators = {
             1: Factor1Validator(),
             2: Factor2Validator(),
+            4: Factor4Validator(),  # Added Factor 4
             6: Factor6Validator(),
+            8: Factor8Validator(),  # Added Factor 8
             10: Factor10Validator(),
             12: Factor12Validator(),  # Added Factor 12
         }
 
         # Validators for remaining factors are implemented as needed
         # 3: Factor 3 (Own Your Context Window)
-        # 4: Factor 4 (Tools are Structured Outputs)
         # 5: Factor 5 (Unify Execution & Business State)
         # 7: Factor 7 (Contact Humans with Tool Calls)
-        # 8: Factor 8 (Own Your Control Flow)
         # 9: Factor 9 (Compact Errors)
         # 11: Factor 11 (Trigger from Anywhere)
 

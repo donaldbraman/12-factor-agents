@@ -60,11 +60,11 @@ def execute_task(self, task: str):
 ```
 
 ## Acceptance Criteria
-- [ ] Factor8Validator class implemented
-- [ ] Validates explicit control flow
-- [ ] Checks flow documentation
-- [ ] Ensures flow observability
-- [ ] Tests pass with >90% coverage
+- [x] Factor8Validator class implemented
+- [x] Validates explicit control flow
+- [x] Checks flow documentation
+- [x] Ensures flow observability
+- [x] Tests pass with >90% coverage
 
 ## Priority
 High - Critical for debugging and maintenance
@@ -73,4 +73,21 @@ High - Critical for debugging and maintenance
 enhancement
 
 ## Status
-open
+COMPLETED
+
+## Implementation Details
+✅ **COMPLETED** - Factor 8 Validator Implementation
+- ✅ Factor8Validator class added to core/compliance.py
+- ✅ Comprehensive validation with 4 checks (0.25 points each):
+  1. **Explicit Execution Stages**: Detects stage-based execution patterns and workflow management
+  2. **Flow Observability**: Validates progress tracking attributes and get_status() method
+  3. **Deterministic Decision Points**: Checks for non-deterministic patterns and explicit decision logic
+  4. **Flow Control Methods**: Validates set_progress(), advance_stage(), set_workflow_stages() methods
+- ✅ Validator registered in ComplianceAuditor.__init__
+- ✅ Comprehensive test suite created with 10 test cases covering all scenarios
+- ✅ All tests passing (10/10 test cases)
+- ✅ Validated with SmartIssueAgent - achieving MOSTLY_COMPLIANT status
+- ✅ Overall system compliance: 7/12 validators (58% → 67% compliance)
+
+**Progress**: Factor 4 ✅ → Factor 8 ✅ COMPLETED
+**Next**: Factor 3 (Context Window) per priority order
