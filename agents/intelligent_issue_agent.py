@@ -14,6 +14,7 @@ from core.hierarchical_orchestrator import HierarchicalOrchestrator
 from core.smart_state import get_smart_state_manager, StateType, StateStatus
 from core.telemetry import TelemetryCollector
 from core.intelligent_triggers import create_trigger_engine
+from core.git_workflow import GitWorkflowManager
 
 
 class IntelligentIssueAgent(BaseAgent):
@@ -34,6 +35,7 @@ class IntelligentIssueAgent(BaseAgent):
         self.state_manager = get_smart_state_manager()
         self.telemetry = TelemetryCollector()
         self.trigger_engine = create_trigger_engine()  # Factor 2: Explicit Dependencies
+        self.git_workflow = GitWorkflowManager()  # Git workflow for PR creation
         self.current_state_id = None
 
     def register_tools(self) -> List[Tool]:
