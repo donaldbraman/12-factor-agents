@@ -399,17 +399,27 @@ class IntelligentIssueAgent(BaseAgent):
 
         results = []
 
-        # Handle file creation requests
-        if "create_requests" in intent:
-            for request in intent["create_requests"]:
-                result = self._create_file(request)
-                results.append(result)
+        # Parse the actual issue content for specific fixes
+        issue_fixes = self._parse_issue_for_fixes(intent["raw_content"])
 
-        # Handle file fixes
-        if "fix_requests" in intent:
-            for request in intent["fix_requests"]:
-                result = self._fix_file(request)
+        # If we have specific files to update, handle them
+        if issue_fixes["files_to_update"]:
+            for file_path in issue_fixes["files_to_update"]:
+                result = self._apply_issue_fix(file_path, issue_fixes)
                 results.append(result)
+        # Otherwise fall back to old behavior
+        else:
+            # Handle file creation requests
+            if "create_requests" in intent:
+                for request in intent["create_requests"]:
+                    result = self._create_file(request)
+                    results.append(result)
+
+            # Handle file fixes
+            if "fix_requests" in intent:
+                for request in intent["fix_requests"]:
+                    result = self._fix_file(request)
+                    results.append(result)
 
         # Aggregate results
         all_success = all(r.get("success", False) for r in results)
@@ -548,45 +558,166 @@ class IntelligentIssueAgent(BaseAgent):
 
     def _generate_file_content(self, request: Dict) -> str:
         """Generate appropriate content for a new file"""
-
+        # This should only be called for truly NEW files, not fixes
+        # For now, return minimal viable content
         file_type = request["path"].split(".")[-1] if "." in request["path"] else "txt"
 
-        templates = {
-            "py": '''#!/usr/bin/env python3
-"""
-Generated file: {path}
-"""
-
-def main():
-    """Main function"""
-    pass
-
-if __name__ == "__main__":
-    main()
-''',
-            "md": """# {title}
-
-## Overview
-Generated documentation file.
-
-## Details
-Add content here.
-""",
-            "txt": "Generated file content\n",
-            "json": "{{}}\n",
-        }
-
-        template = templates.get(file_type, "Generated content\n")
-        return template.format(
-            path=request["path"],
-            title=Path(request["path"]).stem.replace("-", " ").title(),
-        )
+        if file_type == "py":
+            return '#!/usr/bin/env python3\n"""New module"""\n\n'
+        elif file_type == "md":
+            title = Path(request["path"]).stem.replace("-", " ").title()
+            return f"# {title}\n\n"
+        else:
+            return ""  # Empty file for other types
 
     def _apply_fixes(self, content: str, fix_type: str) -> str:
-        """Apply fixes to content (simplified)"""
-        # This is where we'd add intelligent fixing
-        # For now, just return content with a comment
-        return f"# Fixed: {fix_type}\n{content}"
+        """Apply fixes to content - PLACEHOLDER"""
+        # This needs to be replaced with actual fix logic
+        # For now, just return original content
+        return content
+
+    def _parse_issue_for_fixes(self, issue_content: str) -> Dict:
+        """Parse issue content to extract specific fixes needed"""
+        fixes = {"files_to_update": [], "changes": [], "type": "unknown"}
+
+        # Extract files to update
+        files_section = re.search(r"## Files to Update\s*\n([^#]+)", issue_content)
+        if files_section:
+            file_lines = files_section.group(1).strip().split("\n")
+            for line in file_lines:
+                if line.strip().startswith("- "):
+                    file_path = line.strip()[2:].strip()
+                    fixes["files_to_update"].append(file_path)
+
+        # Extract problem and solution
+        problem = re.search(r"## Problem\s*\n([^#]+)", issue_content)
+        solution = re.search(r"## Solution\s*\n([^#]+)", issue_content)
+
+        if problem and solution:
+            fixes["problem"] = problem.group(1).strip()
+            fixes["solution"] = solution.group(1).strip()
+
+            # Parse line-by-line changes from solution
+            if "Add" in fixes["solution"] or "add" in fixes["solution"]:
+                fixes["type"] = "add"
+            elif "Replace" in fixes["solution"] or "replace" in fixes["solution"]:
+                fixes["type"] = "replace"
+            elif "Remove" in fixes["solution"] or "remove" in fixes["solution"]:
+                fixes["type"] = "remove"
+
+        # Extract issue type
+        type_match = re.search(r"## Type\s*\n([^\n]+)", issue_content)
+        if type_match:
+            fixes["issue_type"] = type_match.group(1).strip()
+
+        return fixes
+
+    def _apply_issue_fix(self, file_path: str, issue_fixes: Dict) -> Dict:
+        """Apply specific fixes from an issue to a file"""
+
+        # Read the file
+        file_tool = self.tools[0]
+        read_result = file_tool.execute(operation="read", path=file_path)
+
+        if not read_result.success:
+            # File doesn't exist - might need to create it
+            if "create" in issue_fixes.get("type", "").lower():
+                # Create new file with minimal content
+                content = self._generate_file_content({"path": file_path})
+                write_result = file_tool.execute(
+                    operation="write", path=file_path, content=content
+                )
+                return {
+                    "success": write_result.success,
+                    "operation": "create",
+                    "path": file_path,
+                    "error": write_result.error if not write_result.success else None,
+                }
+            return {
+                "success": False,
+                "operation": "fix",
+                "path": file_path,
+                "error": f"File not found: {file_path}",
+            }
+
+        # Apply the specific fix based on solution
+        original_content = read_result.data["content"]
+        fixed_content = self._apply_specific_fix(original_content, issue_fixes)
+
+        # Only write if content changed
+        if fixed_content != original_content:
+            write_result = file_tool.execute(
+                operation="write", path=file_path, content=fixed_content
+            )
+            return {
+                "success": write_result.success,
+                "operation": "fix",
+                "path": file_path,
+                "changes": "Applied fix from issue",
+                "error": write_result.error if not write_result.success else None,
+            }
+        else:
+            return {
+                "success": True,
+                "operation": "fix",
+                "path": file_path,
+                "changes": "No changes needed",
+            }
+
+    def _apply_specific_fix(self, content: str, issue_fixes: Dict) -> str:
+        """Apply specific fix based on issue description"""
+
+        solution = issue_fixes.get("solution", "")
+        problem = issue_fixes.get("problem", "")
+
+        # Look for line-specific fixes
+        line_match = re.search(r"line (\d+)", problem.lower())
+        if line_match:
+            target_line = int(line_match.group(1))
+            lines = content.split("\n")
+
+            # Extract what to add from solution
+            if "noqa" in solution.lower():
+                # Add noqa comment
+                if target_line <= len(lines):
+                    line = lines[target_line - 1]  # Convert to 0-based
+                    if "# noqa" not in line:
+                        lines[target_line - 1] = line.rstrip() + "  # noqa: E402"
+                    return "\n".join(lines)
+
+            # Check for other specific additions
+            code_block = re.search(r"```python\n(.+?)\n```", solution, re.DOTALL)
+            if code_block:
+                new_code = code_block.group(1)
+                # Replace the specific line
+                if target_line <= len(lines):
+                    lines[target_line - 1] = new_code
+                    return "\n".join(lines)
+
+        # Look for docstring additions
+        if "docstring" in problem.lower() or "docstring" in solution.lower():
+            return self._add_docstring(content, issue_fixes)
+
+        # If no specific fix pattern matched, return original
+        return content
+
+    def _add_docstring(self, content: str, issue_fixes: Dict) -> str:
+        """Add a docstring to a function/class"""
+
+        # Look for __init__ method without docstring
+        if "__init__" in issue_fixes.get("problem", ""):
+            lines = content.split("\n")
+            for i, line in enumerate(lines):
+                if "def __init__" in line:
+                    # Check if next line is already a docstring
+                    if i + 1 < len(lines) and '"""' not in lines[i + 1]:
+                        # Add a docstring
+                        indent = len(line) - len(line.lstrip())
+                        docstring = " " * (indent + 4) + '"""Initialize the agent."""'
+                        lines.insert(i + 1, docstring)
+                        return "\n".join(lines)
+
+        return content
 
     def _apply_action(self, action: Dict[str, Any]) -> ToolResponse:
         """Handle actions for reducer pattern"""
