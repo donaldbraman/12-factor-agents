@@ -1,0 +1,35 @@
+# Find Issue Intelligently
+
+You need to find the issue file that the user wants you to work on. Be smart about this - don't rely on brittle patterns.
+
+## Search Strategy (in order):
+
+1. **Direct file path**: If the user gives you a direct file path, check if it exists and use it.
+
+2. **Local issues directory**: Always check local files FIRST before going to GitHub.
+   - Look in `issues/` directory
+   - Try multiple naming patterns for any issue number you find:
+     - `issues/{number}.md`
+     - `issues/issue-{number}.md`  
+     - `issues/{number}.txt`
+     - `issue_{number}.md`
+
+3. **Smart path detection**: Look for file paths mentioned anywhere in the request.
+   - Check if paths exist as-is
+   - If not, check if they might be in the issues/ directory
+
+4. **GitHub fallback**: ONLY if you can't find a local file, then consider it might be a GitHub issue.
+
+## Examples:
+
+- User says "Fix issue #122" → Check `issues/122.md` first
+- User says "Process 124" → Check `issues/124.md` first  
+- User says "Handle issues/122.md" → Use that exact path if it exists
+- User says "GitHub issue 123" → Still check locally first at `issues/123.md`
+
+## Important:
+
+- Always prefer local files over GitHub API
+- Be flexible with naming conventions
+- Don't fail if the first pattern doesn't match - try alternatives
+- Report clearly what you tried and what you found

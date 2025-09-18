@@ -1,0 +1,44 @@
+# Routing Decision
+
+Determine the best approach for handling this issue based on its characteristics.
+
+## Issue Analysis:
+- Type: {issue_type}
+- Complexity: {complexity}
+- Files affected: {file_count}
+- Has tests: {has_tests}
+- Error report: {is_error_report}
+
+## Routing Options:
+
+1. **Direct Fix (IntelligentIssueAgent)**:
+   - Use for simple fixes with clear solutions
+   - Single file changes
+   - Bug fixes with obvious corrections
+
+2. **Complex Orchestration (HierarchicalOrchestrator)**:
+   - Use for multi-file changes
+   - System-wide refactoring
+   - Complex feature implementations
+
+3. **Testing Focus (TestingAgent)**:
+   - Use for test-related issues
+   - Coverage improvements
+   - Test failures
+
+4. **Feature Creation Pipeline**:
+   - Use for new features requiring design
+   - NOT for bug fixes or error corrections
+   - Requires full implementation cycle
+
+## Decision Criteria:
+
+CRITICAL: Never route bug fixes or error reports to feature creation!
+
+- If it contains "fix", "bug", "error", "failure" → Direct fix or Complex orchestration
+- If it's about tests → TestingAgent
+- If it needs design and is truly NEW → Feature Creation
+- If unsure → Default to Direct Fix
+
+## Response:
+Choose the most appropriate handler and explain why.
