@@ -10,6 +10,7 @@ from typing import Dict, Any, List, Optional
 from datetime import datetime
 import re
 
+# noqa: E402
 import sys
 
 sys.path.insert(0, str(Path(__file__).parent.parent))  # noqa: E402
