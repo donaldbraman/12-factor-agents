@@ -101,8 +101,10 @@ class TelemetryPatternLearner:
             "recommendations": [],
         }
 
-        # Read telemetry files (LOCAL ONLY)
-        telemetry_files = list(self.telemetry_dir.glob("*.json"))
+        # Read telemetry files (LOCAL ONLY) - support both .json and .jsonl
+        telemetry_files = list(self.telemetry_dir.glob("*.json")) + list(
+            self.telemetry_dir.glob("*.jsonl")
+        )
         recent_events = []
 
         cutoff_date = datetime.now() - timedelta(days=days_back)
@@ -110,12 +112,29 @@ class TelemetryPatternLearner:
         for file in telemetry_files:
             try:
                 with open(file, "r") as f:
-                    events = json.load(f)
-                    # Filter recent events
-                    for event in events:
-                        event_date = datetime.fromisoformat(event.get("timestamp", ""))
-                        if event_date >= cutoff_date:
-                            recent_events.append(event)
+                    # Try JSONL format first (one JSON per line)
+                    if file.suffix == ".jsonl":
+                        for line in f:
+                            if line.strip():
+                                event = json.loads(line)
+                                event_date = datetime.fromisoformat(
+                                    event.get("timestamp", "")
+                                )
+                                if event_date >= cutoff_date:
+                                    recent_events.append(event)
+                    else:
+                        # Regular JSON format
+                        events = json.load(f)
+                        # Handle both single event and list of events
+                        if isinstance(events, dict):
+                            events = [events]
+                        # Filter recent events
+                        for event in events:
+                            event_date = datetime.fromisoformat(
+                                event.get("timestamp", "")
+                            )
+                            if event_date >= cutoff_date:
+                                recent_events.append(event)
             except Exception:
                 continue  # Skip corrupted files
 
@@ -141,7 +160,9 @@ class TelemetryPatternLearner:
         failure_contexts = defaultdict(list)
 
         for event in events:
-            if event.get("event_type") in ["AGENT_FAILURE", "ERROR"]:
+            # Handle different event type formats
+            event_type = event.get("event_type", "").lower()
+            if event_type in ["agent_failure", "error", "implementation_gap"]:
                 context = event.get("context", {})
 
                 # Extract patterns from context
@@ -182,8 +203,10 @@ class TelemetryPatternLearner:
         success_contexts = defaultdict(list)
 
         for event in events:
-            if event.get("event_type") in ["AGENT_SUCCESS", "WORKFLOW_END"]:
-                if event.get("success") is True:
+            event_type = event.get("event_type", "").lower()
+            if event_type in ["agent_success", "workflow_end"]:
+                # Check for success indicator (might be True or implicit)
+                if event.get("success") is not False:
                     context = event.get("context", {})
 
                     # Extract successful patterns
