@@ -1,0 +1,254 @@
+version: '1.0'
+last_updated: '2025-09-18'
+avoid_patterns:
+  placeholder_code:
+    description: Avoid generating placeholder or stub code
+    examples:
+    - pattern: pass
+      context: Empty function body
+      better: Implement actual logic based on requirements
+    - pattern: '# TODO: Implement'
+      context: TODO comments instead of implementation
+      better: Complete the implementation before submitting
+    - pattern: 'return True  # placeholder'
+      context: Placeholder return values
+      better: Return actual computed results
+    - pattern: self.assertTrue(True)
+      context: Placeholder test assertions
+      better: Test actual functionality with meaningful assertions
+  generic_implementations:
+    description: Avoid generic, non-specific implementations
+    examples:
+    - pattern: data = {}
+      context: Generic variable names
+      better: user_profile = {} or config_settings = {}
+    - pattern: 'def process():'
+      context: Generic function names
+      better: def validate_user_input() or def calculate_total_price()
+    - pattern: result = None
+      context: Uninitialized results
+      better: Initialize with meaningful default or compute actual value
+  missing_error_handling:
+    description: Always include proper error handling
+    examples:
+    - pattern: open(file)
+      context: File operations without error handling
+      better: "try:\n    with open(file, 'r') as f:\n        content = f.read()\n\
+        except FileNotFoundError:\n    logger.error(f\"File not found: {file}\")\n\
+        \    return None\n"
+    - pattern: 'except:'
+      context: Bare except clauses
+      better: 'except (ValueError, TypeError) as e:'
+  skeletal_tests:
+    description: Tests must actually test functionality
+    examples:
+    - pattern: assert True
+      context: Tests that always pass
+      better: assert user.is_valid() == expected_validity
+    - pattern: 'def test_something(self): pass'
+      context: Empty test methods
+      better: Implement actual test logic with setup, action, and assertions
+follow_patterns:
+  comprehensive_tests:
+    description: Generate comprehensive test coverage
+    template: "def test_{functionality}(self):\n    # Arrange - Set up test data\n\
+      \    test_data = self._create_test_data()\n    expected_result = self._get_expected_result()\n\
+      \    \n    # Act - Perform the action\n    actual_result = self.system_under_test.{method}(test_data)\n\
+      \    \n    # Assert - Verify the result\n    self.assertEqual(actual_result,\
+      \ expected_result)\n    self.assertIsNotNone(actual_result.timestamp)\n"
+  error_handling:
+    description: Include robust error handling
+    template: "try:\n    result = risky_operation()\n    if not result:\n        raise\
+      \ ValueError(\"Invalid result from operation\")\n    return process_result(result)\n\
+      except SpecificException as e:\n    logger.error(f\"Operation failed: {e}\"\
+      )\n    return self.handle_error(e)\nfinally:\n    cleanup_resources()\n"
+  meaningful_implementations:
+    description: Create implementations with real logic
+    guidelines:
+    - Always implement the core functionality described in the issue
+    - Include data validation and transformation
+    - Add logging for important operations
+    - Return meaningful results, not placeholders
+    - Include edge case handling
+  descriptive_naming:
+    description: Use clear, descriptive names
+    examples:
+      good:
+      - calculate_monthly_revenue
+      - user_authentication_token
+      - validate_email_format
+      - database_connection_pool
+      bad:
+      - calc
+      - token
+      - validate
+      - pool
+context_patterns:
+  file_placement:
+    description: Place files in correct locations
+    rules:
+    - pattern: test_*.py
+      location: tests/
+      not: root directory
+    - pattern: '*_agent.py'
+      location: agents/
+      not: root directory
+    - pattern: '*.md'
+      location: docs/ or issues/
+      not: random directories
+  import_organization:
+    description: Organize imports properly
+    template: '# Standard library imports
+
+      import os
+
+      import sys
+
+      from pathlib import Path
+
+
+      # Third-party imports
+
+      import pytest
+
+      from hypothesis import given
+
+
+      # Local imports
+
+      from core.agent import BaseAgent
+
+      from core.tools import ToolResponse
+
+      '
+  class_structure:
+    description: Follow consistent class structure
+    template: "class {AgentName}(BaseAgent):\n    \"\"\"Clear docstring explaining\
+      \ purpose.\"\"\"\n    \n    def __init__(self):\n        super().__init__()\n\
+      \        # Initialize specific attributes\n    \n    def register_tools(self)\
+      \ -> List[Tool]:\n        \"\"\"Register required tools.\"\"\"\n        return\
+      \ [ToolA(), ToolB()]\n    \n    def execute_task(self, task: str) -> ToolResponse:\n\
+      \        \"\"\"Main execution with actual logic.\"\"\"\n        # Real implementation\
+      \ here\n        return ToolResponse(success=True, data=results)\n"
+quality_metrics:
+- name: placeholder_ratio
+  description: Ratio of placeholder code to real implementation
+  target: < 0.05
+- name: test_coverage
+  description: Percentage of code covered by tests
+  target: '> 80%'
+- name: error_handling_coverage
+  description: Percentage of risky operations with error handling
+  target: '> 90%'
+- name: meaningful_assertion_ratio
+  description: Ratio of real assertions to placeholder assertions in tests
+  target: '> 0.95'
+learned_patterns:
+- date: '2025-09-18'
+  pattern: Avoid creating files in .agents/.agents/ recursive directories
+  learned_from: Dogfooding session showed wrong file placement
+  action: Check current working directory before file creation
+- date: '2025-09-18'
+  pattern: Include actual business logic, not just structure
+  learned_from: Review found many skeletal implementations
+  action: Implement at least core functionality in first pass
+- date: '2025-09-18'
+  pattern: Tests should test actual functionality
+  learned_from: Many tests just had assertTrue(True)
+  action: Generate tests that validate real behavior
+- date: '2025-09-18'
+  pattern: routing_mismatch
+  learned_from: 'Telemetry: 118 failures observed'
+  action: Improve agent routing logic to respect recommendations
+  success_rate: 0.0
+  usage_count: 0
+- date: '2025-09-18'
+  pattern: parameter_mismatch
+  learned_from: 'Telemetry: 30 failures observed'
+  action: Update method signatures to match calling patterns
+  success_rate: 0.0
+  usage_count: 0
+- date: '2025-09-18'
+  pattern: method_signature_error
+  learned_from: 'Telemetry: 18 failures observed'
+  action: Fix method signatures to accept execution_state_id
+  success_rate: 0.0
+  usage_count: 0
+- date: '2025-09-18'
+  pattern: routing_mismatch
+  learned_from: 'Telemetry: 118 failures observed'
+  action: Improve agent routing logic to respect recommendations
+  success_rate: 0.0
+  usage_count: 0
+- date: '2025-09-18'
+  pattern: parameter_mismatch
+  learned_from: 'Telemetry: 30 failures observed'
+  action: Update method signatures to match calling patterns
+  success_rate: 0.0
+  usage_count: 0
+- date: '2025-09-18'
+  pattern: method_signature_error
+  learned_from: 'Telemetry: 18 failures observed'
+  action: Fix method signatures to accept execution_state_id
+  success_rate: 0.0
+  usage_count: 0
+- date: '2025-09-18'
+  pattern: routing_mismatch
+  learned_from: 'Telemetry: 118 failures observed'
+  action: Improve agent routing logic to respect recommendations
+  success_rate: 0.0
+  usage_count: 0
+- date: '2025-09-18'
+  pattern: parameter_mismatch
+  learned_from: 'Telemetry: 30 failures observed'
+  action: Update method signatures to match calling patterns
+  success_rate: 0.0
+  usage_count: 0
+- date: '2025-09-18'
+  pattern: method_signature_error
+  learned_from: 'Telemetry: 18 failures observed'
+  action: Fix method signatures to accept execution_state_id
+  success_rate: 0.0
+  usage_count: 0
+generation_prompts:
+  code_implementation: 'When implementing {feature}:
+
+    1. Include complete, working implementation - no placeholders
+
+    2. Add comprehensive error handling for all operations that could fail
+
+    3. Use descriptive variable and function names
+
+    4. Include logging for debugging
+
+    5. Handle edge cases explicitly
+
+    6. Return meaningful results, not just True/False
+
+    '
+  test_generation: 'When generating tests for {module}:
+
+    1. Test actual functionality, not placeholders
+
+    2. Include both positive and negative test cases
+
+    3. Test edge cases and boundary conditions
+
+    4. Use meaningful assertions that verify behavior
+
+    5. Include setup and teardown as needed
+
+    6. Add property-based tests with Hypothesis where applicable
+
+    '
+  file_placement: 'Place generated files correctly:
+
+    - Tests go in tests/ directory
+
+    - Agents go in agents/ directory
+
+    - Documentation goes in docs/ directory
+
+    - Never create files in repository root unless config files
+
+    - Check current directory before creating files'

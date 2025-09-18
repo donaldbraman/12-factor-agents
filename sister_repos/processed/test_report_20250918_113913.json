@@ -1,0 +1,19 @@
+{
+  "repo": "cite-assist",
+  "timestamp": "2025-09-18T11:10:00",
+  "data": [
+    {
+      "title": "Memory leak in citation parser",
+      "description": "Parser consumes increasing memory during batch processing",
+      "priority": "high",
+      "type": "bug",
+      "file": "src/parser.py"
+    },
+    {
+      "title": "Add comprehensive tests for API client",
+      "description": "API client lacks sufficient test coverage",
+      "priority": "medium",
+      "type": "test"
+    }
+  ]
+}

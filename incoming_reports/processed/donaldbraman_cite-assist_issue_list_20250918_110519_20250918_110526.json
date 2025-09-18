@@ -1,0 +1,33 @@
+{
+  "repo": "donaldbraman/cite-assist",
+  "timestamp": "2025-09-18T11:05:19.255246",
+  "report_type": "issue_list",
+  "issues": [
+    {
+      "title": "Memory leak in processing loop",
+      "description": "Long-running process consumes increasing memory",
+      "priority": "high",
+      "type": "bug",
+      "file": "src/processor.py",
+      "line": 67
+    },
+    {
+      "title": "Broken test in test_utils.py",
+      "description": "Test fails intermittently due to timing issue",
+      "priority": "medium",
+      "type": "test",
+      "file": "tests/test_utils.py",
+      "line": 25
+    }
+  ],
+  "summary": {
+    "total_issues": 2,
+    "high_priority": 1,
+    "medium_priority": 1,
+    "low_priority": 0
+  },
+  "metadata": {
+    "generated_by": "external_report_submission",
+    "version": "1.0"
+  }
+}

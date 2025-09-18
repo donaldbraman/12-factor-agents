@@ -1,0 +1,32 @@
+{
+  "timestamp": "2025-09-18T10:53:45.159807",
+  "title": "Quality Analysis: 3 failure patterns detected",
+  "insights": {
+    "failure_patterns": [
+      {
+        "pattern": "routing_mismatch",
+        "failure_rate": 1.0,
+        "failure_count": 118,
+        "suggested_fix": "Improve agent routing logic to respect recommendations"
+      },
+      {
+        "pattern": "parameter_mismatch",
+        "failure_rate": 1.0,
+        "failure_count": 30,
+        "suggested_fix": "Update method signatures to match calling patterns"
+      },
+      {
+        "pattern": "method_signature_error",
+        "failure_rate": 1.0,
+        "failure_count": 18,
+        "suggested_fix": "Fix method signatures to accept execution_state_id"
+      }
+    ],
+    "success_patterns": [],
+    "recommendations": [
+      "AVOID: routing_mismatch (fails 100% of the time)",
+      "AVOID: parameter_mismatch (fails 100% of the time)",
+      "AVOID: method_signature_error (fails 100% of the time)"
+    ]
+  }
+}
