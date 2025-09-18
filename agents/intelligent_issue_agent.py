@@ -228,14 +228,9 @@ class IntelligentIssueAgent(BaseAgent):
             )
 
     def _extract_issue_reference(self, task: str) -> Optional[Dict]:
-        """Extract issue number or file path from task description"""
+        """Extract issue number or file path from task description - LOCAL FIRST"""
 
-        # Check for issue number (#123)
-        issue_match = re.search(r"#(\d+)", task)
-        if issue_match:
-            return {"type": "github", "number": issue_match.group(1)}
-
-        # Check for file path (issues/something.md)
+        # FIRST: Check for file path (issues/something.md)
         path_match = re.search(r"issues?/[\w\-]+\.md", task)
         if path_match:
             return {"type": "file", "path": path_match.group(0)}
@@ -252,6 +247,17 @@ class IntelligentIssueAgent(BaseAgent):
         # Check if the whole task is a path
         if Path(task).exists():
             return {"type": "file", "path": task}
+
+        # FALLBACK: Check for issue number (#123) - try local file first
+        issue_match = re.search(r"#(\d+)", task)
+        if issue_match:
+            issue_num = issue_match.group(1)
+            # Try local file first
+            local_path = f"issues/{issue_num}.md"
+            if Path(local_path).exists():
+                return {"type": "file", "path": local_path}
+            # Fall back to GitHub
+            return {"type": "github", "number": issue_num}
 
         return None
 
