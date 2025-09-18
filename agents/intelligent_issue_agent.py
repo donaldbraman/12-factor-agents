@@ -130,6 +130,9 @@ class IntelligentIssueAgent(BaseAgent):
                 },
             )
 
+            # Initialize variable for telemetry
+            is_feature_creation = False
+
             # Phase 4: Quality-focused routing based on high-confidence triggers
             if trigger_decision.confidence >= 0.85:  # Quality threshold
                 # High-confidence quality routing
@@ -166,9 +169,17 @@ class IntelligentIssueAgent(BaseAgent):
                 )
 
                 # Use human-like intelligent analysis for precious code decisions
-                is_feature_creation = self._is_feature_creation_request(
-                    intent, issue_content
-                )
+                # CRITICAL FIX: Never treat bug fixes or error reports as feature creation
+                is_feature_creation = False
+                if (
+                    "fix" not in issue_content.lower()
+                    and "bug" not in issue_content.lower()
+                    and "error" not in issue_content.lower()
+                    and "failure" not in issue_content.lower()
+                ):
+                    is_feature_creation = self._is_feature_creation_request(
+                        intent, issue_content
+                    )
 
                 if is_feature_creation:
                     result = self._handle_feature_creation(
@@ -361,7 +372,9 @@ class IntelligentIssueAgent(BaseAgent):
 
         return requests
 
-    def _handle_simple_issue(self, intent: Dict) -> ToolResponse:
+    def _handle_simple_issue(
+        self, intent: Dict, execution_state_id: str = None
+    ) -> ToolResponse:
         """Handle simple issues with direct tool calls"""
 
         results = []
