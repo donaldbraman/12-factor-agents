@@ -670,6 +670,15 @@ class IntelligentIssueAgent(BaseAgent):
         solution = issue_fixes.get("solution", "")
         problem = issue_fixes.get("problem", "")
 
+        # Look for specific code patterns mentioned in the problem
+        if "sys.path.insert" in problem and "noqa" in solution:
+            # Find the sys.path.insert line and add noqa
+            lines = content.split("\n")
+            for i, line in enumerate(lines):
+                if "sys.path.insert" in line and "# noqa" not in line:
+                    lines[i] = line.rstrip() + "  # noqa: E402"
+                    return "\n".join(lines)
+
         # Look for line-specific fixes
         line_match = re.search(r"line (\d+)", problem.lower())
         if line_match:
@@ -678,12 +687,15 @@ class IntelligentIssueAgent(BaseAgent):
 
             # Extract what to add from solution
             if "noqa" in solution.lower():
-                # Add noqa comment
-                if target_line <= len(lines):
-                    line = lines[target_line - 1]  # Convert to 0-based
-                    if "# noqa" not in line:
-                        lines[target_line - 1] = line.rstrip() + "  # noqa: E402"
-                    return "\n".join(lines)
+                # Look for the actual pattern near that line
+                # Check a window around the mentioned line
+                for offset in range(-5, 6):
+                    actual_line = target_line + offset - 1  # Convert to 0-based
+                    if 0 <= actual_line < len(lines):
+                        line = lines[actual_line]
+                        if "sys.path.insert" in line and "# noqa" not in line:
+                            lines[actual_line] = line.rstrip() + "  # noqa: E402"
+                            return "\n".join(lines)
 
             # Check for other specific additions
             code_block = re.search(r"```python\n(.+?)\n```", solution, re.DOTALL)
