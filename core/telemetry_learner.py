@@ -179,6 +179,12 @@ class TelemetryPatternLearner:
                     failure_contexts["todo_in_code"].append(message)
                 if "not implemented" in message.lower():
                     failure_contexts["empty_implementation"].append(message)
+                if "routing mismatch" in message.lower():
+                    failure_contexts["routing_mismatch"].append(message)
+                if "takes 2 positional arguments but 3 were given" in message:
+                    failure_contexts["method_signature_error"].append(message)
+                if "got an unexpected keyword argument" in message:
+                    failure_contexts["parameter_mismatch"].append(message)
 
         # Analyze patterns
         patterns = []
@@ -288,6 +294,9 @@ class TelemetryPatternLearner:
             "empty_implementation": "Add real business logic, not just structure",
             "missing_tests": "Add comprehensive tests with real assertions",
             "no_error_handling": "Add try/except blocks for risky operations",
+            "routing_mismatch": "Improve agent routing logic to respect recommendations",
+            "method_signature_error": "Fix method signatures to accept execution_state_id",
+            "parameter_mismatch": "Update method signatures to match calling patterns",
         }
 
         return fixes.get(pattern, "Review and improve implementation")
