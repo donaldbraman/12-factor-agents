@@ -1,8 +1,0 @@
-{
-    "feature_name": "Implement Circuit Breaker Pattern for External Services",
-    "version": "1.0.0",
-    "configuration": {
-        "enabled": true,
-        "settings": {}
-    }
-}
