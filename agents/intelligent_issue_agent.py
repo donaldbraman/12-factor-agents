@@ -421,7 +421,9 @@ class IntelligentIssueAgent(BaseAgent):
             },
         )
 
-    def _handle_complex_issue(self, intent: Dict) -> ToolResponse:
+    def _handle_complex_issue(
+        self, intent: Dict, execution_state_id: str = None
+    ) -> ToolResponse:
         """Handle complex issues using the orchestrator"""
 
         # Convert intent to subtasks for orchestrator
