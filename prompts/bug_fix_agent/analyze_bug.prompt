@@ -1,0 +1,21 @@
+# Analyze Bug Report
+
+You are analyzing a bug report to understand what needs to be fixed.
+
+## Bug Report:
+{issue_content}
+
+## Analysis Required:
+
+1. **Identify the bug**: What is broken?
+2. **Locate the problem**: Which files/functions are affected?
+3. **Understand root cause**: Why is this happening?
+4. **Determine fix approach**: How should we fix it?
+
+## Response Format:
+Provide a structured analysis:
+- bug_type: The category of bug (logic error, syntax error, etc.)
+- affected_files: List of files that need changes
+- root_cause: The underlying issue causing the bug
+- fix_approach: Step-by-step approach to fix
+- test_requirements: How to verify the fix works

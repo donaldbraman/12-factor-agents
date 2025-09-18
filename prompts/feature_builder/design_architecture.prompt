@@ -1,0 +1,21 @@
+# Design Feature Architecture
+
+Design the architecture for this feature request.
+
+## Feature Specification:
+{specification}
+
+## Design Requirements:
+
+1. **Modular**: Create reusable components
+2. **Testable**: Design for easy testing
+3. **Scalable**: Consider future growth
+4. **Maintainable**: Keep it simple and clear
+
+## Response Format:
+Provide architectural design:
+- components: List of components to create
+- interfaces: APIs and contracts between components
+- data_flow: How data moves through the system
+- dependencies: External libraries or services needed
+- file_structure: Where files should be created
