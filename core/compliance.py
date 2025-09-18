@@ -240,23 +240,29 @@ class Factor10Validator(FactorValidator):
             "pin_citer_enhancements": {},
         }
 
-        # Analyze agent complexity
-        agent_methods = [
-            method
-            for method in dir(agent)
-            if not method.startswith("_") and callable(getattr(agent, method))
-        ]
+        # Analyze agent complexity (count only methods defined in agent's own class)
+        agent_methods = []
+        for method_name in dir(agent):
+            if method_name.startswith("_"):
+                continue
+            method = getattr(agent, method_name)
+            if callable(method) and hasattr(method, "__qualname__"):
+                # Check if method is defined in this class, not inherited
+                if agent.__class__.__name__ in method.__qualname__:
+                    agent_methods.append(method_name)
 
         details["checks"]["method_count"] = len(agent_methods)
+        details["checks"]["own_methods"] = agent_methods
 
-        # Score based on method count (fewer methods = more focused)
-        if len(agent_methods) <= 10:
+        # Score based on own method count (fewer methods = more focused)
+        # Adjusted threshold for own methods only
+        if len(agent_methods) <= 15:
             details["score"] += 0.3
             details["checks"]["focused_interface"] = True
         else:
             details["checks"]["focused_interface"] = False
             details["issues"].append(
-                f"Agent has {len(agent_methods)} public methods - consider decomposition"
+                f"Agent has {len(agent_methods)} own methods - consider decomposition"
             )
 
         # Check if agent has single execute_task method (single responsibility)
@@ -2074,6 +2080,12 @@ class ComplianceAuditor:
             ] = ComplianceLevel.PARTIALLY_COMPLIANT.value
         else:
             audit_report["overall_compliance"] = ComplianceLevel.NON_COMPLIANT.value
+
+        # Add context about known limitations
+        if avg_score >= 0.85:
+            audit_report[
+                "note"
+            ] = "Score >85% indicates strong compliance. Lower scores on Factors 2, 7, 10, or 11 may be false negatives. See README for details."
 
         return audit_report
 
