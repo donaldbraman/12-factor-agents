@@ -1,0 +1,39 @@
+# Understand Issue Intent
+
+Analyze the issue content and determine what needs to be done.
+
+## Issue Content:
+{issue_content}
+
+## Analysis Guidelines:
+
+1. **Identify the Type**:
+   - Bug fix: Look for "error", "bug", "broken", "fix", "failure", "crash"
+   - Feature request: Look for "implement", "add", "create", "new feature"
+   - Improvement: Look for "improve", "enhance", "optimize", "refactor"
+   - Documentation: Look for "document", "docs", "README", "explain"
+   - Test: Look for "test", "coverage", "verify"
+
+2. **Assess Complexity**:
+   - Simple: Single file, clear fix, obvious solution
+   - Moderate: Multiple files, some investigation needed
+   - Complex: System-wide changes, architecture decisions needed
+
+3. **Extract Specific Requirements**:
+   - What files need to be modified?
+   - What specific changes are requested?
+   - Are there success criteria mentioned?
+   - Are there constraints or warnings?
+
+4. **Determine Action Items**:
+   - List concrete steps to address the issue
+   - Identify dependencies or prerequisites
+   - Note any risks or concerns
+
+## Response Format:
+Provide a structured analysis with:
+- type: The issue type
+- complexity: simple/moderate/complex
+- files: List of files that need changes
+- requirements: Specific things that must be done
+- approach: How to tackle this issue

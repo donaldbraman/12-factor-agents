@@ -14,6 +14,7 @@ from core.hierarchical_orchestrator import HierarchicalOrchestrator
 from core.smart_state import get_smart_state_manager, StateType, StateStatus
 from core.telemetry import TelemetryCollector
 from core.intelligent_triggers import create_trigger_engine
+from core.prompt_manager import PromptManager
 from core.git_workflow import GitWorkflowManager
 
 
@@ -35,6 +36,7 @@ class IntelligentIssueAgent(BaseAgent):
         self.state_manager = get_smart_state_manager()
         self.telemetry = TelemetryCollector()
         self.trigger_engine = create_trigger_engine()  # Factor 2: Explicit Dependencies
+        self.prompt_manager = PromptManager()  # Factor 2: Own Your Prompts
         self.git_workflow = GitWorkflowManager()  # Git workflow for PR creation
         self.current_state_id = None
 
@@ -132,6 +134,9 @@ class IntelligentIssueAgent(BaseAgent):
                 },
             )
 
+            # Initialize variable for telemetry
+            is_feature_creation = False
+
             # Phase 4: Quality-focused routing based on high-confidence triggers
             if trigger_decision.confidence >= 0.85:  # Quality threshold
                 # High-confidence quality routing
@@ -168,9 +173,17 @@ class IntelligentIssueAgent(BaseAgent):
                 )
 
                 # Use human-like intelligent analysis for precious code decisions
-                is_feature_creation = self._is_feature_creation_request(
-                    intent, issue_content
-                )
+                # CRITICAL FIX: Never treat bug fixes or error reports as feature creation
+                is_feature_creation = False
+                if (
+                    "fix" not in issue_content.lower()
+                    and "bug" not in issue_content.lower()
+                    and "error" not in issue_content.lower()
+                    and "failure" not in issue_content.lower()
+                ):
+                    is_feature_creation = self._is_feature_creation_request(
+                        intent, issue_content
+                    )
 
                 if is_feature_creation:
                     result = self._handle_feature_creation(
@@ -219,30 +232,57 @@ class IntelligentIssueAgent(BaseAgent):
             )
 
     def _extract_issue_reference(self, task: str) -> Optional[Dict]:
-        """Extract issue number or file path from task description"""
+        """Use prompt-driven intelligence to find the issue file"""
 
-        # Check for issue number (#123)
-        issue_match = re.search(r"#(\d+)", task)
-        if issue_match:
-            return {"type": "github", "number": issue_match.group(1)}
+        # Load the prompt guidance from our library
+        # The prompt tells us the smart strategy for finding issues
+        # This way we can update the strategy without changing code
 
-        # Check for file path (issues/something.md)
-        path_match = re.search(r"issues?/[\w\-]+\.md", task)
-        if path_match:
-            return {"type": "file", "path": path_match.group(0)}
+        # For now, use a simple implementation that follows the prompt's guidance
+        task_clean = task.strip()
 
-        # Check for any file path that exists
-        # Extract potential paths (anything that looks like a path)
-        potential_paths = re.findall(
-            r"[/\w\-\.]+\.(?:md|txt|py|js|json|yaml|yml)", task
-        )
-        for path in potential_paths:
-            if Path(path).exists():
-                return {"type": "file", "path": path}
+        # 1. Direct file path
+        if Path(task_clean).exists():
+            return {"type": "file", "path": task_clean}
 
-        # Check if the whole task is a path
-        if Path(task).exists():
-            return {"type": "file", "path": task}
+        # 2. Local issues directory - extract any numbers and check locally first
+        import re
+
+        numbers = re.findall(r"\d+", task)
+
+        for num in numbers:
+            # Follow the prompt's suggested patterns
+            local_patterns = [
+                f"issues/{num}.md",
+                f"issues/issue-{num}.md",
+                f"issues/{num}.txt",
+                f"issue_{num}.md",
+            ]
+
+            for path in local_patterns:
+                if Path(path).exists():
+                    return {"type": "file", "path": path}
+
+        # 3. Smart path detection
+        words = task.split()
+        for word in words:
+            word_clean = word.strip('.,!?;:"')
+
+            if "/" in word_clean or word_clean.endswith(
+                (".md", ".txt", ".json", ".yaml")
+            ):
+                if Path(word_clean).exists():
+                    return {"type": "file", "path": word_clean}
+
+                # Check in issues/ directory
+                if not word_clean.startswith("issues/"):
+                    issue_path = f"issues/{word_clean}"
+                    if Path(issue_path).exists():
+                        return {"type": "file", "path": issue_path}
+
+        # 4. GitHub fallback - ONLY if local not found
+        if numbers:
+            return {"type": "github", "number": numbers[0]}
 
         return None
 
