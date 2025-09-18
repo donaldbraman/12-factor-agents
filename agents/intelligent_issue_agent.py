@@ -361,7 +361,9 @@ class IntelligentIssueAgent(BaseAgent):
 
         return requests
 
-    def _handle_simple_issue(self, intent: Dict) -> ToolResponse:
+    def _handle_simple_issue(
+        self, intent: Dict, execution_state_id: str = None
+    ) -> ToolResponse:
         """Handle simple issues with direct tool calls"""
 
         results = []
