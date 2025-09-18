@@ -72,7 +72,7 @@ class GitWorkflowManager:
             )
 
     def commit_changes(self, message: str, files: List[str] = None) -> ToolResponse:
-        """Commit changes to the feature branch"""
+        """Commit changes to the feature branch with pre-commit hook handling"""
         try:
             # Add files (or all if none specified)
             if files:
@@ -99,16 +99,36 @@ class GitWorkflowManager:
 
 Co-Authored-By: Claude <noreply@anthropic.com>"""
 
-            subprocess.run(
-                ["git", "commit", "-m", commit_message], check=True, capture_output=True
+            # Try commit with pre-commit hooks
+            result = subprocess.run(
+                ["git", "commit", "-m", commit_message], capture_output=True, text=True
             )
+
+            if result.returncode != 0:
+                # Pre-commit hooks might have modified files, try re-adding and committing again
+                subprocess.run(["git", "add", "."], check=True)
+
+                # Try commit again
+                result = subprocess.run(
+                    ["git", "commit", "-m", commit_message],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
 
             return ToolResponse(
                 success=True, data={"branch": self.feature_branch, "message": message}
             )
 
         except subprocess.CalledProcessError as e:
-            return ToolResponse(success=False, error=f"Failed to commit changes: {e}")
+            return ToolResponse(
+                success=False,
+                error=f"Failed to commit changes: {e}",
+                data={
+                    "stderr": getattr(e, "stderr", ""),
+                    "stdout": getattr(e, "stdout", ""),
+                },
+            )
 
     def create_pull_request(
         self, title: str, body: str, issue_number: str = None
