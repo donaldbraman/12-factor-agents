@@ -201,7 +201,7 @@ class IntelligentIssueAgent(BaseAgent):
                 context={
                     "state_id": execution_state_id,
                     "intent": intent,
-                    "is_feature_creation": is_feature_creation,
+                    "is_feature_creation": locals().get("is_feature_creation", False),
                 },
             )
 
