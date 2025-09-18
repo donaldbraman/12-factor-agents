@@ -1,0 +1,44 @@
+{
+  "repo": "donaldbraman/cite-assist",
+  "timestamp": "2025-09-18T11:00:00",
+  "report_type": "analysis",
+  "issues": [
+    {
+      "title": "Placeholder implementation in parser.py",
+      "description": "Function has TODO comment instead of implementation",
+      "priority": "high",
+      "type": "placeholder",
+      "file": "src/parser.py",
+      "line": 42,
+      "context": "def parse_citation(text):\n    # TODO: Implement actual parsing\n    pass"
+    },
+    {
+      "title": "Missing error handling in api_client.py",
+      "description": "Network requests lack proper error handling and retry logic",
+      "priority": "medium",
+      "type": "error_handling",
+      "file": "src/api_client.py",
+      "line": 15
+    }
+  ],
+  "patterns": [
+    {
+      "pattern": "todo_comments",
+      "count": 8,
+      "severity": "medium"
+    },
+    {
+      "pattern": "missing_error_handling",
+      "count": 3,
+      "severity": "high"
+    }
+  ],
+  "recommendations": [
+    "Replace placeholder implementations with real code",
+    "Add comprehensive error handling for network operations"
+  ],
+  "metadata": {
+    "generated_by": "external_report_submission_test",
+    "version": "1.0"
+  }
+}

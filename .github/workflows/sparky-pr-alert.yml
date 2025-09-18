@@ -1,0 +1,35 @@
+#!/bin/bash
+# GitHub Actions workflow for Sparky PR alerts
+# Place in .github/workflows/sparky-pr-alert.yml
+
+name: Sparky PR Alert
+on:
+  pull_request:
+    types: [opened]
+
+jobs:
+  sparky-alert:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Check if Sparky PR
+        id: check-sparky
+        run: |
+          if [[ "${{ github.event.pull_request.body }}" == *"🤖 Generated with"* ]] || 
+             [[ "${{ github.event.pull_request.body }}" == *"Co-Authored-By: Claude"* ]] ||
+             [[ "${{ github.event.pull_request.title }}" == *"fix"* ]] ||
+             [[ "${{ github.event.pull_request.title }}" == *"improve"* ]]; then
+            echo "sparky=true" >> $GITHUB_OUTPUT
+          fi
+      
+      - name: Send Sparky Alert
+        if: steps.check-sparky.outputs.sparky == 'true'
+        run: |
+          echo "🚨🚨🚨 URGENT SPARKY PR ALERT 🚨🚨🚨"
+          echo "PR #${{ github.event.pull_request.number }}: ${{ github.event.pull_request.title }}"
+          echo "URL: ${{ github.event.pull_request.html_url }}"
+          echo "🚨 REQUIRES EXTREME REVIEW - SELF-MODIFYING AI 🚨"
+          
+          # Post to Slack/Discord if configured
+          curl -X POST -H 'Content-type: application/json' \
+            --data "{\"text\":\"🚨 SPARKY PR ALERT: #${{ github.event.pull_request.number }} - ${{ github.event.pull_request.title }} - REQUIRES EXTREME REVIEW\"}" \
+            $SLACK_WEBHOOK_URL || true
