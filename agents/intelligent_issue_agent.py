@@ -1382,20 +1382,43 @@ configuration:
 
 # Example usage
 if __name__ == "__main__":
+    import sys
+
     agent = IntelligentIssueAgent()
 
-    # Test with a simple issue reference
-    result = agent.execute_task("Read and process issue #123")
-    print(f"Result: {result}")
+    # Check if issue file was provided as argument
+    if len(sys.argv) > 1:
+        # Handle --issue-file argument
+        if "--issue-file" in sys.argv:
+            idx = sys.argv.index("--issue-file")
+            if idx + 1 < len(sys.argv):
+                issue_file = sys.argv[idx + 1]
+                result = agent.execute_task(
+                    f"Handle the issue described in {issue_file}"
+                )
+                print(f"Result: {result}")
+            else:
+                print("Error: --issue-file requires a file path")
+                sys.exit(1)
+        else:
+            # Direct task execution
+            task = " ".join(sys.argv[1:])
+            result = agent.execute_task(task)
+            print(f"Result: {result}")
+    else:
+        # Default test cases
+        # Test with a simple issue reference
+        result = agent.execute_task("Read and process issue #123")
+        print(f"Result: {result}")
 
-    # Test with natural language
-    test_issue = """
-    Fix the authentication bug in src/auth.py and add tests for the login function.
-    Also update the README.md with the new authentication flow.
-    """
+        # Test with natural language
+        test_issue = """
+        Fix the authentication bug in src/auth.py and add tests for the login function.
+        Also update the README.md with the new authentication flow.
+        """
 
-    with open("test_issue.md", "w") as f:
-        f.write(test_issue)
+        with open("test_issue.md", "w") as f:
+            f.write(test_issue)
 
-    result = agent.execute_task("Handle the issue described in test_issue.md")
-    print(f"Result: {result}")
+        result = agent.execute_task("Handle the issue described in test_issue.md")
+        print(f"Result: {result}")
