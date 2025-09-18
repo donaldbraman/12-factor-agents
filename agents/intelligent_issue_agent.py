@@ -255,14 +255,43 @@ class IntelligentIssueAgent(BaseAgent):
                 return result.data["content"]
 
         elif issue_data["type"] == "github":
-            # TODO: Use GitHub API to fetch issue
-            # For now, try local file
+            # Try local file first (faster and works offline)
             issue_path = f"issues/{issue_data['number']}.md"
             if Path(issue_path).exists():
                 file_tool = self.tools[0]
                 result = file_tool.execute(operation="read", path=issue_path)
                 if result.success:
                     return result.data["content"]
+
+            # Fallback to GitHub CLI if local file doesn't exist
+            import subprocess
+            import json
+
+            try:
+                # Get issue details using GitHub CLI
+                result = subprocess.run(
+                    [
+                        "gh",
+                        "issue",
+                        "view",
+                        str(issue_data["number"]),
+                        "--json",
+                        "title,body",
+                    ],
+                    capture_output=True,
+                    text=True,
+                    check=True,
+                )
+
+                issue_json = json.loads(result.stdout)
+                # Format as markdown like a local issue file
+                content = f"# {issue_json.get('title', 'Issue ' + str(issue_data['number']))}\n\n"
+                content += issue_json.get("body", "No description provided")
+                return content
+
+            except (subprocess.CalledProcessError, json.JSONDecodeError, KeyError):
+                # GitHub CLI failed, issue not found
+                pass
 
         return None
 
