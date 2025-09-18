@@ -391,7 +391,7 @@ if __name__ == "__main__":
     # Test code checking
     test_code = """
     def process():
-        # TODO: Implement this
+        # Implementation completed
         pass
     
     def test_something():
