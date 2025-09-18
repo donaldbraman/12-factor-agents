@@ -44,7 +44,7 @@ class IntelligentIssueAgent(BaseAgent):
             # TestTool(), # Add when needed
         ]
 
-    def execute_task(self, task: str) -> ToolResponse:
+    def execute_task(self, task: str, context: Optional[Dict] = None) -> ToolResponse:
         """
         Enhanced main entry point with smart state management.
 
