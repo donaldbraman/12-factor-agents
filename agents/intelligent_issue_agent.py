@@ -168,9 +168,15 @@ class IntelligentIssueAgent(BaseAgent):
                 )
 
                 # Use human-like intelligent analysis for precious code decisions
-                is_feature_creation = self._is_feature_creation_request(
-                    intent, issue_content
-                )
+                # CRITICAL FIX: Never treat bug fixes as feature creation
+                is_feature_creation = False
+                if (
+                    "fix" not in issue_content.lower()
+                    and "bug" not in issue_content.lower()
+                ):
+                    is_feature_creation = self._is_feature_creation_request(
+                        intent, issue_content
+                    )
 
                 if is_feature_creation:
                     result = self._handle_feature_creation(
@@ -402,12 +408,25 @@ class IntelligentIssueAgent(BaseAgent):
         # Parse the actual issue content for specific fixes
         issue_fixes = self._parse_issue_for_fixes(intent["raw_content"])
 
-        # If we have specific files to update, handle them
+        # ALWAYS prioritize specific fixes from issue description
         if issue_fixes["files_to_update"]:
             for file_path in issue_fixes["files_to_update"]:
                 result = self._apply_issue_fix(file_path, issue_fixes)
                 results.append(result)
-        # Otherwise fall back to old behavior
+        # NEVER fall back to feature creation for fix issues
+        elif "fix" in str(intent.get("actions", [])).lower():
+            # This is a fix but we couldn't parse files - try harder
+            # Extract any mentioned files from the content
+            import re
+
+            file_mentions = re.findall(r"[\w/]+\.py", intent["raw_content"])
+            for file_path in file_mentions:
+                if "agents/" in file_path or "/" not in file_path:
+                    if "/" not in file_path:
+                        file_path = f"agents/{file_path}"
+                    result = self._apply_issue_fix(file_path, issue_fixes)
+                    results.append(result)
+        # Only use old behavior for actual creation requests
         else:
             # Handle file creation requests
             if "create_requests" in intent:
