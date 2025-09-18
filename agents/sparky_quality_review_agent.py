@@ -25,6 +25,14 @@ from core.agent import BaseAgent
 from core.tools import Tool, ToolResponse
 from core.quality_patterns import get_pattern_manager
 
+# Import telemetry learner if available
+try:
+    from core.telemetry_learner import TelemetryPatternLearner
+
+    HAS_TELEMETRY_LEARNING = True
+except ImportError:
+    HAS_TELEMETRY_LEARNING = False
+
 
 class QualityIssue(Enum):
     """Types of quality issues we commonly see"""
@@ -63,6 +71,14 @@ class CodeQualityAnalyzer(Tool):
         )
         # Use central pattern manager instead of hardcoding
         self.pattern_manager = get_pattern_manager()
+
+        # Use telemetry learner if available
+        self.telemetry_learner = None
+        if HAS_TELEMETRY_LEARNING:
+            try:
+                self.telemetry_learner = TelemetryPatternLearner()
+            except Exception:
+                pass  # Telemetry not available
 
     def execute(self, file_path: str) -> ToolResponse:
         """Analyze a file for quality issues using pattern database"""
