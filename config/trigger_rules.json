@@ -1,5 +1,5 @@
 {
-  "IntelligentIssueAgent": {
+  "AsyncSparky": {
     "keywords": [
       "implement", "create", "build", "develop", "design", "add",
       "feature", "enhancement", "functionality", "new"
@@ -44,7 +44,7 @@
     "min_confidence_threshold": 0.85,
     "high_quality_threshold": 0.95,
     "require_consensus_threshold": 0.75,
-    "fallback_handler": "IntelligentIssueAgent"
+    "fallback_handler": "AsyncSparky"
   },
   "quality_settings": {
     "enable_deep_analysis": true,

@@ -54,7 +54,7 @@ class SimpleExternalIssueProcessor:
             # Create a local issue file in the 12-factor-agents issues directory
             issue_file = self._create_local_issue_file(issue_data, assigned_agent)
 
-            # Process using IntelligentIssueAgent
+            # Process using SPARKY 6.0
             result = self._process_with_intelligent_agent(issue_file, issue_data)
 
             return {
@@ -164,7 +164,7 @@ class SimpleExternalIssueProcessor:
 
         # Check for feature creation indicators
         if any(keyword in title for keyword in ["implement", "create", "add", "build"]):
-            return "IntelligentIssueAgent"
+            return "SPARKY 6.0"
 
         # Check content for new feature indicators
         content = f"{title} {description} {goal}".lower()
@@ -181,14 +181,14 @@ class SimpleExternalIssueProcessor:
                 "functionality",
             ]
         ):
-            return "IntelligentIssueAgent"
+            return "SPARKY 6.0"
 
         # Check if files need to be created
         if issue_data.get("files_to_create"):
-            return "IntelligentIssueAgent"
+            return "SPARKY 6.0"
 
-        # Default to IntelligentIssueAgent for sister repo issues
-        return "IntelligentIssueAgent"
+        # Default to SPARKY 6.0 for sister repo issues
+        return "SPARKY 6.0"
 
     def _create_local_issue_file(self, issue_data: Dict, assigned_agent: str) -> Path:
         """Create a local issue file that the system can process"""
@@ -249,26 +249,33 @@ open
     def _process_with_intelligent_agent(
         self, issue_file: Path, issue_data: Dict
     ) -> Dict:
-        """Process the issue using IntelligentIssueAgent"""
+        """Process the issue using SPARKY 6.0"""
         try:
-            # Import and use the IntelligentIssueAgent from current system
-            from agents.intelligent_issue_agent import IntelligentIssueAgent
+            # Import and use SPARKY 6.0 for house-trained Git workflow
+            from agents.sparky_6_async import AsyncSparky
 
-            # Create the agent
-            agent = IntelligentIssueAgent()
+            # Create SPARKY 6.0 agent
+            import asyncio
 
-            # Process the issue
-            task = f"Process the issue file at {issue_file}"
-            result = agent.execute_task(task)
+            agent = AsyncSparky()
 
-            if result.success:
+            # Process the issue using SPARKY 6.0's async launch
+            async def run_sparky():
+                context = await agent.launch(issue_file)
+                return context
+
+            # Run SPARKY 6.0 async agent
+            result = asyncio.run(run_sparky())
+
+            if result.current_state.name == "COMPLETED":
                 print(
                     f"✅ Successfully processed cite-assist issue #{issue_data['number']}"
                 )
                 return {
                     "success": True,
-                    "agent_result": result.data,
-                    "message": "Issue processed successfully by IntelligentIssueAgent",
+                    "agent_result": result.agent_id,
+                    "branch": result.checkpoint_data.get("branch_name"),
+                    "message": "Issue processed successfully by SPARKY 6.0",
                 }
             else:
                 print(
@@ -277,15 +284,15 @@ open
                 return {
                     "success": False,
                     "error": result.error,
-                    "message": "IntelligentIssueAgent processing failed",
+                    "message": "SPARKY 6.0 processing failed",
                 }
 
         except Exception as e:
-            print(f"❌ Error processing with IntelligentIssueAgent: {e}")
+            print(f"❌ Error processing with SPARKY 6.0: {e}")
             return {
                 "success": False,
                 "error": str(e),
-                "message": "Failed to invoke IntelligentIssueAgent",
+                "message": "Failed to invoke SPARKY 6.0",
             }
 
 

@@ -94,9 +94,9 @@ class GitHubIssueLoader:
 
         # Check labels first
         if "bug" in labels:
-            return "IntelligentIssueAgent"
+            return "AsyncSparky"
         elif "enhancement" in labels:
-            return "IntelligentIssueAgent"
+            return "AsyncSparky"
         elif "documentation" in labels:
             return "DocumentationAgent"
 
@@ -112,7 +112,7 @@ class GitHubIssueLoader:
         # Issue: "Tests failing after upgrade to pytest 8.0"
         # → Route to TestingAgent ✓ (correct - primary intent is fixing tests)
         #
-        # For now, use IntelligentIssueAgent as default - it can handle most tasks
+        # For now, use AsyncSparky as default - it can handle most tasks
         # and has feature detection, bug fixing, and smart routing capabilities.
         # Only use specialized agents when the ENTIRE issue is about that specialty.
 
@@ -134,9 +134,9 @@ class GitHubIssueLoader:
         ):
             return "TestingAgent"
 
-        # Everything else goes to IntelligentIssueAgent
+        # Everything else goes to AsyncSparky
         # It has feature detection and can create new features or fix bugs
-        return "IntelligentIssueAgent"
+        return "AsyncSparky"
 
     def save_as_issue_file(self, issue_data: Dict) -> Path:
         """Save GitHub issue as local file for processing"""

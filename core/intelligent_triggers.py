@@ -293,14 +293,14 @@ class DeepSemanticTriggerAnalyzer(TriggerAnalyzer):
 
             # Map to handler
             handler_mapping = {
-                "creation_intent": "IntelligentIssueAgent",
+                "creation_intent": "AsyncSparky",
                 "modification_intent": "IssueProcessorAgent",
                 "analysis_intent": "TestingAgent",
                 "orchestration_intent": "HierarchicalOrchestrator",
             }
 
             if total_score > 0:
-                handler = handler_mapping.get(intent, "IntelligentIssueAgent")
+                handler = handler_mapping.get(intent, "AsyncSparky")
                 dimension_scores[handler] = min(total_score, 1.0)
 
         return dimension_scores
@@ -368,7 +368,7 @@ class ContextualIntentAnalyzer(TriggerAnalyzer):
             and code_signals.get("files_to_create", 0) >= 2
             and scope_signals.get("new_functionality", False)
         ):
-            contextual_scores["IntelligentIssueAgent"] = 0.9
+            contextual_scores["AsyncSparky"] = 0.9
 
         # Complex orchestration context
         elif (
@@ -681,9 +681,7 @@ class QualityTriggerEngine:
 
         if not high_confidence_handlers:
             # No high-confidence options - be conservative
-            fallback_handler = quality_thresholds.get(
-                "fallback_handler", "IntelligentIssueAgent"
-            )
+            fallback_handler = quality_thresholds.get("fallback_handler", "AsyncSparky")
             return TriggerDecision(
                 handler=fallback_handler,
                 confidence=TriggerConfidence.UNCERTAIN.value,
@@ -745,7 +743,7 @@ class QualityTriggerEngine:
 
         # Efficient default configuration
         return {
-            "IntelligentIssueAgent": {
+            "AsyncSparky": {
                 "keywords": ["implement", "create", "build", "develop", "feature"],
                 "weight": 0.3,
             },

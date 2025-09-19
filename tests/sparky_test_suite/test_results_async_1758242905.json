@@ -1,0 +1,42 @@
+{
+  "sparky_version": "6.0-async",
+  "timestamp": 1758242905,
+  "results": [
+    {
+      "test": "001-add-comment.md",
+      "level": "1",
+      "status": "PASSED",
+      "agent_id": "1b0544b3",
+      "actions_completed": 3,
+      "time_seconds": 0.71,
+      "insights": 1
+    },
+    {
+      "test": "011-refactor-function.md",
+      "level": "2",
+      "status": "PASSED",
+      "agent_id": "e5cdc632",
+      "actions_completed": 3,
+      "time_seconds": 0.71,
+      "insights": 1
+    },
+    {
+      "test": "021-implement-error-handling.md",
+      "level": "3",
+      "status": "PASSED",
+      "agent_id": "4974106a",
+      "actions_completed": 3,
+      "time_seconds": 0.71,
+      "insights": 1
+    },
+    {
+      "test": "031-full-feature-implementation.md",
+      "level": "4",
+      "status": "PASSED",
+      "agent_id": "44592bea",
+      "actions_completed": 3,
+      "time_seconds": 0.71,
+      "insights": 1
+    }
+  ]
+}

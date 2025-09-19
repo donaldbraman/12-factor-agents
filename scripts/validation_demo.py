@@ -166,20 +166,20 @@ def sister_function():
 
 
 def demo_intelligent_agent_integration():
-    """Demonstrate integration with IntelligentIssueAgent workflow"""
-    print("\n🤖 Demonstrating IntelligentIssueAgent Integration")
+    """Demonstrate integration with AsyncSparky workflow"""
+    print("\n🤖 Demonstrating AsyncSparky Integration")
     print("=" * 50)
 
     # Import the agent
-    from agents.intelligent_issue_agent import IntelligentIssueAgent
+    from agents.sparky_6_async import AsyncSparky
     from core.execution_context import create_default_context
 
     # Create agent with default context
-    agent = IntelligentIssueAgent()
+    agent = AsyncSparky()
     context = create_default_context()
     agent.context = context
 
-    print("✅ IntelligentIssueAgent instantiated with validation system")
+    print("✅ AsyncSparky instantiated with validation system")
 
     # The agent now includes the validation system in its _generic_implementation method
     print("🔧 Agent workflow now includes:")

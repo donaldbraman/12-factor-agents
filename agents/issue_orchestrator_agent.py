@@ -148,7 +148,7 @@ class AgentDispatcherTool(Tool):
                 "CLIBuilderAgent": "cli_builder_agent",
                 "RegistryBuilderAgent": "registry_builder_agent",
                 "UvMigrationAgent": "uv_migration_agent",
-                "IntelligentIssueAgent": "intelligent_issue_agent",
+                "AsyncSparky": "sparky_6_async",
             }
 
             module_name = agent_map.get(

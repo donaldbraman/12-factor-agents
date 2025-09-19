@@ -101,6 +101,22 @@ class OrchestrationResult:
     error_message: str = ""
     metadata: Dict[str, Any] = field(default_factory=dict)
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to JSON-serializable dictionary"""
+        return {
+            "task_id": self.task_id,
+            "success": self.success,
+            "result": self.result
+            if isinstance(self.result, (dict, list, str, int, float, bool, type(None)))
+            else str(self.result),
+            "execution_time": self.execution_time,
+            "agents_used": self.agents_used,
+            "levels_deep": self.levels_deep,
+            "coordination_overhead": self.coordination_overhead,
+            "error_message": self.error_message,
+            "metadata": self.metadata,
+        }
+
 
 class TaskDecomposer:
     """Intelligent task decomposition engine"""

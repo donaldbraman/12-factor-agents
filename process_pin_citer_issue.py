@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Process pin-citer issue #145 using IntelligentIssueAgent."""
+"""Process pin-citer issue #145 using AsyncSparky."""
 
 import sys
 from pathlib import Path

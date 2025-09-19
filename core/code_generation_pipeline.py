@@ -11,7 +11,7 @@ from typing import Dict, List, Optional
 from dataclasses import dataclass
 from datetime import datetime
 
-from agents.intelligent_issue_agent import IntelligentIssueAgent
+from agents.sparky_6_async import AsyncSparky
 from agents.code_generation_agent import CodeGenerationAgent
 from agents.pr_creation_agent import PRCreationAgent
 from core.smart_state import SmartStateManager
@@ -53,7 +53,7 @@ class CodeGenerationPipeline:
 
         # Initialize agents
         self.agents = {
-            "analysis": IntelligentIssueAgent(),
+            "analysis": AsyncSparky(),
             "generation": CodeGenerationAgent(),
             "pr_creation": PRCreationAgent(),
         }
@@ -108,7 +108,7 @@ class CodeGenerationPipeline:
         try:
             # Stage 1: Analysis
             print("\n📋 Stage 1: Analysis")
-            print("🤖 HANDOFF → IntelligentIssueAgent")
+            print("🤖 HANDOFF → SPARKY 6.0")
             analysis_result = self._run_analysis(repo, issue_number, issue_content)
 
             if not analysis_result["success"]:
@@ -261,7 +261,7 @@ class CodeGenerationPipeline:
         if not issue_content:
             issue_content = self._fetch_issue_content(repo, issue_number)
 
-        # Analyze with IntelligentIssueAgent
+        # Analyze with SPARKY 6.0
         analysis = {
             "title": self._extract_title(issue_content),
             "root_cause": self._extract_root_cause(issue_content),

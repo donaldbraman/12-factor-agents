@@ -63,6 +63,26 @@ class OrchestrationResult:
     steps_completed: List[str] = field(default_factory=list)
     context: Optional[TaskContext] = None
 
+    def to_dict(self) -> Dict[str, Any]:
+        """Convert to JSON-serializable dictionary"""
+        return {
+            "success": self.success,
+            "task_id": self.task_id,
+            "results": self.results,
+            "errors": self.errors,
+            "steps_completed": self.steps_completed,
+            "context": {
+                "task_id": self.context.task_id,
+                "task_type": self.context.task_type,
+                "issue_number": self.context.issue_number,
+                "pr_number": self.context.pr_number,
+                "files_to_process": self.context.files_to_process,
+                "metadata": self.context.metadata,
+            }
+            if self.context
+            else None,
+        }
+
 
 class SimpleOrchestrator:
     """
