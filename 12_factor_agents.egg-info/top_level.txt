@@ -1,4 +1,0 @@
-agents
-bin
-core
-orchestration
