@@ -31,3 +31,18 @@ coverage.xml
 coverage.json
 .pytest_cache/
 prompts/learned_patterns/
+
+# Security - NEVER commit these
+token.json
+*.token
+*.key
+*.pem
+
+# Build artifacts
+*.egg-info/
+dist/
+build/
+
+# Test outputs
+sparky_processed_*.txt
+test_results_*.json
