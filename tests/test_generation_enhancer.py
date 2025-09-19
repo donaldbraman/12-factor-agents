@@ -209,7 +209,8 @@ except ImportError:
 
 # Import the module we're testing
 try:
-    from {module_name} import *
+    # Import specific items instead of using wildcard
+    # from {module_name} import SpecificClass, specific_function
 except ImportError:
     # If module doesn't exist yet, we'll create mocks
     pass
