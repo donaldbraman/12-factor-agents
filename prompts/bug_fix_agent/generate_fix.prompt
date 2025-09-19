@@ -1,0 +1,35 @@
+# Generate Bug Fix
+
+Based on the bug report, generate the specific code changes needed.
+
+## Bug Report:
+{issue_content}
+
+## Fix Generation Rules:
+
+1. **Minimal changes**: Fix only what's broken
+2. **Preserve behavior**: Don't change unrelated functionality  
+3. **Add tests**: Include test to verify fix
+4. **Clear comments**: Explain why the fix works
+
+## Response Format:
+Provide the fix as a series of file edits:
+```json
+{
+  "edits": [
+    {
+      "file": "path/to/file.py",
+      "operation": "replace",
+      "old_code": "buggy code here",
+      "new_code": "fixed code here",
+      "explanation": "why this fixes it"
+    }
+  ],
+  "tests": [
+    {
+      "file": "tests/test_fix.py",
+      "test_code": "test that verifies the fix"
+    }
+  ]
+}
+```
