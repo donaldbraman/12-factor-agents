@@ -1,42 +1,16 @@
-#!/usr/bin/env python3
-"""
-Add Docstring to BaseAgent __init__ Method - Base
+"""Base agent class"""
 
 
-"""
-# Enhanced by AsyncSparky - 2025-09-18T12:54:57.876257
+class BaseAgent:
+    """Base class for all agents"""
 
-# Enhanced by AsyncSparky - 2025-09-18T12:54:57.876133
+    def __init__(self, agent_id: str):
+        self.agent_id = agent_id
+        self.initialized = False
 
-
-from typing import Dict, Any
-
-
-class Base:
-    """
-    Main class for Add Docstring to BaseAgent __init__ Method functionality.
-    """
-
-    def __init__(self):
-        """Initialize the base component."""
+    def initialize(self):
+        """Initialize agent"""
         self.initialized = True
-
-    def execute(self, *args, **kwargs) -> Dict[str, Any]:
-        """
-        Main execution method for base operations.
-
-        Returns:
-            Dict containing execution results
-        """
-        return {"success": True, "message": "Executed successfully"}
-
-
-def main():
-    """Main function for direct module execution."""
-    component = Base()
-    result = component.execute()
-    print(f"Result: {result}")
-
-
-if __name__ == "__main__":
-    main()
+        # Allocate some memory for testing
+        self.data = [0] * 10000
+        return self
